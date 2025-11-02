@@ -1,7 +1,7 @@
 -- Task 2.4: Certifications metadata table
 
 create table if not exists public.certifications (
-    id uuid primary key default uuid_generate_v4(),
+    id uuid primary key default gen_random_uuid(),
     code text not null unique,
     name text not null,
     description text,

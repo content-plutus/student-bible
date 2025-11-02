@@ -3,7 +3,7 @@
 create type certification_status as enum ('planned', 'in_progress', 'completed', 'on_hold', 'dropped');
 
 create table if not exists public.student_certifications (
-    id uuid primary key default uuid_generate_v4(),
+    id uuid primary key default gen_random_uuid(),
     student_id uuid not null references public.students (id) on delete cascade,
     certification_id uuid not null references public.certifications (id) on delete cascade,
     enrollment_date date,

@@ -1,7 +1,7 @@
 -- Task 2.9: Attendance records with engagement metrics
 
 create table if not exists public.attendance_records (
-    id uuid primary key default uuid_generate_v4(),
+    id uuid primary key default gen_random_uuid(),
     student_id uuid not null references public.students (id) on delete cascade,
     session_date date not null,
     session_type text,

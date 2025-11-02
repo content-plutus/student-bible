@@ -1,7 +1,7 @@
 -- Task 2.10: Test scores with analysis data JSONB
 
 create table if not exists public.test_scores (
-    id uuid primary key default uuid_generate_v4(),
+    id uuid primary key default gen_random_uuid(),
     student_id uuid not null references public.students (id) on delete cascade,
     assessment_name text not null,
     assessment_type text,
