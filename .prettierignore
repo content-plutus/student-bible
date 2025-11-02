@@ -1,0 +1,14 @@
+node_modules
+.next
+out
+build
+
+package-lock.json
+
+create-prd.md
+Student Bible.md
+tasks/
+WARP.md
+.vscode
+
+.DS_Store
