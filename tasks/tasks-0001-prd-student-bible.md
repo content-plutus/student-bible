@@ -77,24 +77,24 @@
   - [x] 1.15 Configure GitHub Actions for CI/CD pipeline
 
 - [ ] 2.0 Design and Implement Extensible Database Schema with JSONB Support
-  - [ ] 2.1 Create `students` table with core fields and `extra_fields JSONB` column for future extensions
-  - [ ] 2.2 Add identification fields with proper constraints (aadhar_number UNIQUE WHERE NOT NULL)
-  - [ ] 2.3 Create `addresses` table with `additional_data JSONB` for unmapped address fields
-  - [ ] 2.4 Create `certifications` table with certification metadata and requirements
-  - [ ] 2.5 Create `student_certifications` junction table with `custom_fields JSONB`
-  - [ ] 2.6 Create `academic_info` table with flexible structure for varying education systems
-  - [ ] 2.7 Create `exam_attempts` table with `metadata JSONB` for exam-specific data
-  - [ ] 2.8 Create `form_submissions` table with `raw_data JSONB` for complete form preservation
-  - [ ] 2.9 Create `attendance_records` table with engagement metrics and `extra_metrics JSONB`
-  - [ ] 2.10 Create `test_scores` table with `analysis_data JSONB` for future analytics
-  - [ ] 2.11 Add CHECK constraints for data validation (phone format, date ranges, etc.)
-  - [ ] 2.12 Create indexes on phone_number, email, and JSONB fields using GIN indexes
-  - [ ] 2.13 Set up Row Level Security (RLS) policies for read-only access initially
-  - [ ] 2.14 Create materialized views for student progress calculations
-  - [ ] 2.15 Add unique constraints with NULLS NOT DISTINCT for optional unique fields
-  - [ ] 2.16 Create generated columns for common calculations (full_name, age, progress_percentage)
-  - [ ] 2.17 Implement trigger functions for automatic timestamp updates
-  - [ ] 2.18 Create database functions for JSONB field queries and updates
+  - [x] 2.1 Create `students` table with core fields and `extra_fields JSONB` column for future extensions
+  - [x] 2.2 Add identification fields with proper constraints (aadhar_number UNIQUE WHERE NOT NULL)
+  - [x] 2.3 Create `addresses` table with `additional_data JSONB` for unmapped address fields
+  - [x] 2.4 Create `certifications` table with certification metadata and requirements
+  - [x] 2.5 Create `student_certifications` junction table with `custom_fields JSONB`
+  - [x] 2.6 Create `academic_info` table with flexible structure for varying education systems
+  - [x] 2.7 Create `exam_attempts` table with `metadata JSONB` for exam-specific data
+  - [x] 2.8 Create `form_submissions` table with `raw_data JSONB` for complete form preservation
+  - [x] 2.9 Create `attendance_records` table with engagement metrics and `extra_metrics JSONB`
+  - [x] 2.10 Create `test_scores` table with `analysis_data JSONB` for future analytics
+  - [x] 2.11 Add CHECK constraints for data validation (phone format, date ranges, etc.)
+  - [x] 2.12 Create indexes on phone_number, email, and JSONB fields using GIN indexes
+  - [x] 2.13 Set up Row Level Security (RLS) policies for read-only access initially
+  - [x] 2.14 Create materialized views for student progress calculations
+  - [x] 2.15 Add unique constraints with NULLS NOT DISTINCT for optional unique fields
+  - [x] 2.16 Create generated columns for common calculations (full_name, age, progress_percentage)
+  - [x] 2.17 Implement trigger functions for automatic timestamp updates
+  - [x] 2.18 Create database functions for JSONB field queries and updates
   - [ ] 2.19 Document schema design decisions and JSONB usage patterns
   - [ ] 2.20 Create schema versioning table for tracking migrations
 
