@@ -3,13 +3,7 @@
 alter table public.students
     add column full_name text generated always as (trim(first_name || ' ' || coalesce(last_name, ''))) stored;
 
-alter table public.students
-    add column age_years integer generated always as (
-        case
-            when date_of_birth is null then null
-            else floor(date_part('year', age(date_of_birth)))::integer
-        end
-    ) stored;
+-- Age should be calculated at query time: floor(date_part('year', age(date_of_birth)))::integer
 
 alter table public.student_certifications
     add column progress_percentage numeric(5,2) generated always as (
