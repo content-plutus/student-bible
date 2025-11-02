@@ -69,9 +69,13 @@ SELECT students_has_extra_field(
 
 ### `students_update_extra_fields(student_id uuid, patch jsonb, strip_nulls boolean) → jsonb`
 
-Updates a student's `extra_fields` by merging a patch object. Optionally strips null values.
+Atomically updates a student's `extra_fields` by merging a patch object. Optionally strips null values.
 
 **Security:** This function uses `SECURITY DEFINER` and is restricted to `service_role` users only.
+
+**Concurrency:** This function uses an atomic single-statement UPDATE to eliminate race conditions. Multiple concurrent updates to different keys will all be preserved. If two updates modify the same key concurrently, last-writer-wins for that specific key.
+
+**Validation:** The patch parameter must be a JSON object (not an array or scalar). Passing null or non-object values will raise an exception.
 
 **Example:**
 
@@ -89,6 +93,20 @@ SELECT students_update_extra_fields(
 - Adding new fields discovered from form submissions
 - Updating certification-specific information
 - Storing temporary workflow state
+
+**Concurrency Example:**
+
+```sql
+-- Session 1 and Session 2 execute simultaneously:
+-- Session 1: UPDATE student SET extra_fields = merge(current, {"key1": "value1"})
+-- Session 2: UPDATE student SET extra_fields = merge(current, {"key2": "value2"})
+-- Result: Both key1 and key2 are present in final extra_fields (no data loss)
+
+-- If both sessions update the same key:
+-- Session 1: UPDATE student SET extra_fields = merge(current, {"key": "value1"})
+-- Session 2: UPDATE student SET extra_fields = merge(current, {"key": "value2"})
+-- Result: Whichever transaction commits last wins (last-writer-wins for same key)
+```
 
 ### `search_students_by_extra(field_key text, field_value jsonb) → setof students`
 
@@ -115,9 +133,13 @@ Checks if a specific field exists in an address's `additional_data` column.
 
 ### `addresses_update_additional_data(address_id uuid, patch jsonb, strip_nulls boolean) → jsonb`
 
-Updates an address's `additional_data` by merging a patch object.
+Atomically updates an address's `additional_data` by merging a patch object.
 
 **Security:** This function uses `SECURITY DEFINER` and is restricted to `service_role` users only.
+
+**Concurrency:** Uses atomic single-statement UPDATE to prevent lost updates. Same concurrency semantics as `students_update_extra_fields()`.
+
+**Validation:** The patch parameter must be a JSON object.
 
 ## Best Practices
 
