@@ -1,7 +1,7 @@
 -- Task 2.6: Academic information table with flexible structure
 
 create table if not exists public.academic_info (
-    id uuid primary key default uuid_generate_v4(),
+    id uuid primary key default gen_random_uuid(),
     student_id uuid not null references public.students (id) on delete cascade,
     highest_education_level text,
     college_name text,

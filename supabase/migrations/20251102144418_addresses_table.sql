@@ -2,7 +2,7 @@
 -- Supports PRD requirements for book delivery addresses and schema flexibility
 
 create table if not exists public.student_addresses (
-    id uuid primary key default uuid_generate_v4(),
+    id uuid primary key default gen_random_uuid(),
     student_id uuid not null references public.students (id) on delete cascade,
     address_type text not null default 'residential',
     address_line1 text not null,

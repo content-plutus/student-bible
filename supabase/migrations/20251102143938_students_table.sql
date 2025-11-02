@@ -2,11 +2,11 @@
 -- PRD references: goals (section 2), Functional Requirements 1, 11-12, Schema Flexibility 20-24
 
 -- Ensure required extensions are available
-create extension if not exists "uuid-ossp";
+create extension if not exists pgcrypto;  -- Provides gen_random_uuid()
 create extension if not exists citext;
 
 create table if not exists public.students (
-    id uuid primary key default uuid_generate_v4(),
+    id uuid primary key default gen_random_uuid(),
     created_at timestamptz not null default now(),
     updated_at timestamptz not null default now(),
     phone_number varchar(10) not null,

@@ -1,7 +1,7 @@
 -- Task 2.7: Exam attempts with metadata JSONB
 
 create table if not exists public.exam_attempts (
-    id uuid primary key default uuid_generate_v4(),
+    id uuid primary key default gen_random_uuid(),
     student_certification_id uuid not null references public.student_certifications (id) on delete cascade,
     paper_code text not null,
     attempt_date date,

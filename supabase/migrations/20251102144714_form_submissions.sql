@@ -1,7 +1,7 @@
 -- Task 2.8: Raw form submissions with JSONB storage
 
 create table if not exists public.form_submissions (
-    id uuid primary key default uuid_generate_v4(),
+    id uuid primary key default gen_random_uuid(),
     student_id uuid references public.students (id) on delete set null,
     form_name text not null,
     submission_id text,
