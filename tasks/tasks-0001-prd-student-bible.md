@@ -1,0 +1,231 @@
+# Task List: Student Bible - Centralized Data Management System
+
+## Relevant Files
+
+*Note: This is a greenfield project, so all files will be created during implementation.*
+
+- `package.json` - Project dependencies and scripts configuration
+- `next.config.js` - Next.js configuration with environment variables
+- `supabase/config.toml` - Supabase local development configuration
+- `.env.local` - Environment variables for API keys and database URLs
+- `supabase/migrations/001_initial_schema.sql` - Initial database schema with flexibility features
+- `supabase/migrations/002_jsonb_extensions.sql` - JSONB columns for schema extensibility
+- `supabase/migrations/003_calculated_fields.sql` - Generated columns and views for derived data
+- `lib/supabase/client.ts` - Supabase client initialization
+- `lib/supabase/server.ts` - Supabase server-side client
+- `lib/db/schema.ts` - Database schema TypeScript definitions
+- `app/layout.tsx` - Root layout component
+- `app/page.tsx` - Home page with search functionality
+- `app/api/sync/route.ts` - API endpoint for data synchronization
+- `app/api/sync/route.test.ts` - Tests for sync endpoint
+- `app/api/export/route.ts` - API endpoint for data export
+- `app/api/schema/extend/route.ts` - API endpoint for schema extension operations
+- `components/StudentSearch.tsx` - Phone number search component
+- `components/StudentSearch.test.tsx` - Tests for search component
+- `components/StudentTable.tsx` - Student data display table with dynamic columns
+- `components/StudentProfile.tsx` - Detailed student profile view
+- `components/ExportButton.tsx` - Google Sheets export component
+- `lib/types/student.ts` - TypeScript interfaces for student data with optional fields
+- `lib/types/validations.ts` - Validation schemas with partial data support
+- `lib/validators/studentValidator.ts` - Data validation functions
+- `lib/validators/studentValidator.test.ts` - Validation function tests
+- `lib/validators/rules.ts` - Validation rules configuration
+- `lib/validators/schemaEvolution.ts` - Schema evolution validation helpers
+- `lib/services/googleForms.ts` - Google Forms polling service
+- `lib/services/apiIntegration.ts` - External API integration service
+- `lib/services/schemaManager.ts` - Dynamic schema management service
+- `lib/utils/csvParser.ts` - CSV parsing utilities
+- `lib/utils/formatters.ts` - Data formatting utilities
+- `lib/utils/jsonbHelpers.ts` - JSONB query and manipulation utilities
+- `lib/utils/jsonbHelpers.test.ts` - Tests for JSONB utilities
+- `scripts/migrate.ts` - Database migration script
+- `scripts/import-historical.ts` - Historical data import script
+- `scripts/sync-forms.ts` - Google Forms sync script
+- `scripts/extend-schema.ts` - Schema extension script for adding new fields
+- `docs/schema-extension-guide.md` - Documentation for adding new fields safely
+- `docs/field-addition-workflow.md` - Decision tree for column vs JSONB storage
+
+### Notes
+
+- This is a greenfield project using Supabase + Next.js (recommended in PRD)
+- Schema flexibility is a core requirement (PRD sections 20-24)
+- JSONB columns will be used for unmapped/future fields
+- Generated columns will handle calculated fields
+- All new fields should support NULL values initially for backward compatibility
+- Unit tests will be created alongside components
+- Phone numbers follow Indian mobile format (10 digits, starting with 6-9)
+- Use `npm test` to run all tests, or `npm test -- [path]` for specific tests
+- Schema changes should be tested with the backward compatibility test suite
+
+## Tasks
+
+- [ ] 1.0 Initialize Project Infrastructure with Schema Flexibility Foundation
+  - [ ] 1.1 Create new Next.js project with TypeScript using `create-next-app@latest --typescript`
+  - [ ] 1.2 Set up Supabase account and create new project on free tier (500MB database, 2GB bandwidth)
+  - [ ] 1.3 Install core Supabase libraries (`@supabase/supabase-js`, `@supabase/auth-helpers-nextjs`)
+  - [ ] 1.4 Configure environment variables for Supabase URL and anon key in `.env.local`
+  - [ ] 1.5 Set up Tailwind CSS for styling with responsive design utilities
+  - [ ] 1.6 Install validation libraries (zod for schema validation with partial support)
+  - [ ] 1.7 Install data handling dependencies (csv-parse, date-fns, react-table v8, react-hook-form)
+  - [ ] 1.8 Configure ESLint and Prettier with rules for consistent code formatting
+  - [ ] 1.9 Initialize Git repository with `.gitignore` for Next.js and environment files
+  - [ ] 1.10 Set up project folder structure following Next.js 13+ app directory conventions
+  - [ ] 1.11 Create initial TypeScript config with strict mode and path aliases
+  - [ ] 1.12 Install JSONB handling libraries (superjson for serialization)
+  - [ ] 1.13 Set up Jest and React Testing Library for unit testing
+  - [ ] 1.14 Create initial documentation structure in `/docs` folder
+  - [ ] 1.15 Configure GitHub Actions for CI/CD pipeline
+
+- [ ] 2.0 Design and Implement Extensible Database Schema with JSONB Support
+  - [ ] 2.1 Create `students` table with core fields and `extra_fields JSONB` column for future extensions
+  - [ ] 2.2 Add identification fields with proper constraints (aadhar_number UNIQUE WHERE NOT NULL)
+  - [ ] 2.3 Create `addresses` table with `additional_data JSONB` for unmapped address fields
+  - [ ] 2.4 Create `certifications` table with certification metadata and requirements
+  - [ ] 2.5 Create `student_certifications` junction table with `custom_fields JSONB`
+  - [ ] 2.6 Create `academic_info` table with flexible structure for varying education systems
+  - [ ] 2.7 Create `exam_attempts` table with `metadata JSONB` for exam-specific data
+  - [ ] 2.8 Create `form_submissions` table with `raw_data JSONB` for complete form preservation
+  - [ ] 2.9 Create `attendance_records` table with engagement metrics and `extra_metrics JSONB`
+  - [ ] 2.10 Create `test_scores` table with `analysis_data JSONB` for future analytics
+  - [ ] 2.11 Add CHECK constraints for data validation (phone format, date ranges, etc.)
+  - [ ] 2.12 Create indexes on phone_number, email, and JSONB fields using GIN indexes
+  - [ ] 2.13 Set up Row Level Security (RLS) policies for read-only access initially
+  - [ ] 2.14 Create materialized views for student progress calculations
+  - [ ] 2.15 Add unique constraints with NULLS NOT DISTINCT for optional unique fields
+  - [ ] 2.16 Create generated columns for common calculations (full_name, age, progress_percentage)
+  - [ ] 2.17 Implement trigger functions for automatic timestamp updates
+  - [ ] 2.18 Create database functions for JSONB field queries and updates
+  - [ ] 2.19 Document schema design decisions and JSONB usage patterns
+  - [ ] 2.20 Create schema versioning table for tracking migrations
+
+- [ ] 3.0 Build Flexible Data Validation Layer with Partial Data Support
+  - [ ] 3.1 Create Zod schemas for core student fields with `.partial()` support
+  - [ ] 3.2 Implement phone number validation with Indian format (regex: /^[6-9]\d{9}$/)
+  - [ ] 3.3 Create email validation with async uniqueness check against database
+  - [ ] 3.4 Implement AADHAR validation with checksum verification (12 digits)
+  - [ ] 3.5 Create address validation with conditional requirements (landmark if delivery needed)
+  - [ ] 3.6 Implement PIN code validation with Indian postal code format
+  - [ ] 3.7 Create dynamic batch code validation based on certification type
+  - [ ] 3.8 Implement date validations with business logic (age >= 16, passing year <= current+5)
+  - [ ] 3.9 Create cross-field validation rules using Zod refinements
+  - [ ] 3.10 Implement enum validations with fallback for unknown values
+  - [ ] 3.11 Create data normalization functions (title case, trim, phone formatting)
+  - [ ] 3.12 Build duplicate detection with configurable matching criteria
+  - [ ] 3.13 Create validation error formatter with field-specific messages
+  - [ ] 3.14 Implement validation middleware for Next.js API routes
+  - [ ] 3.15 Create validation for JSONB fields with schema registry
+  - [ ] 3.16 Build backward compatibility layer for schema changes
+  - [ ] 3.17 Implement optional field validation with NULL handling
+  - [ ] 3.18 Create validation performance monitoring and caching
+  - [ ] 3.19 Write comprehensive unit tests for all validators
+  - [ ] 3.20 Document validation rules and error codes
+
+- [ ] 4.0 Develop Core Backend Services with Dynamic Field Handling
+  - [ ] 4.1 Create Supabase client singleton with connection pooling
+  - [ ] 4.2 Implement student search API with phone number and dynamic field search
+  - [ ] 4.3 Create student profile API with JSONB field merging
+  - [ ] 4.4 Build student creation API with validation and JSONB field extraction
+  - [ ] 4.5 Implement CSV parser with dynamic column mapping
+  - [ ] 4.6 Create data transformation service with field mapping registry
+  - [ ] 4.7 Build export API with dynamic column selection and formatting
+  - [ ] 4.8 Implement batch import API with progress tracking and rollback
+  - [ ] 4.9 Create authentication middleware with JWT validation
+  - [ ] 4.10 Build comprehensive error handling with error classification
+  - [ ] 4.11 Implement rate limiting using Redis or in-memory store
+  - [ ] 4.12 Create health check endpoint with dependency status
+  - [ ] 4.13 Build OpenAPI documentation with dynamic schema generation
+  - [ ] 4.14 Implement JSONB query builder for dynamic field searches
+  - [ ] 4.15 Create field metadata API for UI field discovery
+  - [ ] 4.16 Build schema extension API for adding new fields dynamically
+  - [ ] 4.17 Implement audit logging for all data modifications
+  - [ ] 4.18 Create caching layer with invalidation strategies
+  - [ ] 4.19 Build WebSocket support for real-time updates
+  - [ ] 4.20 Write integration tests for all API endpoints
+
+- [ ] 5.0 Create Adaptive User Interface Components
+  - [ ] 5.1 Build responsive layout with mobile-first approach
+  - [ ] 5.2 Create smart search component with autocomplete and field selection
+  - [ ] 5.3 Implement dynamic table with column visibility and ordering
+  - [ ] 5.4 Build expandable row component with lazy loading
+  - [ ] 5.5 Create tabbed profile view with dynamic tab generation
+  - [ ] 5.6 Implement progress visualization with multiple chart types
+  - [ ] 5.7 Build timeline component for certification journey
+  - [ ] 5.8 Create flexible export dialog with format and field selection
+  - [ ] 5.9 Implement dynamic form builder for custom fields
+  - [ ] 5.10 Build loading skeletons with accurate content shapes
+  - [ ] 5.11 Create error boundaries with fallback UI
+  - [ ] 5.12 Implement toast notification system with queue management
+  - [ ] 5.13 Build responsive data grid with virtual scrolling
+  - [ ] 5.14 Create pagination with dynamic page size
+  - [ ] 5.15 Implement dashboard with customizable widgets
+  - [ ] 5.16 Build field manager UI for adding/editing custom fields
+  - [ ] 5.17 Create data import wizard with mapping interface
+  - [ ] 5.18 Implement keyboard navigation and accessibility
+  - [ ] 5.19 Build print-friendly views for reports
+  - [ ] 5.20 Write component tests with user interaction scenarios
+
+- [ ] 6.0 Implement Data Integration with Schema Evolution Support
+  - [ ] 6.1 Set up Google Cloud Console with Sheets API enabled
+  - [ ] 6.2 Create service account with appropriate IAM permissions
+  - [ ] 6.3 Implement Google Sheets client with retry logic
+  - [ ] 6.4 Build Forms response reader with schema detection
+  - [ ] 6.5 Create polling scheduler with configurable intervals (2-4 hours)
+  - [ ] 6.6 Implement incremental sync with change detection
+  - [ ] 6.7 Build external API integration framework with plugin architecture
+  - [ ] 6.8 Create CSV fetcher with encoding detection
+  - [ ] 6.9 Implement daily batch sync with transaction support
+  - [ ] 6.10 Build field mapping engine with transformation rules
+  - [ ] 6.11 Create sync status dashboard with metrics
+  - [ ] 6.12 Implement manual sync triggers with conflict resolution
+  - [ ] 6.13 Build retry mechanism with exponential backoff
+  - [ ] 6.14 Create detailed sync logging with error categorization
+  - [ ] 6.15 Implement data reconciliation with diff generation
+  - [ ] 6.16 Build schema evolution detector for new form fields
+  - [ ] 6.17 Create field mapping UI for administrators
+  - [ ] 6.18 Implement data quality monitoring with alerts
+  - [ ] 6.19 Build sync performance optimization with batching
+  - [ ] 6.20 Write end-to-end integration tests
+
+- [ ] 7.0 Setup Migration Tools with Schema Extension Capabilities
+  - [ ] 7.1 Create CSV reader with encoding and delimiter detection
+  - [ ] 7.2 Build flexible mapping configuration with GUI
+  - [ ] 7.3 Implement validation pipeline with error reporting
+  - [ ] 7.4 Create batch processor with checkpoint recovery
+  - [ ] 7.5 Build duplicate detection with merge strategies
+  - [ ] 7.6 Implement transaction-based rollback mechanism
+  - [ ] 7.7 Create data transformation DSL for complex mappings
+  - [ ] 7.8 Build migration progress UI with ETA calculation
+  - [ ] 7.9 Implement pre-migration backup automation
+  - [ ] 7.10 Create export utilities for multiple formats (CSV, JSON, SQL)
+  - [ ] 7.11 Build backup scheduler with retention policies
+  - [ ] 7.12 Implement data anonymization for test environments
+  - [ ] 7.13 Create migration validation reports with statistics
+  - [ ] 7.14 Build schema extension CLI tool
+  - [ ] 7.15 Document migration patterns and best practices
+  - [ ] 7.16 Create field addition wizard with impact analysis
+  - [ ] 7.17 Implement zero-downtime migration strategies
+  - [ ] 7.18 Build data archival system for old records
+  - [ ] 7.19 Create migration testing framework
+  - [ ] 7.20 Write migration rollback procedures
+
+- [ ] 8.0 Configure Production Environment with Monitoring
+  - [ ] 8.1 Set up Vercel account with team configuration
+  - [ ] 8.2 Connect GitHub repository with branch protection
+  - [ ] 8.3 Configure production environment variables securely
+  - [ ] 8.4 Set up Supabase production with appropriate tier
+  - [ ] 8.5 Execute production database migrations with verification
+  - [ ] 8.6 Configure custom domain with SSL certificates
+  - [ ] 8.7 Set up security headers and CSP policies
+  - [ ] 8.8 Configure CORS for API access control
+  - [ ] 8.9 Set up Vercel Analytics for performance monitoring
+  - [ ] 8.10 Configure Sentry for error tracking and alerting
+  - [ ] 8.11 Implement automated database backup strategy
+  - [ ] 8.12 Create staging environment with data masking
+  - [ ] 8.13 Set up CI/CD pipeline with test automation
+  - [ ] 8.14 Create deployment runbook with rollback procedures
+  - [ ] 8.15 Build user training materials and video tutorials
+  - [ ] 8.16 Implement application performance monitoring (APM)
+  - [ ] 8.17 Set up log aggregation with search capabilities
+  - [ ] 8.18 Create operational dashboard with KPIs
+  - [ ] 8.19 Implement security scanning and dependency updates
+  - [ ] 8.20 Conduct load testing and performance optimization
