@@ -95,7 +95,7 @@ begin
     
     return merged_fields;
 end;
-$$ language plpgsql security definer;
+$$ language plpgsql security definer set search_path = pg_catalog, public;
 
 comment on function public.students_update_extra_fields(uuid, jsonb, boolean) is
     'Updates a student''s extra_fields by merging a patch. Optionally strips null values. Returns the updated extra_fields.';
@@ -171,10 +171,11 @@ begin
     
     return merged_data;
 end;
-$$ language plpgsql security definer;
+$$ language plpgsql security definer set search_path = pg_catalog, public;
 
 comment on function public.addresses_update_additional_data(uuid, jsonb, boolean) is
     'Updates an address''s additional_data by merging a patch. Optionally strips null values. Returns the updated additional_data.';
+
 
 
 grant execute on function public.students_get_extra_field(uuid, text) to authenticated;
@@ -182,6 +183,9 @@ grant execute on function public.students_has_extra_field(uuid, text) to authent
 grant execute on function public.search_students_by_extra(text, jsonb) to authenticated;
 grant execute on function public.addresses_get_additional_field(uuid, text) to authenticated;
 grant execute on function public.addresses_has_additional_field(uuid, text) to authenticated;
+
+revoke execute on function public.students_update_extra_fields(uuid, jsonb, boolean) from public;
+revoke execute on function public.addresses_update_additional_data(uuid, jsonb, boolean) from public;
 
 grant execute on function public.students_update_extra_fields(uuid, jsonb, boolean) to service_role;
 grant execute on function public.addresses_update_additional_data(uuid, jsonb, boolean) to service_role;
