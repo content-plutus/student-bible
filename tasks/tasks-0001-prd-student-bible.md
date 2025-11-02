@@ -139,8 +139,7 @@
   - [ ] 4.16 Build schema extension API for adding new fields dynamically
   - [ ] 4.17 Implement audit logging for all data modifications
   - [ ] 4.18 Create caching layer with invalidation strategies
-  - [ ] 4.19 Build WebSocket support for real-time updates
-  - [ ] 4.20 Write integration tests for all API endpoints
+  - [ ] 4.19 Write integration tests for all API endpoints
 
 - [ ] 5.0 Create Adaptive User Interface Components
   - [ ] 5.1 Build responsive layout with mobile-first approach
@@ -148,7 +147,7 @@
   - [ ] 5.3 Implement dynamic table with column visibility and ordering
   - [ ] 5.4 Build expandable row component with lazy loading
   - [ ] 5.5 Create tabbed profile view with dynamic tab generation
-  - [ ] 5.6 Implement progress visualization with multiple chart types
+  - [ ] 5.6 Implement lightweight progress indicator (e.g., progress bar or textual summary)
   - [ ] 5.7 Build timeline component for certification journey
   - [ ] 5.8 Create flexible export dialog with format and field selection
   - [ ] 5.9 Implement dynamic form builder for custom fields
@@ -157,12 +156,11 @@
   - [ ] 5.12 Implement toast notification system with queue management
   - [ ] 5.13 Build responsive data grid with virtual scrolling
   - [ ] 5.14 Create pagination with dynamic page size
-  - [ ] 5.15 Implement dashboard with customizable widgets
-  - [ ] 5.16 Build field manager UI for adding/editing custom fields
-  - [ ] 5.17 Create data import wizard with mapping interface
-  - [ ] 5.18 Implement keyboard navigation and accessibility
-  - [ ] 5.19 Build print-friendly views for reports
-  - [ ] 5.20 Write component tests with user interaction scenarios
+  - [ ] 5.15 Build field manager UI for adding/editing custom fields
+  - [ ] 5.16 Create data import wizard with mapping interface
+  - [ ] 5.17 Implement keyboard navigation and accessibility
+  - [ ] 5.18 Build print-friendly views for reports
+  - [ ] 5.19 Write component tests with user interaction scenarios
 
 - [ ] 6.0 Implement Data Integration with Schema Evolution Support
   - [ ] 6.1 Set up Google Cloud Console with Sheets API enabled
@@ -175,7 +173,7 @@
   - [ ] 6.8 Create CSV fetcher with encoding detection
   - [ ] 6.9 Implement daily batch sync with transaction support
   - [ ] 6.10 Build field mapping engine with transformation rules
-  - [ ] 6.11 Create sync status dashboard with metrics
+  - [ ] 6.11 Provide sync status table/log with key metrics
   - [ ] 6.12 Implement manual sync triggers with conflict resolution
   - [ ] 6.13 Build retry mechanism with exponential backoff
   - [ ] 6.14 Create detailed sync logging with error categorization
@@ -204,9 +202,8 @@
   - [ ] 7.15 Document migration patterns and best practices
   - [ ] 7.16 Create field addition wizard with impact analysis
   - [ ] 7.17 Implement zero-downtime migration strategies
-  - [ ] 7.18 Build data archival system for old records
-  - [ ] 7.19 Create migration testing framework
-  - [ ] 7.20 Write migration rollback procedures
+  - [ ] 7.18 Create migration testing framework
+  - [ ] 7.19 Write migration rollback procedures
 
 - [ ] 8.0 Configure Production Environment with Monitoring
   - [ ] 8.1 Set up Vercel account with team configuration
@@ -226,6 +223,5 @@
   - [ ] 8.15 Build user training materials and video tutorials
   - [ ] 8.16 Implement application performance monitoring (APM)
   - [ ] 8.17 Set up log aggregation with search capabilities
-  - [ ] 8.18 Create operational dashboard with KPIs
-  - [ ] 8.19 Implement security scanning and dependency updates
-  - [ ] 8.20 Conduct load testing and performance optimization
+  - [ ] 8.18 Implement security scanning and dependency updates
+  - [ ] 8.19 Conduct load testing and performance optimization
