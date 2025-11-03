@@ -335,10 +335,7 @@ export const getCertificationTypeValidationError = (
   return result.error.issues[0]?.message || "Invalid certification type";
 };
 
-export const isKnownEnumValue = (
-  value: string,
-  enumType: keyof typeof ENUM_VALUES,
-): boolean => {
+export const isKnownEnumValue = (value: string, enumType: keyof typeof ENUM_VALUES): boolean => {
   return ENUM_VALUES[enumType].includes(value as never);
 };
 

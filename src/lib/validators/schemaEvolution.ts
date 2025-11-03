@@ -130,7 +130,7 @@ export const validatePartialData = <T>(
 ): JsonbValidationResult<T> => {
   if (allowPartial && schema instanceof z.ZodObject) {
     const partialSchema = schema.partial();
-    return validateJsonbField(partialSchema, data);
+    return validateJsonbField(partialSchema, data) as JsonbValidationResult<T>;
   }
   return validateJsonbField(schema, data);
 };

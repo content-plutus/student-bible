@@ -1,10 +1,8 @@
-import { defineConfig } from "superjson";
-
-export default defineConfig({
+export default {
   modules: [
     {
       path: "./src/lib/utils/superjson",
       export: "superjson",
     },
   ],
-});
+};
