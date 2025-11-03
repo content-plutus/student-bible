@@ -4,14 +4,17 @@ type QueryError = { message: string } | null;
 type SelectOptions = { head?: boolean; count?: "exact" | "planned" | "estimated" };
 type SelectResult = { error: QueryError; count: number | null };
 
-export type StudentsFilterBuilder = {
-  eq: (column: string, value: unknown) => StudentsFilterBuilder;
-  neq: (column: string, value: unknown) => StudentsFilterBuilder;
-  select: (columns?: string, options?: SelectOptions) => Promise<SelectResult>;
+type FilterQuery = PromiseLike<SelectResult> & {
+  eq: (column: string, value: unknown) => FilterQuery;
+  neq: (column: string, value: unknown) => FilterQuery;
+};
+
+type StudentsTableBuilder = {
+  select: (columns?: string, options?: SelectOptions) => FilterQuery;
 };
 
 export type SupabaseLike = {
-  from: (table: string) => StudentsFilterBuilder;
+  from: (table: string) => StudentsTableBuilder;
 };
 
 export type EmailUniquenessOptions = {
@@ -31,16 +34,16 @@ export const isEmailUnique = async (
 ): Promise<boolean> => {
   const normalisedEmail = normalizeEmail(email);
 
-  let query = supabase.from("students").eq("email", normalisedEmail);
+  let query = supabase
+    .from("students")
+    .select("id", { count: "exact", head: true })
+    .eq("email", normalisedEmail);
 
   if (options.excludeStudentId) {
     query = query.neq("id", options.excludeStudentId);
   }
 
-  const { error, count } = await query.select("id", {
-    count: "exact",
-    head: true,
-  });
+  const { error, count } = await query;
 
   if (error) {
     throw new Error(`Failed to verify email uniqueness: ${error.message}`);
