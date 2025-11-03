@@ -1,6 +1,5 @@
 import { z } from "zod";
 import { VALIDATION_RULES } from "./rules";
-import { getSupabaseClient } from "../supabase/client";
 
 export const phoneNumberSchema = z
   .string()
@@ -109,32 +108,31 @@ export const checkEmailUniqueness = async (
   excludeStudentId?: string,
 ): Promise<{ isUnique: boolean; error?: string }> => {
   try {
-    const normalizedEmail = email.trim().toLowerCase();
-    const sb = getSupabaseClient();
+    const response = await fetch("/api/validate-email", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ email, excludeStudentId }),
+    });
 
-    let query = sb.from("students").select("id, email").eq("email", normalizedEmail);
+    const data = await response.json();
 
-    if (excludeStudentId) {
-      query = query.neq("id", excludeStudentId);
-    }
-
-    const { data, error } = await query;
-
-    if (error) {
+    if (!response.ok) {
       return {
         isUnique: false,
-        error: `Database error: ${error.message}`,
+        error: data.error || "Unable to verify email uniqueness",
       };
     }
 
     return {
-      isUnique: !data || data.length === 0,
-      error: data && data.length > 0 ? "Email address is already in use" : undefined,
+      isUnique: data.isUnique,
+      error: data.isUnique ? undefined : "Email address is already in use",
     };
   } catch (err) {
     return {
       isUnique: false,
-      error: `Unexpected error: ${err instanceof Error ? err.message : "Unknown error"}`,
+      error: `Network error: ${err instanceof Error ? err.message : "Unknown error"}`,
     };
   }
 };
