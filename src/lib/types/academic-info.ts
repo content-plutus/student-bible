@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from "zod";
 
 const currentYear = new Date().getFullYear();
 
@@ -12,7 +12,7 @@ export const academicInfoSchema = z.object({
   passing_year: z
     .number()
     .int()
-    .min(1950, 'Passing year must be 1950 or later')
+    .min(1950, "Passing year must be 1950 or later")
     .max(currentYear + 5, `Passing year cannot be more than ${currentYear + 5}`)
     .nullable(),
   stream_12th: z.string().nullable(),

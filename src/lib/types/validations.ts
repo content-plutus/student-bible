@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from "zod";
 
 export const createPartialSchema = <T extends z.ZodTypeAny>(schema: T) => {
   return schema.partial();
@@ -6,23 +6,23 @@ export const createPartialSchema = <T extends z.ZodTypeAny>(schema: T) => {
 
 export const createInsertSchema = <T extends z.ZodObject<z.ZodRawShape>>(
   schema: T,
-  omitFields: string[] = ['id', 'created_at', 'updated_at']
+  omitFields: string[] = ["id", "created_at", "updated_at"],
 ) => {
   const shape = schema.shape;
   const newShape: Record<string, z.ZodTypeAny> = {};
-  
+
   for (const key in shape) {
     if (!omitFields.includes(key)) {
       newShape[key] = shape[key];
     }
   }
-  
+
   return z.object(newShape).strict();
 };
 
 export const createUpdateSchema = <T extends z.ZodObject<z.ZodRawShape>>(
   schema: T,
-  omitFields: string[] = ['id', 'created_at', 'updated_at']
+  omitFields: string[] = ["id", "created_at", "updated_at"],
 ) => {
   return createInsertSchema(schema, omitFields).partial();
 };
@@ -50,28 +50,28 @@ export const validateEmail = (email: string): boolean => {
 export const validateDateRange = (
   date: string | Date,
   minYear: number = 1950,
-  maxYear: number = new Date().getFullYear() + 5
+  maxYear: number = new Date().getFullYear() + 5,
 ): boolean => {
-  const dateObj = typeof date === 'string' ? new Date(date) : date;
+  const dateObj = typeof date === "string" ? new Date(date) : date;
   const year = dateObj.getFullYear();
   return year >= minYear && year <= maxYear;
 };
 
 export const validateAge = (dateOfBirth: string | Date, minAge: number = 16): boolean => {
-  const dob = typeof dateOfBirth === 'string' ? new Date(dateOfBirth) : dateOfBirth;
+  const dob = typeof dateOfBirth === "string" ? new Date(dateOfBirth) : dateOfBirth;
   const today = new Date();
   const age = today.getFullYear() - dob.getFullYear();
   const monthDiff = today.getMonth() - dob.getMonth();
-  
+
   if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dob.getDate())) {
     return age - 1 >= minAge;
   }
-  
+
   return age >= minAge;
 };
 
 export const normalizePhoneNumber = (phone: string): string => {
-  return phone.replace(/\D/g, '').slice(-10);
+  return phone.replace(/\D/g, "").slice(-10);
 };
 
 export const normalizeEmail = (email: string): string => {
@@ -83,13 +83,13 @@ export const normalizeName = (name: string): string => {
     .trim()
     .split(/\s+/)
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-    .join(' ');
+    .join(" ");
 };
 
 export const normalizeAadharNumber = (aadhar: string): string => {
-  return aadhar.replace(/\D/g, '');
+  return aadhar.replace(/\D/g, "");
 };
 
 export const normalizePanNumber = (pan: string): string => {
-  return pan.toUpperCase().replace(/\s/g, '');
+  return pan.toUpperCase().replace(/\s/g, "");
 };

@@ -1,11 +1,11 @@
-import { z } from 'zod';
+import { z } from "zod";
 
 export const certificationStatusEnum = z.enum([
-  'planned',
-  'in_progress',
-  'completed',
-  'on_hold',
-  'dropped',
+  "planned",
+  "in_progress",
+  "completed",
+  "on_hold",
+  "dropped",
 ]);
 
 export const studentCertificationSchema = z.object({
@@ -13,7 +13,7 @@ export const studentCertificationSchema = z.object({
   student_id: z.string().uuid(),
   certification_id: z.string().uuid(),
   enrollment_date: z.string().date().nullable(),
-  status: certificationStatusEnum.default('planned'),
+  status: certificationStatusEnum.default("planned"),
   progress_papers_completed: z.number().int().min(0).default(0),
   total_papers_target: z.number().int().min(0).nullable(),
   projected_exam: z.string().date().nullable(),

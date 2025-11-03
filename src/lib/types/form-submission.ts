@@ -1,9 +1,9 @@
-import { z } from 'zod';
+import { z } from "zod";
 
 export const formSubmissionSchema = z.object({
   id: z.string().uuid(),
   student_id: z.string().uuid().nullable(),
-  form_name: z.string().min(1, 'Form name is required'),
+  form_name: z.string().min(1, "Form name is required"),
   submission_id: z.string().nullable(),
   submitted_at: z.string().datetime().nullable(),
   raw_data: z.record(z.string(), z.unknown()),

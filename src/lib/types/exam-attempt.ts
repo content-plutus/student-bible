@@ -1,9 +1,9 @@
-import { z } from 'zod';
+import { z } from "zod";
 
 export const examAttemptSchema = z.object({
   id: z.string().uuid(),
   student_certification_id: z.string().uuid(),
-  paper_code: z.string().min(1, 'Paper code is required'),
+  paper_code: z.string().min(1, "Paper code is required"),
   attempt_date: z.string().date().nullable(),
   result: z.string().nullable(),
   score: z.number().min(0).max(999.99).nullable(),

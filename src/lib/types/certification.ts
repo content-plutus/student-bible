@@ -1,9 +1,9 @@
-import { z } from 'zod';
+import { z } from "zod";
 
 export const certificationSchema = z.object({
   id: z.string().uuid(),
-  code: z.string().min(1, 'Certification code is required'),
-  name: z.string().min(1, 'Certification name is required'),
+  code: z.string().min(1, "Certification code is required"),
+  name: z.string().min(1, "Certification name is required"),
   description: z.string().nullable(),
   total_papers: z.number().int().positive().nullable(),
   organization: z.string().nullable(),

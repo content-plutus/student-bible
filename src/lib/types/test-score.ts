@@ -1,9 +1,9 @@
-import { z } from 'zod';
+import { z } from "zod";
 
 export const testScoreSchema = z.object({
   id: z.string().uuid(),
   student_id: z.string().uuid(),
-  assessment_name: z.string().min(1, 'Assessment name is required'),
+  assessment_name: z.string().min(1, "Assessment name is required"),
   assessment_type: z.string().nullable(),
   assessment_date: z.string().date().nullable(),
   score: z.number().min(0).max(999.99).nullable(),
