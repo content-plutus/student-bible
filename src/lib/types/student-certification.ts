@@ -61,7 +61,7 @@ export const studentCertificationSchema = z
     const expectedPrefix = data.custom_fields?.batch_prefix;
     const expectedIdentifier = data.custom_fields?.batch_identifier;
 
-    if (expectedPrefix && expectedPrefix !== prefix) {
+    if (typeof expectedPrefix === "string" && expectedPrefix !== prefix) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         message: `Batch prefix must match ${expectedPrefix}`,
@@ -69,7 +69,7 @@ export const studentCertificationSchema = z
       });
     }
 
-    if (expectedIdentifier && expectedIdentifier !== identifier) {
+    if (typeof expectedIdentifier === "string" && expectedIdentifier !== identifier) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         message: `Batch identifier must match ${expectedIdentifier}`,
