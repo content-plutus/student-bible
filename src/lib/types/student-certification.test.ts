@@ -31,6 +31,7 @@ describe("studentCertificationSchema", () => {
     status: "in_progress" as const,
     progress_papers_completed: 5,
     total_papers_target: 13,
+    batch_code: "ACCA_FND_SecA_1_M",
     projected_exam: "2025-06-01",
     custom_fields: {},
     created_at: "2024-01-01T00:00:00Z",
@@ -74,6 +75,55 @@ describe("studentCertificationSchema", () => {
   it("should reject non-integer total_papers_target", () => {
     const invalidCertification = { ...validStudentCertification, total_papers_target: 13.5 };
     const result = studentCertificationSchema.safeParse(invalidCertification);
+    expect(result.success).toBe(false);
+  });
+
+  it("should reject batch code when empty after trim", () => {
+    const invalidCertification = { ...validStudentCertification, batch_code: "   " };
+    const result = studentCertificationSchema.safeParse(invalidCertification);
+    expect(result.success).toBe(false);
+  });
+
+  it("should reject batch code not matching expected pattern", () => {
+    const invalidCertification = { ...validStudentCertification, batch_code: "INVALID" };
+    const result = studentCertificationSchema.safeParse(invalidCertification);
+    expect(result.success).toBe(false);
+  });
+
+  it("should validate batch code matching custom field expectations", () => {
+    const certification = {
+      ...validStudentCertification,
+      batch_code: "CMA_PART1_Batch_3_E",
+      custom_fields: {
+        batch_prefix: "CMA",
+        batch_identifier: "PART1",
+      },
+    };
+    const result = studentCertificationSchema.safeParse(certification);
+    expect(result.success).toBe(true);
+  });
+
+  it("should reject batch code with mismatched prefix", () => {
+    const certification = {
+      ...validStudentCertification,
+      batch_code: "ACCA_FND_Batch_2_W",
+      custom_fields: {
+        batch_prefix: "CMA",
+      },
+    };
+    const result = studentCertificationSchema.safeParse(certification);
+    expect(result.success).toBe(false);
+  });
+
+  it("should reject batch code with mismatched identifier", () => {
+    const certification = {
+      ...validStudentCertification,
+      batch_code: "CMA_PART1_SecB_5_N",
+      custom_fields: {
+        batch_identifier: "PART2",
+      },
+    };
+    const result = studentCertificationSchema.safeParse(certification);
     expect(result.success).toBe(false);
   });
 
