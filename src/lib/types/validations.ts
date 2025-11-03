@@ -1,6 +1,49 @@
 import { z } from "zod";
 import { isValidAadhaar } from "aadhaar-validator-ts";
 
+export const INDIAN_STATES = [
+  "Andhra Pradesh",
+  "Arunachal Pradesh",
+  "Assam",
+  "Bihar",
+  "Chhattisgarh",
+  "Goa",
+  "Gujarat",
+  "Haryana",
+  "Himachal Pradesh",
+  "Jharkhand",
+  "Karnataka",
+  "Kerala",
+  "Madhya Pradesh",
+  "Maharashtra",
+  "Manipur",
+  "Meghalaya",
+  "Mizoram",
+  "Nagaland",
+  "Odisha",
+  "Punjab",
+  "Rajasthan",
+  "Sikkim",
+  "Tamil Nadu",
+  "Telangana",
+  "Tripura",
+  "Uttar Pradesh",
+  "Uttarakhand",
+  "West Bengal",
+  "Andaman and Nicobar Islands",
+  "Chandigarh",
+  "Dadra and Nagar Haveli and Daman and Diu",
+  "Delhi",
+  "Jammu and Kashmir",
+  "Ladakh",
+  "Lakshadweep",
+  "Puducherry",
+] as const;
+
+export const GENDERS = ["Male", "Female", "Others"] as const;
+export const SALUTATIONS = ["Mr", "Ms", "Mrs"] as const;
+export const STREAMS = ["Commerce", "Arts", "Science", "Other"] as const;
+
 export const createPartialSchema = <T extends z.ZodTypeAny>(schema: T) => {
   return schema.partial();
 };
@@ -94,3 +137,105 @@ export const normalizeAadharNumber = (aadhar: string): string => {
 export const normalizePanNumber = (pan: string): string => {
   return pan.toUpperCase().replace(/\s/g, "");
 };
+
+export const phoneNumberSchema = z
+  .string({ required_error: "Phone number is required" })
+  .trim()
+  .length(10, "Phone number must be exactly 10 digits")
+  .regex(/^[6-9]\d{9}$/, "Phone number must start with 6-9");
+
+export const emailSchema = z
+  .string({ required_error: "Email is required" })
+  .email("Please enter a valid email address")
+  .toLowerCase()
+  .trim();
+
+export const aadharSchema = z
+  .string()
+  .trim()
+  .length(12, "AADHAR number must be exactly 12 digits")
+  .regex(/^[0-9]{12}$/, "AADHAR number must contain only digits")
+  .refine((val) => isValidAadhaar(val), "Invalid AADHAR number: checksum verification failed")
+  .nullable()
+  .optional();
+
+export const panSchema = z
+  .string()
+  .trim()
+  .length(10, "PAN number must be exactly 10 characters")
+  .regex(/^[A-Z]{5}[0-9]{4}[A-Z]$/, "PAN number must follow format: 5 letters, 4 digits, 1 letter")
+  .nullable()
+  .optional();
+
+export const postalCodeSchema = z
+  .string({ required_error: "PIN code is required" })
+  .trim()
+  .length(6, "PIN code must be exactly 6 digits")
+  .regex(/^[0-9]{6}$/, "PIN code must contain only digits");
+
+export const nameSchema = z
+  .string({ required_error: "Name is required" })
+  .trim()
+  .min(2, "Name must be at least 2 characters");
+
+export const dateOfBirthSchema = z
+  .string()
+  .refine((val) => {
+    const date = new Date(val);
+    const year = date.getFullYear();
+    return year >= 1950 && year <= 2010;
+  }, "Date of birth must be between 1950 and 2010")
+  .refine((val) => {
+    const dob = new Date(val);
+    const today = new Date();
+    const age = today.getFullYear() - dob.getFullYear();
+    const monthDiff = today.getMonth() - dob.getMonth();
+    const actualAge =
+      monthDiff < 0 || (monthDiff === 0 && today.getDate() < dob.getDate()) ? age - 1 : age;
+    return actualAge >= 16;
+  }, "Student must be at least 16 years old")
+  .nullable()
+  .optional();
+
+export const genderSchema = z
+  .enum(GENDERS, {
+    errorMap: () => ({ message: "Gender must be one of: Male, Female, Others" }),
+  })
+  .nullable()
+  .optional();
+
+export const salutationSchema = z
+  .enum(SALUTATIONS, {
+    errorMap: () => ({ message: "Salutation must be one of: Mr, Ms, Mrs" }),
+  })
+  .nullable()
+  .optional();
+
+export const stateSchema = z.enum(INDIAN_STATES, {
+  errorMap: () => ({ message: "Please select a valid Indian state" }),
+});
+
+export const streamSchema = z
+  .enum(STREAMS, {
+    errorMap: () => ({ message: "Stream must be one of: Commerce, Arts, Science, Other" }),
+  })
+  .nullable()
+  .optional();
+
+export const addressSchema = z.object({
+  address_line1: z.string().min(1, "Address line 1 is required").trim(),
+  address_line2: z.string().trim().nullable().optional(),
+  landmark: z.string().trim().nullable().optional(),
+  city: z.string().min(1, "City is required").trim(),
+  state: stateSchema,
+  postal_code: postalCodeSchema,
+  country: z.string().default("India"),
+});
+
+export const residentialAddressSchema = addressSchema.extend({
+  address_line1: z
+    .string()
+    .min(20, "Residential address must be at least 20 characters and include landmark details")
+    .trim(),
+  landmark: z.string().min(1, "Landmark is required for residential address").trim(),
+});
