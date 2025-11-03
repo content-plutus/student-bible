@@ -38,3 +38,5 @@ The development server runs on [http://localhost:3000](http://localhost:3000). U
 ## Contributing
 
 Open issues or pull requests to propose changes. Please ensure updates stay aligned with the requirements captured in the PRD.
+
+![CodeRabbit Pull Request Reviews](https://img.shields.io/coderabbit/prs/github/content-plutus/student-bible?utm_source=oss&utm_medium=github&utm_campaign=content-plutus%2Fstudent-bible&labelColor=171717&color=FF570A&link=https%3A%2F%2Fcoderabbit.ai&label=CodeRabbit+Reviews)
