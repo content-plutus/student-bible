@@ -8,10 +8,7 @@ export async function POST(request: NextRequest) {
     const { email, excludeStudentId } = body;
 
     if (!email || typeof email !== "string") {
-      return NextResponse.json(
-        { isUnique: false, error: "Email is required" },
-        { status: 400 },
-      );
+      return NextResponse.json({ isUnique: false, error: "Email is required" }, { status: 400 });
     }
 
     const formatResult = emailSchema.safeParse(email);
