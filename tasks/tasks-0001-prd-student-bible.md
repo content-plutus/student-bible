@@ -99,17 +99,17 @@
   - [x] 2.20 Create schema versioning table for tracking migrations
 
 - [ ] 3.0 Build Flexible Data Validation Layer with Partial Data Support
-  - [ ] 3.1 Create Zod schemas for core student fields with `.partial()` support
-  - [ ] 3.2 Implement phone number validation with Indian format (regex: /^[6-9]\d{9}$/)
+  - [x] 3.1 Create Zod schemas for core student fields with `.partial()` support
+  - [x] 3.2 Implement phone number validation with Indian format (regex: /^[6-9]\d{9}$/)
   - [ ] 3.3 Create email validation with async uniqueness check against database
   - [ ] 3.4 Implement AADHAR validation with checksum verification (12 digits)
   - [ ] 3.5 Create address validation with conditional requirements (landmark if delivery needed)
-  - [ ] 3.6 Implement PIN code validation with Indian postal code format
+  - [x] 3.6 Implement PIN code validation with Indian postal code format
   - [ ] 3.7 Create dynamic batch code validation based on certification type
-  - [ ] 3.8 Implement date validations with business logic (age >= 16, passing year <= current+5)
-  - [ ] 3.9 Create cross-field validation rules using Zod refinements
+  - [x] 3.8 Implement date validations with business logic (age >= 16, passing year <= current+5)
+  - [x] 3.9 Create cross-field validation rules using Zod refinements
   - [ ] 3.10 Implement enum validations with fallback for unknown values
-  - [ ] 3.11 Create data normalization functions (title case, trim, phone formatting)
+  - [x] 3.11 Create data normalization functions (title case, trim, phone formatting)
   - [ ] 3.12 Build duplicate detection with configurable matching criteria
   - [ ] 3.13 Create validation error formatter with field-specific messages
   - [ ] 3.14 Implement validation middleware for Next.js API routes
