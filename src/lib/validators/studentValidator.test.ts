@@ -115,6 +115,14 @@ describe("guardianPhoneSchema", () => {
       expect(guardianPhoneSchema.safeParse("98765432100").success).toBe(false);
       expect(guardianPhoneSchema.safeParse("987654321a").success).toBe(false);
     });
+
+    it("should reject empty strings", () => {
+      expect(guardianPhoneSchema.safeParse("").success).toBe(false);
+    });
+
+    it("should reject strings with only whitespace", () => {
+      expect(guardianPhoneSchema.safeParse("   ").success).toBe(false);
+    });
   });
 });
 
@@ -148,6 +156,14 @@ describe("validateGuardianPhone", () => {
   it("should return false for invalid guardian phone numbers", () => {
     expect(validateGuardianPhone("1234567890")).toBe(false);
     expect(validateGuardianPhone("987654321")).toBe(false);
+  });
+
+  it("should return false for empty strings", () => {
+    expect(validateGuardianPhone("")).toBe(false);
+  });
+
+  it("should return false for strings with only whitespace", () => {
+    expect(validateGuardianPhone("   ")).toBe(false);
   });
 });
 
@@ -259,5 +275,17 @@ describe("getGuardianPhoneValidationError", () => {
     const error2 = getGuardianPhoneValidationError("987654321");
     expect(error2).toBeTruthy();
     expect(error2).toContain("10");
+  });
+
+  it("should return error message for empty strings", () => {
+    const error = getGuardianPhoneValidationError("");
+    expect(error).toBeTruthy();
+    expect(error).toContain("10");
+  });
+
+  it("should return error message for strings with only whitespace", () => {
+    const error = getGuardianPhoneValidationError("   ");
+    expect(error).toBeTruthy();
+    expect(error).toContain("10");
   });
 });

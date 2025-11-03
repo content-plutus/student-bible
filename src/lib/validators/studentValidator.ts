@@ -34,7 +34,6 @@ export const validatePhoneNumber = (phone: string): boolean => {
 };
 
 export const validateGuardianPhone = (phone: string | null | undefined): boolean => {
-  if (!phone) return true;
   return guardianPhoneSchema.safeParse(phone).success;
 };
 
@@ -63,7 +62,6 @@ export const getPhoneValidationError = (phone: string): string | null => {
 export const getGuardianPhoneValidationError = (
   phone: string | null | undefined,
 ): string | null => {
-  if (!phone) return null;
   const result = guardianPhoneSchema.safeParse(phone);
   if (result.success) return null;
   return result.error.issues[0]?.message || "Invalid guardian phone number";
