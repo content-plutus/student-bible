@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { VALIDATION_RULES } from "./rules";
-import { supabase } from "../supabase/client";
+import { getSupabaseClient } from "../supabase/client";
 
 export const phoneNumberSchema = z
   .string()
@@ -110,8 +110,9 @@ export const checkEmailUniqueness = async (
 ): Promise<{ isUnique: boolean; error?: string }> => {
   try {
     const normalizedEmail = email.trim().toLowerCase();
+    const sb = getSupabaseClient();
 
-    let query = supabase.from("students").select("id, email").eq("email", normalizedEmail);
+    let query = sb.from("students").select("id, email").eq("email", normalizedEmail);
 
     if (excludeStudentId) {
       query = query.neq("id", excludeStudentId);
