@@ -126,7 +126,11 @@ export const normalizeJsonbValue = (value: unknown): unknown => {
 export function validatePartialData<T extends z.ZodTypeAny>(
   schema: T,
   data: unknown,
-  allowPartial?: false,
+): JsonbValidationResult<z.infer<T>>;
+export function validatePartialData<T extends z.ZodTypeAny>(
+  schema: T,
+  data: unknown,
+  allowPartial: false,
 ): JsonbValidationResult<z.infer<T>>;
 export function validatePartialData<S extends z.ZodRawShape>(
   schema: z.ZodObject<S>,
@@ -136,9 +140,9 @@ export function validatePartialData<S extends z.ZodRawShape>(
 export function validatePartialData(
   schema: z.ZodTypeAny,
   data: unknown,
-  allowPartial: boolean = true,
+  allowPartial?: boolean,
 ): JsonbValidationResult<unknown> {
-  if (allowPartial && schema instanceof z.ZodObject) {
+  if (allowPartial === true && schema instanceof z.ZodObject) {
     const partialSchema = (schema as z.ZodObject<z.ZodRawShape>).partial();
     return validateJsonbField(partialSchema, data);
   }
