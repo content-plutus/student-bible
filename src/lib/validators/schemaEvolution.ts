@@ -123,17 +123,31 @@ export const normalizeJsonbValue = (value: unknown): unknown => {
   return value;
 };
 
-export const validatePartialData = <T>(
-  schema: z.ZodType<T>,
+export function validatePartialData<T extends z.ZodTypeAny>(
+  schema: T,
   data: unknown,
-  allowPartial: boolean = true,
-): JsonbValidationResult<T> => {
-  if (allowPartial && schema instanceof z.ZodObject) {
-    const partialSchema = schema.partial();
-    return validateJsonbField(partialSchema, data) as JsonbValidationResult<T>;
+): JsonbValidationResult<z.infer<T>>;
+export function validatePartialData<T extends z.ZodTypeAny>(
+  schema: T,
+  data: unknown,
+  allowPartial: false,
+): JsonbValidationResult<z.infer<T>>;
+export function validatePartialData<S extends z.ZodRawShape>(
+  schema: z.ZodObject<S>,
+  data: unknown,
+  allowPartial: true,
+): JsonbValidationResult<Partial<z.infer<z.ZodObject<S>>>>;
+export function validatePartialData(
+  schema: z.ZodTypeAny,
+  data: unknown,
+  allowPartial?: boolean,
+): JsonbValidationResult<unknown> {
+  if (allowPartial === true && schema instanceof z.ZodObject) {
+    const partialSchema = (schema as z.ZodObject<z.ZodRawShape>).partial();
+    return validateJsonbField(partialSchema, data);
   }
   return validateJsonbField(schema, data);
-};
+}
 
 export const extractBatchCodeFromExtraFields = (
   extraFields: Record<string, unknown> | null | undefined,
