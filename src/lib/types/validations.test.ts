@@ -32,9 +32,10 @@ describe("validatePhoneNumber", () => {
 });
 
 describe("validateAadharNumber", () => {
-  it("should validate correct AADHAR numbers", () => {
-    expect(validateAadharNumber("123456789012")).toBe(true);
-    expect(validateAadharNumber("987654321098")).toBe(true);
+  it("should validate correct AADHAR numbers with valid Verhoeff checksum", () => {
+    expect(validateAadharNumber("234123451235")).toBe(true);
+    expect(validateAadharNumber("987654321096")).toBe(true);
+    expect(validateAadharNumber("999999990019")).toBe(true);
   });
 
   it("should reject invalid AADHAR numbers", () => {
@@ -42,6 +43,12 @@ describe("validateAadharNumber", () => {
     expect(validateAadharNumber("1234567890123")).toBe(false);
     expect(validateAadharNumber("12345678901A")).toBe(false);
     expect(validateAadharNumber("abcdefghijkl")).toBe(false);
+  });
+
+  it("should reject AADHAR numbers with invalid Verhoeff checksum", () => {
+    expect(validateAadharNumber("123456789012")).toBe(false);
+    expect(validateAadharNumber("111111111111")).toBe(false);
+    expect(validateAadharNumber("123456789010")).toBe(false);
   });
 });
 

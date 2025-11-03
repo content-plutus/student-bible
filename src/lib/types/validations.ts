@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { isValidAadhaar } from "aadhaar-validator-ts";
 
 export const createPartialSchema = <T extends z.ZodTypeAny>(schema: T) => {
   return schema.partial();
@@ -32,7 +33,7 @@ export const validatePhoneNumber = (phone: string): boolean => {
 };
 
 export const validateAadharNumber = (aadhar: string): boolean => {
-  return /^[0-9]{12}$/.test(aadhar);
+  return /^[0-9]{12}$/.test(aadhar) && isValidAadhaar(aadhar);
 };
 
 export const validatePanNumber = (pan: string): boolean => {
