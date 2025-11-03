@@ -263,14 +263,6 @@ export const residentialAddressSchema = addressSchema.extend({
   landmark: z.string().min(1, "Landmark is required for residential address").trim(),
 });
 
-export const CERTIFICATION_TYPES = ["US CMA", "ACCA", "CFA", "US CPA"] as const;
-
-export const certificationTypeSchema = z.enum(CERTIFICATION_TYPES, {
-  errorMap: () => ({
-    message: "Certification type must be one of: US CMA, ACCA, CFA, US CPA",
-  }),
-});
-
 export const batchCodeSchema = z
   .string()
   .trim()
