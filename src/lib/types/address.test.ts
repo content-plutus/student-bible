@@ -62,9 +62,40 @@ describe("studentAddressSchema", () => {
     const addressWithNulls = {
       ...validAddress,
       address_line2: null,
-      landmark: null,
     };
     const result = studentAddressSchema.safeParse(addressWithNulls);
+    expect(result.success).toBe(true);
+  });
+
+  it("should allow null landmark for non-delivery address", () => {
+    const residentialAddress = {
+      ...validAddress,
+      landmark: null,
+    };
+    const result = studentAddressSchema.safeParse(residentialAddress);
+    expect(result.success).toBe(true);
+  });
+
+  it("should require landmark when address type is delivery", () => {
+    const deliveryAddress = {
+      ...validAddress,
+      address_type: "delivery",
+      landmark: null,
+    };
+    const result = studentAddressSchema.safeParse(deliveryAddress);
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.issues[0].path).toEqual(["landmark"]);
+    }
+  });
+
+  it("should accept landmark when address type is delivery", () => {
+    const deliveryAddress = {
+      ...validAddress,
+      address_type: "delivery",
+      landmark: "Behind City Mall",
+    };
+    const result = studentAddressSchema.safeParse(deliveryAddress);
     expect(result.success).toBe(true);
   });
 
