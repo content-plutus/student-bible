@@ -2,6 +2,7 @@ import { describe, it, expect } from "@jest/globals";
 import {
   phoneNumberSchema,
   guardianPhoneSchema,
+  guardianPhoneInputSchema,
   validatePhoneNumber,
   validateGuardianPhone,
   parsePhoneNumber,
@@ -102,8 +103,18 @@ describe("guardianPhoneSchema", () => {
       expect(guardianPhoneSchema.safeParse(null).success).toBe(true);
     });
 
+    it("should NOT accept undefined values (required-but-nullable)", () => {
+      expect(guardianPhoneSchema.safeParse(undefined).success).toBe(false);
+    });
+  });
+
+  describe("guardianPhoneInputSchema (optional-and-nullable)", () => {
+    it("should accept null values", () => {
+      expect(guardianPhoneInputSchema.safeParse(null).success).toBe(true);
+    });
+
     it("should accept undefined values", () => {
-      expect(guardianPhoneSchema.safeParse(undefined).success).toBe(true);
+      expect(guardianPhoneInputSchema.safeParse(undefined).success).toBe(true);
     });
 
     it("should trim whitespace from valid phone numbers", () => {

@@ -14,7 +14,7 @@ export const phoneNumberSchema = z
       .regex(VALIDATION_RULES.phone.pattern, VALIDATION_RULES.phone.message),
   );
 
-export const guardianPhoneSchema = z
+const guardianPhoneBase = z
   .string()
   .transform((val) => val.trim())
   .pipe(
@@ -25,16 +25,18 @@ export const guardianPhoneSchema = z
         `Guardian phone number must be exactly ${VALIDATION_RULES.guardianPhone.minLength} digits`,
       )
       .regex(VALIDATION_RULES.guardianPhone.pattern, VALIDATION_RULES.guardianPhone.message),
-  )
-  .optional()
-  .nullable();
+  );
+
+export const guardianPhoneSchema = guardianPhoneBase.nullable();
+
+export const guardianPhoneInputSchema = guardianPhoneSchema.optional();
 
 export const validatePhoneNumber = (phone: string): boolean => {
   return phoneNumberSchema.safeParse(phone).success;
 };
 
 export const validateGuardianPhone = (phone: string | null | undefined): boolean => {
-  return guardianPhoneSchema.safeParse(phone).success;
+  return guardianPhoneInputSchema.safeParse(phone).success;
 };
 
 export const parsePhoneNumber = (phone: string) => {
@@ -46,11 +48,11 @@ export const safeParsePhoneNumber = (phone: string) => {
 };
 
 export const parseGuardianPhone = (phone: string | null | undefined) => {
-  return guardianPhoneSchema.parse(phone);
+  return guardianPhoneInputSchema.parse(phone);
 };
 
 export const safeParseGuardianPhone = (phone: string | null | undefined) => {
-  return guardianPhoneSchema.safeParse(phone);
+  return guardianPhoneInputSchema.safeParse(phone);
 };
 
 export const getPhoneValidationError = (phone: string): string | null => {
@@ -62,7 +64,7 @@ export const getPhoneValidationError = (phone: string): string | null => {
 export const getGuardianPhoneValidationError = (
   phone: string | null | undefined,
 ): string | null => {
-  const result = guardianPhoneSchema.safeParse(phone);
+  const result = guardianPhoneInputSchema.safeParse(phone);
   if (result.success) return null;
   return result.error.issues[0]?.message || "Invalid guardian phone number";
 };
