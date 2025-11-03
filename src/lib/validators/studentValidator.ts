@@ -223,3 +223,102 @@ export const validateDateOfBirthRange = (dateOfBirth: string | Date): string | n
   }
   return null;
 };
+
+export const batchCodeSchema = z
+  .string()
+  .transform((val) => val.trim())
+  .pipe(z.string().min(1, "Batch code cannot be empty"))
+  .optional()
+  .nullable();
+
+export const validateBatchCode = (
+  batchCode: string | null | undefined,
+  certificationType: string | null | undefined,
+): boolean => {
+  if (!batchCode || !certificationType) {
+    return true;
+  }
+
+  const trimmedBatchCode = batchCode.trim();
+  if (trimmedBatchCode.length === 0) {
+    return false;
+  }
+
+  if (certificationType === "US CMA") {
+    return /^CMA_P\d+_Sec[A-Z]_Batch_\d+_[WE]_[E]$/.test(trimmedBatchCode);
+  } else if (certificationType === "ACCA") {
+    return /^ACCA_\d{4}_Batch_\d+$/.test(trimmedBatchCode);
+  } else if (certificationType === "CFA") {
+    return /^CFA_L\d+_Batch_\d+$/.test(trimmedBatchCode);
+  } else if (certificationType === "US CPA") {
+    return /^CPA_[A-Z]{3}_Batch_\d+$/.test(trimmedBatchCode);
+  }
+
+  return true;
+};
+
+export const parseBatchCode = (batchCode: string | null | undefined) => {
+  return batchCodeSchema.parse(batchCode);
+};
+
+export const safeParseBatchCode = (batchCode: string | null | undefined) => {
+  return batchCodeSchema.safeParse(batchCode);
+};
+
+export const getBatchCodeValidationError = (
+  batchCode: string | null | undefined,
+  certificationType: string | null | undefined,
+): string | null => {
+  if (!batchCode || !certificationType) {
+    return null;
+  }
+
+  const trimmedBatchCode = batchCode.trim();
+  if (trimmedBatchCode.length === 0) {
+    return "Batch code cannot be empty";
+  }
+
+  if (certificationType === "US CMA") {
+    if (!/^CMA_P\d+_Sec[A-Z]_Batch_\d+_[WE]_[E]$/.test(trimmedBatchCode)) {
+      return "US CMA batch code must follow format: CMA_P{paper}_Sec{section}_Batch_{number}_{W|E}_{E} (e.g., CMA_P1_SecA_Batch_7_W_E)";
+    }
+  } else if (certificationType === "ACCA") {
+    if (!/^ACCA_\d{4}_Batch_\d+$/.test(trimmedBatchCode)) {
+      return "ACCA batch code must follow format: ACCA_{year}_Batch_{number} (e.g., ACCA_2024_Batch_5)";
+    }
+  } else if (certificationType === "CFA") {
+    if (!/^CFA_L\d+_Batch_\d+$/.test(trimmedBatchCode)) {
+      return "CFA batch code must follow format: CFA_L{level}_Batch_{number} (e.g., CFA_L1_Batch_3)";
+    }
+  } else if (certificationType === "US CPA") {
+    if (!/^CPA_[A-Z]{3}_Batch_\d+$/.test(trimmedBatchCode)) {
+      return "US CPA batch code must follow format: CPA_{section}_Batch_{number} (e.g., CPA_AUD_Batch_2)";
+    }
+  }
+
+  return null;
+};
+
+export const validateCrossFieldBatchCode = (
+  batchCode: string | null | undefined,
+  certificationType: string | null | undefined,
+): string | null => {
+  return getBatchCodeValidationError(batchCode, certificationType);
+};
+
+export const validateBatchCodeFromExtraFields = (
+  extraFields: Record<string, unknown>,
+  certificationType: string | null | undefined,
+): string | null => {
+  const batchCode = extraFields.batch_code;
+
+  if (batchCode === null || batchCode === undefined) {
+    return null;
+  }
+
+  if (typeof batchCode !== "string") {
+    return "Batch code must be a string";
+  }
+
+  return getBatchCodeValidationError(batchCode, certificationType);
+};
