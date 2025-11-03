@@ -15,6 +15,8 @@ import {
   getPhoneValidationError,
   getGuardianPhoneValidationError,
   getAadharValidationError,
+  validateBatchCode,
+  getBatchCodeValidationError,
 } from "./studentValidator";
 
 describe("phoneNumberSchema", () => {
@@ -476,5 +478,156 @@ describe("getAadharValidationError", () => {
     const error = getAadharValidationError("   ");
     expect(error).toBeTruthy();
     expect(error).toContain("12");
+  });
+});
+
+describe("validateBatchCode", () => {
+  describe("US CMA batch codes", () => {
+    it("should accept legacy format CMA_PART1_Batch_3_E", () => {
+      expect(validateBatchCode("CMA_PART1_Batch_3_E", "US CMA")).toBe(true);
+    });
+
+    it("should accept legacy format CMA_PART2_Batch_3_E", () => {
+      expect(validateBatchCode("CMA_PART2_Batch_3_E", "US CMA")).toBe(true);
+    });
+
+    it("should accept PRD format CMA_P1_SecA_Batch_7_W_E", () => {
+      expect(validateBatchCode("CMA_P1_SecA_Batch_7_W_E", "US CMA")).toBe(true);
+    });
+
+    it("should accept PRD format CMA_P2_SecB_Batch_5_E_E", () => {
+      expect(validateBatchCode("CMA_P2_SecB_Batch_5_E_E", "US CMA")).toBe(true);
+    });
+
+    it("should accept Group format CMA_PART1_Group_3_E", () => {
+      expect(validateBatchCode("CMA_PART1_Group_3_E", "US CMA")).toBe(true);
+    });
+
+    it("should reject invalid format CMA_INVALID", () => {
+      expect(validateBatchCode("CMA_INVALID", "US CMA")).toBe(false);
+    });
+
+    it("should reject empty string", () => {
+      expect(validateBatchCode("", "US CMA")).toBe(false);
+    });
+
+    it("should reject whitespace only", () => {
+      expect(validateBatchCode("   ", "US CMA")).toBe(false);
+    });
+  });
+
+  describe("null/undefined handling", () => {
+    it("should return true for null batch code", () => {
+      expect(validateBatchCode(null, "US CMA")).toBe(true);
+    });
+
+    it("should return true for undefined batch code", () => {
+      expect(validateBatchCode(undefined, "US CMA")).toBe(true);
+    });
+
+    it("should return true for null certification type", () => {
+      expect(validateBatchCode("CMA_PART1_Batch_3_E", null)).toBe(true);
+    });
+
+    it("should return true for undefined certification type", () => {
+      expect(validateBatchCode("CMA_PART1_Batch_3_E", undefined)).toBe(true);
+    });
+  });
+
+  describe("other certification types", () => {
+    it("should validate ACCA batch codes", () => {
+      expect(validateBatchCode("ACCA_2024_Batch_5", "ACCA")).toBe(true);
+      expect(validateBatchCode("ACCA_INVALID", "ACCA")).toBe(false);
+    });
+
+    it("should validate CFA batch codes", () => {
+      expect(validateBatchCode("CFA_L1_Batch_3", "CFA")).toBe(true);
+      expect(validateBatchCode("CFA_INVALID", "CFA")).toBe(false);
+    });
+
+    it("should validate US CPA batch codes", () => {
+      expect(validateBatchCode("CPA_AUD_Batch_2", "US CPA")).toBe(true);
+      expect(validateBatchCode("CPA_INVALID", "US CPA")).toBe(false);
+    });
+  });
+});
+
+describe("getBatchCodeValidationError", () => {
+  describe("US CMA batch codes", () => {
+    it("should return null for valid legacy format CMA_PART1_Batch_3_E", () => {
+      expect(getBatchCodeValidationError("CMA_PART1_Batch_3_E", "US CMA")).toBeNull();
+    });
+
+    it("should return null for valid PRD format CMA_P1_SecA_Batch_7_W_E", () => {
+      expect(getBatchCodeValidationError("CMA_P1_SecA_Batch_7_W_E", "US CMA")).toBeNull();
+    });
+
+    it("should return error message for invalid format", () => {
+      const error = getBatchCodeValidationError("CMA_INVALID", "US CMA");
+      expect(error).toBeTruthy();
+      expect(error).toContain("CMA");
+    });
+
+    it("should return error message for empty string", () => {
+      const error = getBatchCodeValidationError("", "US CMA");
+      expect(error).toBeTruthy();
+      expect(error).toContain("empty");
+    });
+
+    it("should return error message for whitespace only", () => {
+      const error = getBatchCodeValidationError("   ", "US CMA");
+      expect(error).toBeTruthy();
+      expect(error).toContain("empty");
+    });
+  });
+
+  describe("null/undefined handling", () => {
+    it("should return null for null batch code", () => {
+      expect(getBatchCodeValidationError(null, "US CMA")).toBeNull();
+    });
+
+    it("should return null for undefined batch code", () => {
+      expect(getBatchCodeValidationError(undefined, "US CMA")).toBeNull();
+    });
+
+    it("should return null for null certification type", () => {
+      expect(getBatchCodeValidationError("CMA_PART1_Batch_3_E", null)).toBeNull();
+    });
+
+    it("should return null for undefined certification type", () => {
+      expect(getBatchCodeValidationError("CMA_PART1_Batch_3_E", undefined)).toBeNull();
+    });
+  });
+
+  describe("other certification types", () => {
+    it("should return null for valid ACCA batch codes", () => {
+      expect(getBatchCodeValidationError("ACCA_2024_Batch_5", "ACCA")).toBeNull();
+    });
+
+    it("should return error for invalid ACCA batch codes", () => {
+      const error = getBatchCodeValidationError("ACCA_INVALID", "ACCA");
+      expect(error).toBeTruthy();
+      expect(error).toContain("ACCA");
+    });
+
+    it("should return null for valid CFA batch codes", () => {
+      expect(getBatchCodeValidationError("CFA_L1_Batch_3", "CFA")).toBeNull();
+    });
+
+    it("should return error for invalid CFA batch codes", () => {
+      const error = getBatchCodeValidationError("CFA_INVALID", "CFA");
+      expect(error).toBeTruthy();
+      expect(error).toContain("CFA");
+    });
+
+    it("should return null for valid US CPA batch codes", () => {
+      expect(getBatchCodeValidationError("CPA_AUD_Batch_2", "US CPA")).toBeNull();
+    });
+
+    it("should return error for invalid US CPA batch codes", () => {
+      const error = getBatchCodeValidationError("CPA_INVALID", "US CPA");
+      expect(error).toBeTruthy();
+      expect(error).toContain("CPA");
+    });
   });
 });
