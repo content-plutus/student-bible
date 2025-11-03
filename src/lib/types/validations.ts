@@ -178,11 +178,7 @@ export const dateOfBirthSchema = z
   .nullable()
   .optional();
 
-export const genderSchema = z
-  .enum(GENDERS)
-  .nullable()
-  .optional()
-  .catch(ENUM_DEFAULTS.gender);
+export const genderSchema = z.enum(GENDERS).nullable().optional().catch(ENUM_DEFAULTS.gender);
 
 export const salutationSchema = z
   .enum(SALUTATIONS)
@@ -196,11 +192,7 @@ export const educationLevelSchema = z
   .optional()
   .catch(ENUM_DEFAULTS.educationLevel);
 
-export const streamSchema = z
-  .enum(STREAMS)
-  .nullable()
-  .optional()
-  .catch(ENUM_DEFAULTS.stream);
+export const streamSchema = z.enum(STREAMS).nullable().optional().catch(ENUM_DEFAULTS.stream);
 
 export const certificationTypeSchema = z
   .enum(CERTIFICATION_TYPES)

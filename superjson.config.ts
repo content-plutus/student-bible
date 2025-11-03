@@ -1,4 +1,4 @@
-export default {
+const superjsonConfig = {
   modules: [
     {
       path: "./src/lib/utils/superjson",
@@ -6,3 +6,5 @@ export default {
     },
   ],
 };
+
+export default superjsonConfig;
