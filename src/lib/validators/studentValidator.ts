@@ -101,3 +101,125 @@ export const getAadharValidationError = (aadhar: string | null | undefined): str
   if (result.success) return null;
   return result.error.issues[0]?.message || "Invalid AADHAR number";
 };
+
+export const panNumberSchema = z
+  .string()
+  .transform((val) => val.trim().toUpperCase())
+  .pipe(
+    z
+      .string()
+      .length(10, "PAN number must be exactly 10 characters")
+      .regex(
+        /^[A-Z]{5}[0-9]{4}[A-Z]$/,
+        "PAN number must follow format: 5 letters, 4 digits, 1 letter",
+      ),
+  )
+  .optional()
+  .nullable();
+
+export const postalCodeSchema = z
+  .string()
+  .transform((val) => val.trim())
+  .pipe(
+    z
+      .string()
+      .length(6, "PIN code must be exactly 6 digits")
+      .regex(/^[0-9]{6}$/, "PIN code must contain only digits"),
+  );
+
+export const emailSchema = z
+  .string()
+  .transform((val) => val.trim().toLowerCase())
+  .pipe(z.string().email("Please enter a valid email address"));
+
+export const validatePanNumber = (pan: string | null | undefined): boolean => {
+  return panNumberSchema.safeParse(pan).success;
+};
+
+export const validatePostalCode = (postalCode: string): boolean => {
+  return postalCodeSchema.safeParse(postalCode).success;
+};
+
+export const validateEmail = (email: string): boolean => {
+  return emailSchema.safeParse(email).success;
+};
+
+export const parsePanNumber = (pan: string | null | undefined) => {
+  return panNumberSchema.parse(pan);
+};
+
+export const safeParsePanNumber = (pan: string | null | undefined) => {
+  return panNumberSchema.safeParse(pan);
+};
+
+export const parsePostalCode = (postalCode: string) => {
+  return postalCodeSchema.parse(postalCode);
+};
+
+export const safeParsePostalCode = (postalCode: string) => {
+  return postalCodeSchema.safeParse(postalCode);
+};
+
+export const parseEmail = (email: string) => {
+  return emailSchema.parse(email);
+};
+
+export const safeParseEmail = (email: string) => {
+  return emailSchema.safeParse(email);
+};
+
+export const getPanValidationError = (pan: string | null | undefined): string | null => {
+  const result = panNumberSchema.safeParse(pan);
+  if (result.success) return null;
+  return result.error.issues[0]?.message || "Invalid PAN number";
+};
+
+export const getPostalCodeValidationError = (postalCode: string): string | null => {
+  const result = postalCodeSchema.safeParse(postalCode);
+  if (result.success) return null;
+  return result.error.issues[0]?.message || "Invalid PIN code";
+};
+
+export const getEmailValidationError = (email: string): string | null => {
+  const result = emailSchema.safeParse(email);
+  if (result.success) return null;
+  return result.error.issues[0]?.message || "Invalid email address";
+};
+
+export const validateCrossFieldGuardianPhone = (
+  studentPhone: string,
+  guardianPhone: string | null | undefined,
+): string | null => {
+  if (!guardianPhone) return null;
+  if (studentPhone === guardianPhone) {
+    return "Guardian phone number must be different from student phone number";
+  }
+  return null;
+};
+
+export const validateMinimumAge = (
+  dateOfBirth: string | Date,
+  minAge: number = 16,
+): string | null => {
+  const dob = typeof dateOfBirth === "string" ? new Date(dateOfBirth) : dateOfBirth;
+  const today = new Date();
+  const age = today.getFullYear() - dob.getFullYear();
+  const monthDiff = today.getMonth() - dob.getMonth();
+  const actualAge =
+    monthDiff < 0 || (monthDiff === 0 && today.getDate() < dob.getDate()) ? age - 1 : age;
+
+  if (actualAge < minAge) {
+    return `Student must be at least ${minAge} years old`;
+  }
+  return null;
+};
+
+export const validateDateOfBirthRange = (dateOfBirth: string | Date): string | null => {
+  const dob = typeof dateOfBirth === "string" ? new Date(dateOfBirth) : dateOfBirth;
+  const year = dob.getFullYear();
+
+  if (year < 1950 || year > 2010) {
+    return "Date of birth must be between 1950 and 2010";
+  }
+  return null;
+};
