@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { isValidAadhaar } from "aadhaar-validator-ts";
-import { VALIDATION_RULES } from "./rules";
+import { VALIDATION_RULES, BATCH_CODE_PATTERNS, CertificationType } from "./rules";
 
 export const phoneNumberSchema = z
   .string()
@@ -235,7 +235,7 @@ export const validateBatchCode = (
   batchCode: string | null | undefined,
   certificationType: string | null | undefined,
 ): boolean => {
-  if (!batchCode || !certificationType) {
+  if (batchCode == null || certificationType == null) {
     return true;
   }
 
@@ -244,17 +244,12 @@ export const validateBatchCode = (
     return false;
   }
 
-  if (certificationType === "US CMA") {
-    return /^CMA_P\d+_Sec[A-Z]_Batch_\d+_[WE]_[E]$/.test(trimmedBatchCode);
-  } else if (certificationType === "ACCA") {
-    return /^ACCA_\d{4}_Batch_\d+$/.test(trimmedBatchCode);
-  } else if (certificationType === "CFA") {
-    return /^CFA_L\d+_Batch_\d+$/.test(trimmedBatchCode);
-  } else if (certificationType === "US CPA") {
-    return /^CPA_[A-Z]{3}_Batch_\d+$/.test(trimmedBatchCode);
+  const pattern = BATCH_CODE_PATTERNS[certificationType as CertificationType];
+  if (!pattern) {
+    return true;
   }
 
-  return true;
+  return pattern.pattern.test(trimmedBatchCode);
 };
 
 export const parseBatchCode = (batchCode: string | null | undefined) => {
@@ -269,7 +264,7 @@ export const getBatchCodeValidationError = (
   batchCode: string | null | undefined,
   certificationType: string | null | undefined,
 ): string | null => {
-  if (!batchCode || !certificationType) {
+  if (batchCode == null || certificationType == null) {
     return null;
   }
 
@@ -278,22 +273,13 @@ export const getBatchCodeValidationError = (
     return "Batch code cannot be empty";
   }
 
-  if (certificationType === "US CMA") {
-    if (!/^CMA_P\d+_Sec[A-Z]_Batch_\d+_[WE]_[E]$/.test(trimmedBatchCode)) {
-      return "US CMA batch code must follow format: CMA_P{paper}_Sec{section}_Batch_{number}_{W|E}_{E} (e.g., CMA_P1_SecA_Batch_7_W_E)";
-    }
-  } else if (certificationType === "ACCA") {
-    if (!/^ACCA_\d{4}_Batch_\d+$/.test(trimmedBatchCode)) {
-      return "ACCA batch code must follow format: ACCA_{year}_Batch_{number} (e.g., ACCA_2024_Batch_5)";
-    }
-  } else if (certificationType === "CFA") {
-    if (!/^CFA_L\d+_Batch_\d+$/.test(trimmedBatchCode)) {
-      return "CFA batch code must follow format: CFA_L{level}_Batch_{number} (e.g., CFA_L1_Batch_3)";
-    }
-  } else if (certificationType === "US CPA") {
-    if (!/^CPA_[A-Z]{3}_Batch_\d+$/.test(trimmedBatchCode)) {
-      return "US CPA batch code must follow format: CPA_{section}_Batch_{number} (e.g., CPA_AUD_Batch_2)";
-    }
+  const pattern = BATCH_CODE_PATTERNS[certificationType as CertificationType];
+  if (!pattern) {
+    return null;
+  }
+
+  if (!pattern.pattern.test(trimmedBatchCode)) {
+    return `${pattern.message} (e.g., ${pattern.example})`;
   }
 
   return null;

@@ -223,20 +223,18 @@ export const mergeExtraFields = (
   current: Record<string, unknown> | null | undefined,
   updates: Record<string, unknown>,
 ): Record<string, unknown> => {
-  const currentFields = current || {};
-  const normalizedUpdates: Record<string, unknown> = {};
+  const result = { ...(current || {}) };
 
   for (const [key, value] of Object.entries(updates)) {
     const normalizedValue = normalizeJsonbValue(value);
-    if (normalizedValue !== null) {
-      normalizedUpdates[key] = normalizedValue;
+    if (normalizedValue === null) {
+      delete result[key];
+    } else {
+      result[key] = normalizedValue;
     }
   }
 
-  return {
-    ...currentFields,
-    ...normalizedUpdates,
-  };
+  return result;
 };
 
 export const stripNullValuesFromExtraFields = (
