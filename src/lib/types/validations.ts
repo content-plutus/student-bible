@@ -1,6 +1,8 @@
 import { z } from "zod";
 import { isValidAadhaar } from "aadhaar-validator-ts";
 
+import { ENUM_VALUES, ENUM_DEFAULTS } from "../validators/rules";
+
 export const INDIAN_STATES = [
   "Andhra Pradesh",
   "Arunachal Pradesh",
@@ -40,9 +42,11 @@ export const INDIAN_STATES = [
   "Puducherry",
 ] as const;
 
-export const GENDERS = ["Male", "Female", "Others"] as const;
-export const SALUTATIONS = ["Mr", "Ms", "Mrs"] as const;
-export const STREAMS = ["Commerce", "Arts", "Science", "Other"] as const;
+export const GENDERS = ENUM_VALUES.gender;
+export const SALUTATIONS = ENUM_VALUES.salutation;
+export const STREAMS = ENUM_VALUES.stream;
+export const EDUCATION_LEVELS = ENUM_VALUES.educationLevel;
+export const CERTIFICATION_TYPES = ENUM_VALUES.certificationType;
 
 export const createPartialSchema = <T extends z.ZodTypeAny>(schema: T) => {
   return schema.partial();
@@ -201,6 +205,7 @@ export const genderSchema = z
   .enum(GENDERS, {
     errorMap: () => ({ message: "Gender must be one of: Male, Female, Others" }),
   })
+  .catch(ENUM_DEFAULTS.gender)
   .nullable()
   .optional();
 
@@ -208,19 +213,37 @@ export const salutationSchema = z
   .enum(SALUTATIONS, {
     errorMap: () => ({ message: "Salutation must be one of: Mr, Ms, Mrs" }),
   })
+  .catch(ENUM_DEFAULTS.salutation)
+  .nullable()
+  .optional();
+
+export const educationLevelSchema = z
+  .enum(EDUCATION_LEVELS, {
+    errorMap: () => ({ message: "Education level must be one of: 10th, 12th, Graduate, Master, Other" }),
+  })
+  .catch(ENUM_DEFAULTS.educationLevel)
+  .nullable()
+  .optional();
+
+export const streamSchema = z
+  .enum(STREAMS, {
+    errorMap: () => ({ message: "Stream must be one of: Commerce, Arts, Science, Other" }),
+  })
+  .catch(ENUM_DEFAULTS.stream)
+  .nullable()
+  .optional();
+
+export const certificationTypeSchema = z
+  .enum(CERTIFICATION_TYPES, {
+    errorMap: () => ({ message: "Certification type must be one of: ACCA, US CMA, CFA, US CPA" }),
+  })
+  .catch(ENUM_DEFAULTS.certificationType)
   .nullable()
   .optional();
 
 export const stateSchema = z.enum(INDIAN_STATES, {
   errorMap: () => ({ message: "Please select a valid Indian state" }),
 });
-
-export const streamSchema = z
-  .enum(STREAMS, {
-    errorMap: () => ({ message: "Stream must be one of: Commerce, Arts, Science, Other" }),
-  })
-  .nullable()
-  .optional();
 
 export const addressSchema = z.object({
   address_line1: z.string().min(1, "Address line 1 is required").trim(),
