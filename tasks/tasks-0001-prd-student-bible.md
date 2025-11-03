@@ -101,9 +101,9 @@
 - [ ] 3.0 Build Flexible Data Validation Layer with Partial Data Support
   - [x] 3.1 Create Zod schemas for core student fields with `.partial()` support
   - [x] 3.2 Implement phone number validation with Indian format (regex: /^[6-9]\d{9}$/)
-  - [ ] 3.3 Create email validation with async uniqueness check against database
-  - [ ] 3.4 Implement AADHAR validation with checksum verification (12 digits)
-  - [ ] 3.5 Create address validation with conditional requirements (landmark if delivery needed)
+  - [x] 3.3 Create email validation with async uniqueness check against database
+  - [x] 3.4 Implement AADHAR validation with checksum verification (12 digits)
+  - [x] 3.5 Create address validation with conditional requirements (landmark if delivery needed)
   - [x] 3.6 Implement PIN code validation with Indian postal code format
   - [ ] 3.7 Create dynamic batch code validation based on certification type
   - [x] 3.8 Implement date validations with business logic (age >= 16, passing year <= current+5)

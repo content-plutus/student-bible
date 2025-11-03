@@ -11,6 +11,12 @@ export const VALIDATION_RULES = {
     minLength: 10,
     maxLength: 10,
   },
+  aadhar: {
+    pattern: /^[0-9]{12}$/,
+    message: "AADHAR number must be exactly 12 digits",
+    minLength: 12,
+    maxLength: 12,
+  },
 } as const;
 
 export type ValidationRules = typeof VALIDATION_RULES;
