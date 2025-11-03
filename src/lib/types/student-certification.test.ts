@@ -31,6 +31,7 @@ describe("studentCertificationSchema", () => {
     status: "in_progress" as const,
     progress_papers_completed: 5,
     total_papers_target: 13,
+    batch_code: "ACCA_FND_SecA_1_M",
     projected_exam: "2025-06-01",
     custom_fields: {},
     created_at: "2024-01-01T00:00:00Z",
@@ -75,6 +76,59 @@ describe("studentCertificationSchema", () => {
     const invalidCertification = { ...validStudentCertification, total_papers_target: 13.5 };
     const result = studentCertificationSchema.safeParse(invalidCertification);
     expect(result.success).toBe(false);
+  });
+
+  it("should allow missing batch code", () => {
+    const certification = { ...validStudentCertification };
+    delete certification.batch_code;
+    const result = studentCertificationSchema.safeParse(certification);
+    expect(result.success).toBe(true);
+  });
+
+  it("should reject batch code that is blank after trim", () => {
+    const invalidCertification = { ...validStudentCertification, batch_code: "   " };
+    const result = studentCertificationSchema.safeParse(invalidCertification);
+    expect(result.success).toBe(false);
+  });
+
+  it("should reject batch code that does not match expected pattern", () => {
+    const invalidCertification = { ...validStudentCertification, batch_code: "INVALID" };
+    const result = studentCertificationSchema.safeParse(invalidCertification);
+    expect(result.success).toBe(false);
+  });
+
+  it("should enforce expected prefix when provided", () => {
+    const certification = {
+      ...validStudentCertification,
+      batch_code: "CMA_PART1_Batch_3_E",
+      custom_fields: { batch_prefix: "CMA" },
+    };
+    const result = studentCertificationSchema.safeParse(certification);
+    expect(result.success).toBe(true);
+
+    const mismatched = {
+      ...certification,
+      batch_code: "ACCA_PART1_Batch_3_E",
+    };
+    const mismatchResult = studentCertificationSchema.safeParse(mismatched);
+    expect(mismatchResult.success).toBe(false);
+  });
+
+  it("should enforce expected identifier when provided", () => {
+    const certification = {
+      ...validStudentCertification,
+      batch_code: "CMA_PART1_Batch_3_E",
+      custom_fields: { batch_identifier: "PART1" },
+    };
+    const result = studentCertificationSchema.safeParse(certification);
+    expect(result.success).toBe(true);
+
+    const mismatched = {
+      ...certification,
+      batch_code: "CMA_PART2_Batch_3_E",
+    };
+    const mismatchResult = studentCertificationSchema.safeParse(mismatched);
+    expect(mismatchResult.success).toBe(false);
   });
 
   it("should use default value for status", () => {
