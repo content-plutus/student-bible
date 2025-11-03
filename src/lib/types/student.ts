@@ -1,24 +1,22 @@
 import { z } from "zod";
+import {
+  phoneNumberSchema,
+  guardianPhoneSchema,
+  emailSchema,
+} from "../validators/studentValidator";
 
 export const studentSchema = z
   .object({
     id: z.string().uuid(),
     created_at: z.string().datetime(),
     updated_at: z.string().datetime(),
-    phone_number: z
-      .string()
-      .length(10)
-      .regex(/^[6-9][0-9]{9}$/, "Phone number must be a valid Indian mobile number"),
-    email: z.string().email().toLowerCase(),
+    phone_number: phoneNumberSchema,
+    email: emailSchema,
     first_name: z.string().min(1, "First name is required").trim(),
     last_name: z.string().trim().nullable(),
     gender: z.string().nullable(),
     date_of_birth: z.string().date().nullable(),
-    guardian_phone: z
-      .string()
-      .length(10)
-      .regex(/^[6-9][0-9]{9}$/, "Guardian phone must be a valid Indian mobile number")
-      .nullable(),
+    guardian_phone: guardianPhoneSchema,
     salutation: z.string().nullable(),
     father_name: z.string().trim().nullable(),
     mother_name: z.string().trim().nullable(),

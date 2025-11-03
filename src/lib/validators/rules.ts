@@ -11,6 +11,12 @@ export const VALIDATION_RULES = {
     minLength: 10,
     maxLength: 10,
   },
+  email: {
+    pattern: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+    message: "Email must be a valid email address",
+    minLength: 5,
+    maxLength: 255,
+  },
 } as const;
 
 export type ValidationRules = typeof VALIDATION_RULES;

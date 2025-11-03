@@ -1,4 +1,4 @@
-import { describe, it, expect } from "@jest/globals";
+import { describe, it, expect, jest, beforeEach } from "@jest/globals";
 import {
   phoneNumberSchema,
   guardianPhoneSchema,
@@ -10,7 +10,14 @@ import {
   safeParseGuardianPhone,
   getPhoneValidationError,
   getGuardianPhoneValidationError,
+  emailSchema,
+  validateEmail,
+  parseEmail,
+  safeParseEmail,
+  getEmailValidationError,
 } from "./studentValidator";
+
+jest.mock("../supabase/client");
 
 describe("phoneNumberSchema", () => {
   describe("valid phone numbers", () => {
@@ -287,5 +294,160 @@ describe("getGuardianPhoneValidationError", () => {
     const error = getGuardianPhoneValidationError("   ");
     expect(error).toBeTruthy();
     expect(error).toContain("10");
+  });
+});
+
+describe("emailSchema", () => {
+  describe("valid emails", () => {
+    it("should accept valid email addresses", () => {
+      expect(emailSchema.safeParse("test@example.com").success).toBe(true);
+      expect(emailSchema.safeParse("user.name@example.com").success).toBe(true);
+      expect(emailSchema.safeParse("user+tag@example.co.uk").success).toBe(true);
+      expect(emailSchema.safeParse("test123@test-domain.com").success).toBe(true);
+    });
+
+    it("should trim and lowercase email addresses", () => {
+      const result = emailSchema.safeParse("  TEST@EXAMPLE.COM  ");
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data).toBe("test@example.com");
+      }
+    });
+
+    it("should accept emails with numbers", () => {
+      expect(emailSchema.safeParse("user123@example.com").success).toBe(true);
+      expect(emailSchema.safeParse("123user@example.com").success).toBe(true);
+    });
+
+    it("should accept emails with special characters", () => {
+      expect(emailSchema.safeParse("user.name@example.com").success).toBe(true);
+      expect(emailSchema.safeParse("user_name@example.com").success).toBe(true);
+      expect(emailSchema.safeParse("user+tag@example.com").success).toBe(true);
+      expect(emailSchema.safeParse("user-name@example.com").success).toBe(true);
+    });
+  });
+
+  describe("invalid emails", () => {
+    it("should reject emails without @ symbol", () => {
+      expect(emailSchema.safeParse("testexample.com").success).toBe(false);
+      expect(emailSchema.safeParse("test.example.com").success).toBe(false);
+    });
+
+    it("should reject emails without domain", () => {
+      expect(emailSchema.safeParse("test@").success).toBe(false);
+      expect(emailSchema.safeParse("test@.com").success).toBe(false);
+    });
+
+    it("should reject emails without local part", () => {
+      expect(emailSchema.safeParse("@example.com").success).toBe(false);
+    });
+
+    it("should reject emails with spaces", () => {
+      expect(emailSchema.safeParse("test user@example.com").success).toBe(false);
+      expect(emailSchema.safeParse("test@example .com").success).toBe(false);
+    });
+
+    it("should reject emails that are too short", () => {
+      expect(emailSchema.safeParse("a@b").success).toBe(false);
+      expect(emailSchema.safeParse("a@b.").success).toBe(false);
+    });
+
+    it("should reject emails that are too long", () => {
+      const longEmail = "a".repeat(250) + "@example.com";
+      expect(emailSchema.safeParse(longEmail).success).toBe(false);
+    });
+
+    it("should reject empty strings", () => {
+      expect(emailSchema.safeParse("").success).toBe(false);
+    });
+
+    it("should reject strings with only whitespace", () => {
+      expect(emailSchema.safeParse("   ").success).toBe(false);
+    });
+
+    it("should reject emails with multiple @ symbols", () => {
+      expect(emailSchema.safeParse("test@@example.com").success).toBe(false);
+      expect(emailSchema.safeParse("test@test@example.com").success).toBe(false);
+    });
+  });
+});
+
+describe("validateEmail", () => {
+  it("should return true for valid email addresses", () => {
+    expect(validateEmail("test@example.com")).toBe(true);
+    expect(validateEmail("user.name@example.com")).toBe(true);
+    expect(validateEmail("user+tag@example.co.uk")).toBe(true);
+  });
+
+  it("should return false for invalid email addresses", () => {
+    expect(validateEmail("testexample.com")).toBe(false);
+    expect(validateEmail("test@")).toBe(false);
+    expect(validateEmail("@example.com")).toBe(false);
+    expect(validateEmail("test user@example.com")).toBe(false);
+  });
+});
+
+describe("parseEmail", () => {
+  it("should parse valid email addresses", () => {
+    expect(parseEmail("test@example.com")).toBe("test@example.com");
+    expect(parseEmail("  TEST@EXAMPLE.COM  ")).toBe("test@example.com");
+  });
+
+  it("should throw error for invalid email addresses", () => {
+    expect(() => parseEmail("testexample.com")).toThrow();
+    expect(() => parseEmail("test@")).toThrow();
+    expect(() => parseEmail("@example.com")).toThrow();
+  });
+});
+
+describe("safeParseEmail", () => {
+  it("should return success for valid email addresses", () => {
+    const result = safeParseEmail("test@example.com");
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data).toBe("test@example.com");
+    }
+  });
+
+  it("should normalize email addresses", () => {
+    const result = safeParseEmail("  TEST@EXAMPLE.COM  ");
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data).toBe("test@example.com");
+    }
+  });
+
+  it("should return error for invalid email addresses", () => {
+    const result = safeParseEmail("testexample.com");
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error).toBeDefined();
+    }
+  });
+});
+
+describe("getEmailValidationError", () => {
+  it("should return null for valid email addresses", () => {
+    expect(getEmailValidationError("test@example.com")).toBeNull();
+    expect(getEmailValidationError("user.name@example.com")).toBeNull();
+  });
+
+  it("should return error message for invalid email addresses", () => {
+    const error1 = getEmailValidationError("testexample.com");
+    expect(error1).toBeTruthy();
+    expect(error1).toContain("email");
+
+    const error2 = getEmailValidationError("test@");
+    expect(error2).toBeTruthy();
+    expect(error2).toContain("email");
+
+    const error3 = getEmailValidationError("@example.com");
+    expect(error3).toBeTruthy();
+    expect(error3).toContain("email");
+  });
+
+  it("should return error message for empty strings", () => {
+    const error = getEmailValidationError("");
+    expect(error).toBeTruthy();
   });
 });

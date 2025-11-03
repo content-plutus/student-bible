@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { VALIDATION_RULES } from "./rules";
+import { supabase } from "../supabase/client";
 
 export const phoneNumberSchema = z
   .string()
@@ -65,4 +66,97 @@ export const getGuardianPhoneValidationError = (
   const result = guardianPhoneSchema.safeParse(phone);
   if (result.success) return null;
   return result.error.issues[0]?.message || "Invalid guardian phone number";
+};
+
+export const emailSchema = z
+  .string()
+  .transform((val) => val.trim().toLowerCase())
+  .pipe(
+    z
+      .string()
+      .min(
+        VALIDATION_RULES.email.minLength,
+        `Email must be at least ${VALIDATION_RULES.email.minLength} characters`,
+      )
+      .max(
+        VALIDATION_RULES.email.maxLength,
+        `Email must be at most ${VALIDATION_RULES.email.maxLength} characters`,
+      )
+      .regex(VALIDATION_RULES.email.pattern, VALIDATION_RULES.email.message)
+      .email("Email must be a valid email address"),
+  );
+
+export const validateEmail = (email: string): boolean => {
+  return emailSchema.safeParse(email).success;
+};
+
+export const parseEmail = (email: string) => {
+  return emailSchema.parse(email);
+};
+
+export const safeParseEmail = (email: string) => {
+  return emailSchema.safeParse(email);
+};
+
+export const getEmailValidationError = (email: string): string | null => {
+  const result = emailSchema.safeParse(email);
+  if (result.success) return null;
+  return result.error.issues[0]?.message || "Invalid email address";
+};
+
+export const checkEmailUniqueness = async (
+  email: string,
+  excludeStudentId?: string,
+): Promise<{ isUnique: boolean; error?: string }> => {
+  try {
+    const normalizedEmail = email.trim().toLowerCase();
+
+    let query = supabase.from("students").select("id, email").eq("email", normalizedEmail);
+
+    if (excludeStudentId) {
+      query = query.neq("id", excludeStudentId);
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      return {
+        isUnique: false,
+        error: `Database error: ${error.message}`,
+      };
+    }
+
+    return {
+      isUnique: !data || data.length === 0,
+      error: data && data.length > 0 ? "Email address is already in use" : undefined,
+    };
+  } catch (err) {
+    return {
+      isUnique: false,
+      error: `Unexpected error: ${err instanceof Error ? err.message : "Unknown error"}`,
+    };
+  }
+};
+
+export const validateEmailWithUniqueness = async (
+  email: string,
+  excludeStudentId?: string,
+): Promise<{ isValid: boolean; error?: string }> => {
+  const formatResult = safeParseEmail(email);
+  if (!formatResult.success) {
+    return {
+      isValid: false,
+      error: formatResult.error.issues[0]?.message || "Invalid email format",
+    };
+  }
+
+  const uniquenessResult = await checkEmailUniqueness(email, excludeStudentId);
+  if (!uniquenessResult.isUnique) {
+    return {
+      isValid: false,
+      error: uniquenessResult.error || "Email address is already in use",
+    };
+  }
+
+  return { isValid: true };
 };
