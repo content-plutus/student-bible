@@ -19,6 +19,22 @@ export const VALIDATION_RULES = {
   },
 } as const;
 
+export const ENUM_VALUES = {
+  gender: ["Male", "Female", "Others"] as const,
+  salutation: ["Mr", "Ms", "Mrs"] as const,
+  educationLevel: ["10th", "12th", "Graduate", "Master", "Other"] as const,
+  stream: ["Commerce", "Arts", "Science", "Other"] as const,
+  certificationType: ["ACCA", "US CMA", "CFA", "US CPA"] as const,
+} as const;
+
+export const ENUM_DEFAULTS = {
+  gender: "Others" as const,
+  salutation: "Mr" as const,
+  educationLevel: "Other" as const,
+  stream: "Other" as const,
+  certificationType: "ACCA" as const,
+} as const;
+
 export const BATCH_CODE_PATTERNS = {
   "US CMA": {
     pattern:
@@ -47,3 +63,5 @@ export const BATCH_CODE_PATTERNS = {
 export type CertificationType = keyof typeof BATCH_CODE_PATTERNS;
 
 export type ValidationRules = typeof VALIDATION_RULES;
+export type EnumValues = typeof ENUM_VALUES;
+export type EnumDefaults = typeof ENUM_DEFAULTS;

@@ -32,82 +32,40 @@ export function formatValidationErrors(zodError: ZodError): FormattedErrors {
 function formatErrorMessage(issue: ZodIssue): string {
   switch (issue.code) {
     case "invalid_type":
-      if (issue.message && !issue.message.startsWith("Expected")) {
-        return issue.message;
-      }
-      return `Expected ${issue.expected}, received ${issue.received}`;
-    case "invalid_string":
-      if (issue.message && !issue.message.startsWith("Invalid")) {
-        return issue.message;
-      }
-      if (issue.validation === "email") {
-        return "Please enter a valid email address";
-      }
-      if (issue.validation === "url") {
-        return "Please enter a valid URL";
-      }
-      return "Invalid format";
+      return issue.message || "Invalid type";
     case "too_small":
-      const smallType = issue.type || issue.origin;
-      if (smallType === "string") {
-        return `Must be at least ${issue.minimum} characters`;
+      if (issue.message && issue.message.includes(">=")) {
+        const match = issue.message.match(/>=(\d+) characters/);
+        if (match) {
+          return `Must be at least ${match[1]} characters`;
+        }
       }
-      if (smallType === "number") {
-        return `Must be at least ${issue.minimum}`;
-      }
-      if (smallType === "array") {
-        return `Must contain at least ${issue.minimum} items`;
-      }
-      return "Value is too small";
+      return issue.message || "Value is too small";
     case "too_big":
-      const bigType = issue.type || issue.origin;
-      if (bigType === "string") {
-        return `Must be at most ${issue.maximum} characters`;
+      if (issue.message && issue.message.includes("<=")) {
+        const match = issue.message.match(/<=(\d+) characters/);
+        if (match) {
+          return `Must be at most ${match[1]} characters`;
+        }
       }
-      if (bigType === "number") {
-        return `Must be at most ${issue.maximum}`;
-      }
-      if (bigType === "array") {
-        return `Must contain at most ${issue.maximum} items`;
-      }
-      return "Value is too large";
-    case "invalid_literal":
-      if (issue.message && !issue.message.startsWith("Invalid")) {
-        return issue.message;
-      }
-      return `Must be ${issue.expected}`;
+      return issue.message || "Value is too large";
     case "unrecognized_keys":
-      if (issue.message && !issue.message.startsWith("Unrecognized")) {
-        return issue.message;
-      }
-      return `Unexpected fields: ${issue.keys.join(", ")}`;
+      return issue.message || "Unexpected fields found";
     case "invalid_union":
-      if (issue.message && issue.message !== "Invalid input") {
-        return issue.message;
-      }
-      return "Invalid value";
-    case "invalid_enum_value":
-      return `Must be one of: ${issue.options.join(", ")}`;
+      return issue.message || "Invalid value";
     case "invalid_value":
-      if (issue.values && Array.isArray(issue.values)) {
-        return `Must be one of: ${issue.values.join(", ")}`;
+      if (issue.message && issue.message.includes("expected one of")) {
+        const match = issue.message.match(/expected one of (.+)/);
+        if (match) {
+          const options = match[1].replace(/"/g, "").replace(/\|/g, ", ");
+          return `Must be one of: ${options}`;
+        }
       }
-      if (issue.message && !issue.message.startsWith("Invalid")) {
-        return issue.message;
-      }
-      return "Invalid value";
-    case "invalid_date":
-      if (issue.message && !issue.message.startsWith("Invalid")) {
-        return issue.message;
-      }
-      return "Invalid date";
+      return issue.message || "Invalid value";
     case "custom":
       return issue.message || "Validation failed";
     default:
-      if (issue.message && issue.message !== "Invalid input") {
-        return issue.message;
-      }
-      return "Invalid input";
+      return issue.message || "Invalid input";
   }
 }
 

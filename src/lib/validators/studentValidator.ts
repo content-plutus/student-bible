@@ -1,6 +1,19 @@
 import { z } from "zod";
 import { isValidAadhaar } from "aadhaar-validator-ts";
-import { VALIDATION_RULES, BATCH_CODE_PATTERNS, CertificationType } from "./rules";
+import {
+  VALIDATION_RULES,
+  ENUM_VALUES,
+  ENUM_DEFAULTS,
+  BATCH_CODE_PATTERNS,
+  CertificationType,
+} from "./rules";
+import {
+  genderSchema,
+  salutationSchema,
+  educationLevelSchema,
+  streamSchema,
+  certificationTypeSchema,
+} from "../types/validations";
 
 export const phoneNumberSchema = z
   .string()
@@ -222,6 +235,112 @@ export const validateDateOfBirthRange = (dateOfBirth: string | Date): string | n
     return "Date of birth must be between 1950 and 2010";
   }
   return null;
+};
+
+export const validateGender = (gender: string | null | undefined): boolean => {
+  return genderSchema.safeParse(gender).success;
+};
+
+export const parseGender = (gender: string | null | undefined) => {
+  return genderSchema.parse(gender);
+};
+
+export const safeParseGender = (gender: string | null | undefined) => {
+  return genderSchema.safeParse(gender);
+};
+
+export const getGenderValidationError = (gender: string | null | undefined): string | null => {
+  const result = genderSchema.safeParse(gender);
+  if (result.success) return null;
+  return result.error.issues[0]?.message || "Invalid gender";
+};
+
+export const validateSalutation = (salutation: string | null | undefined): boolean => {
+  return salutationSchema.safeParse(salutation).success;
+};
+
+export const parseSalutation = (salutation: string | null | undefined) => {
+  return salutationSchema.parse(salutation);
+};
+
+export const safeParseSalutation = (salutation: string | null | undefined) => {
+  return salutationSchema.safeParse(salutation);
+};
+
+export const getSalutationValidationError = (
+  salutation: string | null | undefined,
+): string | null => {
+  const result = salutationSchema.safeParse(salutation);
+  if (result.success) return null;
+  return result.error.issues[0]?.message || "Invalid salutation";
+};
+
+export const validateEducationLevel = (educationLevel: string | null | undefined): boolean => {
+  return educationLevelSchema.safeParse(educationLevel).success;
+};
+
+export const parseEducationLevel = (educationLevel: string | null | undefined) => {
+  return educationLevelSchema.parse(educationLevel);
+};
+
+export const safeParseEducationLevel = (educationLevel: string | null | undefined) => {
+  return educationLevelSchema.safeParse(educationLevel);
+};
+
+export const getEducationLevelValidationError = (
+  educationLevel: string | null | undefined,
+): string | null => {
+  const result = educationLevelSchema.safeParse(educationLevel);
+  if (result.success) return null;
+  return result.error.issues[0]?.message || "Invalid education level";
+};
+
+export const validateStream = (stream: string | null | undefined): boolean => {
+  return streamSchema.safeParse(stream).success;
+};
+
+export const parseStream = (stream: string | null | undefined) => {
+  return streamSchema.parse(stream);
+};
+
+export const safeParseStream = (stream: string | null | undefined) => {
+  return streamSchema.safeParse(stream);
+};
+
+export const getStreamValidationError = (stream: string | null | undefined): string | null => {
+  const result = streamSchema.safeParse(stream);
+  if (result.success) return null;
+  return result.error.issues[0]?.message || "Invalid stream";
+};
+
+export const validateCertificationType = (
+  certificationType: string | null | undefined,
+): boolean => {
+  return certificationTypeSchema.safeParse(certificationType).success;
+};
+
+export const parseCertificationType = (certificationType: string | null | undefined) => {
+  return certificationTypeSchema.parse(certificationType);
+};
+
+export const safeParseCertificationType = (certificationType: string | null | undefined) => {
+  return certificationTypeSchema.safeParse(certificationType);
+};
+
+export const getCertificationTypeValidationError = (
+  certificationType: string | null | undefined,
+): string | null => {
+  const result = certificationTypeSchema.safeParse(certificationType);
+  if (result.success) return null;
+  return result.error.issues[0]?.message || "Invalid certification type";
+};
+
+export const isKnownEnumValue = (value: string, enumType: keyof typeof ENUM_VALUES): boolean => {
+  return ENUM_VALUES[enumType].includes(value as never);
+};
+
+export const getEnumDefault = (enumType: keyof typeof ENUM_DEFAULTS): string => {
+  return ENUM_DEFAULTS[enumType];
 };
 
 export const batchCodeSchema = z

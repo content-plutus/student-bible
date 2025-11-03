@@ -1,6 +1,8 @@
 import { z } from "zod";
 import { isValidAadhaar } from "aadhaar-validator-ts";
 
+import { ENUM_VALUES, ENUM_DEFAULTS } from "../validators/rules";
+
 export const INDIAN_STATES = [
   "Andhra Pradesh",
   "Arunachal Pradesh",
@@ -40,36 +42,11 @@ export const INDIAN_STATES = [
   "Puducherry",
 ] as const;
 
-export const GENDERS = ["Male", "Female", "Others"] as const;
-export const SALUTATIONS = ["Mr", "Ms", "Mrs"] as const;
-export const STREAMS = ["Commerce", "Arts", "Science", "Other"] as const;
-
-export const createPartialSchema = <T extends z.ZodTypeAny>(schema: T) => {
-  return schema.partial();
-};
-
-export const createInsertSchema = <T extends z.ZodObject<z.ZodRawShape>>(
-  schema: T,
-  omitFields: string[] = ["id", "created_at", "updated_at"],
-) => {
-  const shape = schema.shape;
-  const newShape: Record<string, z.ZodTypeAny> = {};
-
-  for (const key in shape) {
-    if (!omitFields.includes(key)) {
-      newShape[key] = shape[key];
-    }
-  }
-
-  return z.object(newShape).strict();
-};
-
-export const createUpdateSchema = <T extends z.ZodObject<z.ZodRawShape>>(
-  schema: T,
-  omitFields: string[] = ["id", "created_at", "updated_at"],
-) => {
-  return createInsertSchema(schema, omitFields).partial();
-};
+export const GENDERS = ENUM_VALUES.gender;
+export const SALUTATIONS = ENUM_VALUES.salutation;
+export const STREAMS = ENUM_VALUES.stream;
+export const EDUCATION_LEVELS = ENUM_VALUES.educationLevel;
+export const CERTIFICATION_TYPES = ENUM_VALUES.certificationType;
 
 export const validatePhoneNumber = (phone: string): boolean => {
   return /^[6-9][0-9]{9}$/.test(phone);
@@ -139,16 +116,18 @@ export const normalizePanNumber = (pan: string): string => {
 };
 
 export const phoneNumberSchema = z
-  .string({ required_error: "Phone number is required" })
+  .string()
   .trim()
+  .min(1, "Phone number is required")
   .length(10, "Phone number must be exactly 10 digits")
   .regex(/^[6-9]\d{9}$/, "Phone number must start with 6-9");
 
 export const emailSchema = z
-  .string({ required_error: "Email is required" })
+  .string()
+  .trim()
+  .min(1, "Email is required")
   .email("Please enter a valid email address")
-  .toLowerCase()
-  .trim();
+  .toLowerCase();
 
 export const aadharSchema = z
   .string()
@@ -168,14 +147,16 @@ export const panSchema = z
   .optional();
 
 export const postalCodeSchema = z
-  .string({ required_error: "PIN code is required" })
+  .string()
   .trim()
+  .min(1, "PIN code is required")
   .length(6, "PIN code must be exactly 6 digits")
   .regex(/^[0-9]{6}$/, "PIN code must contain only digits");
 
 export const nameSchema = z
-  .string({ required_error: "Name is required" })
+  .string()
   .trim()
+  .min(1, "Name is required")
   .min(2, "Name must be at least 2 characters");
 
 export const dateOfBirthSchema = z
@@ -197,30 +178,29 @@ export const dateOfBirthSchema = z
   .nullable()
   .optional();
 
-export const genderSchema = z
-  .enum(GENDERS, {
-    errorMap: () => ({ message: "Gender must be one of: Male, Female, Others" }),
-  })
-  .nullable()
-  .optional();
+export const genderSchema = z.enum(GENDERS).nullable().optional().catch(ENUM_DEFAULTS.gender);
 
 export const salutationSchema = z
-  .enum(SALUTATIONS, {
-    errorMap: () => ({ message: "Salutation must be one of: Mr, Ms, Mrs" }),
-  })
+  .enum(SALUTATIONS)
   .nullable()
-  .optional();
+  .optional()
+  .catch(ENUM_DEFAULTS.salutation);
 
-export const stateSchema = z.enum(INDIAN_STATES, {
-  errorMap: () => ({ message: "Please select a valid Indian state" }),
-});
-
-export const streamSchema = z
-  .enum(STREAMS, {
-    errorMap: () => ({ message: "Stream must be one of: Commerce, Arts, Science, Other" }),
-  })
+export const educationLevelSchema = z
+  .enum(EDUCATION_LEVELS)
   .nullable()
-  .optional();
+  .optional()
+  .catch(ENUM_DEFAULTS.educationLevel);
+
+export const streamSchema = z.enum(STREAMS).nullable().optional().catch(ENUM_DEFAULTS.stream);
+
+export const certificationTypeSchema = z
+  .enum(CERTIFICATION_TYPES)
+  .nullable()
+  .optional()
+  .catch(ENUM_DEFAULTS.certificationType);
+
+export const stateSchema = z.enum(INDIAN_STATES);
 
 export const addressSchema = z.object({
   address_line1: z.string().min(1, "Address line 1 is required").trim(),
@@ -238,14 +218,6 @@ export const residentialAddressSchema = addressSchema.extend({
     .min(20, "Residential address must be at least 20 characters and include landmark details")
     .trim(),
   landmark: z.string().min(1, "Landmark is required for residential address").trim(),
-});
-
-export const CERTIFICATION_TYPES = ["US CMA", "ACCA", "CFA", "US CPA"] as const;
-
-export const certificationTypeSchema = z.enum(CERTIFICATION_TYPES, {
-  errorMap: () => ({
-    message: "Certification type must be one of: US CMA, ACCA, CFA, US CPA",
-  }),
 });
 
 export const batchCodeSchema = z
@@ -287,37 +259,9 @@ export const batchCodeWithCertificationSchema = z
 
       return true;
     },
-    (data) => {
-      const certificationType = data.certification_type;
-      if (certificationType === "US CMA") {
-        return {
-          message:
-            "US CMA batch code must follow format: CMA_{identifier}_{Batch|SecX_Batch|Group}_{number}_{suffix} (e.g., CMA_PART1_Batch_3_E or CMA_P1_SecA_Batch_7_W_E)",
-          path: ["batch_code"],
-        };
-      } else if (certificationType === "ACCA") {
-        return {
-          message:
-            "ACCA batch code must follow format: ACCA_{year}_Batch_{number} (e.g., ACCA_2024_Batch_5)",
-          path: ["batch_code"],
-        };
-      } else if (certificationType === "CFA") {
-        return {
-          message:
-            "CFA batch code must follow format: CFA_L{level}_Batch_{number} (e.g., CFA_L1_Batch_3)",
-          path: ["batch_code"],
-        };
-      } else if (certificationType === "US CPA") {
-        return {
-          message:
-            "US CPA batch code must follow format: CPA_{section}_Batch_{number} (e.g., CPA_AUD_Batch_2)",
-          path: ["batch_code"],
-        };
-      }
-      return {
-        message: "Invalid batch code format for the selected certification type",
-        path: ["batch_code"],
-      };
+    {
+      message: "Invalid batch code format for the selected certification type",
+      path: ["batch_code"],
     },
   );
 
