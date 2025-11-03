@@ -262,3 +262,89 @@ export const residentialAddressSchema = addressSchema.extend({
     .trim(),
   landmark: z.string().min(1, "Landmark is required for residential address").trim(),
 });
+
+export const CERTIFICATION_TYPES = ["US CMA", "ACCA", "CFA", "US CPA"] as const;
+
+export const certificationTypeSchema = z.enum(CERTIFICATION_TYPES, {
+  errorMap: () => ({
+    message: "Certification type must be one of: US CMA, ACCA, CFA, US CPA",
+  }),
+});
+
+export const batchCodeSchema = z
+  .string()
+  .trim()
+  .min(1, "Batch code cannot be empty")
+  .nullable()
+  .optional();
+
+export const batchCodeWithCertificationSchema = z
+  .object({
+    certification_type: certificationTypeSchema.nullable().optional(),
+    batch_code: batchCodeSchema,
+  })
+  .refine(
+    (data) => {
+      if (!data.batch_code || !data.certification_type) {
+        return true;
+      }
+
+      const batchCode = data.batch_code.trim();
+      if (batchCode.length === 0) {
+        return true;
+      }
+
+      const certificationType = data.certification_type;
+
+      if (certificationType === "US CMA") {
+        return /^CMA_(?:P\d+|PART\d+|[A-Z0-9]{1,10})_(?:(?:Sec[A-Z]_)?Batch|Group)_[0-9]{1,2}_[A-Z](?:_[A-Z])?$/.test(
+          batchCode,
+        );
+      } else if (certificationType === "ACCA") {
+        return /^ACCA_\d{4}_Batch_\d+$/.test(batchCode);
+      } else if (certificationType === "CFA") {
+        return /^CFA_L\d+_Batch_\d+$/.test(batchCode);
+      } else if (certificationType === "US CPA") {
+        return /^CPA_[A-Z]{3}_Batch_\d+$/.test(batchCode);
+      }
+
+      return true;
+    },
+    (data) => {
+      const certificationType = data.certification_type;
+      if (certificationType === "US CMA") {
+        return {
+          message:
+            "US CMA batch code must follow format: CMA_{identifier}_{Batch|SecX_Batch|Group}_{number}_{suffix} (e.g., CMA_PART1_Batch_3_E or CMA_P1_SecA_Batch_7_W_E)",
+          path: ["batch_code"],
+        };
+      } else if (certificationType === "ACCA") {
+        return {
+          message:
+            "ACCA batch code must follow format: ACCA_{year}_Batch_{number} (e.g., ACCA_2024_Batch_5)",
+          path: ["batch_code"],
+        };
+      } else if (certificationType === "CFA") {
+        return {
+          message:
+            "CFA batch code must follow format: CFA_L{level}_Batch_{number} (e.g., CFA_L1_Batch_3)",
+          path: ["batch_code"],
+        };
+      } else if (certificationType === "US CPA") {
+        return {
+          message:
+            "US CPA batch code must follow format: CPA_{section}_Batch_{number} (e.g., CPA_AUD_Batch_2)",
+          path: ["batch_code"],
+        };
+      }
+      return {
+        message: "Invalid batch code format for the selected certification type",
+        path: ["batch_code"],
+      };
+    },
+  );
+
+export const batchCodePartialSchema = batchCodeWithCertificationSchema.partial();
+
+export type CertificationType = z.infer<typeof certificationTypeSchema>;
+export type BatchCodeWithCertification = z.infer<typeof batchCodeWithCertificationSchema>;

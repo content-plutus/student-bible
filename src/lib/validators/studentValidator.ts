@@ -1,6 +1,12 @@
 import { z } from "zod";
 import { isValidAadhaar } from "aadhaar-validator-ts";
-import { VALIDATION_RULES, ENUM_VALUES, ENUM_DEFAULTS } from "./rules";
+import {
+  VALIDATION_RULES,
+  ENUM_VALUES,
+  ENUM_DEFAULTS,
+  BATCH_CODE_PATTERNS,
+  CertificationType,
+} from "./rules";
 import {
   genderSchema,
   salutationSchema,
@@ -338,4 +344,89 @@ export const isKnownEnumValue = (
 
 export const getEnumDefault = (enumType: keyof typeof ENUM_DEFAULTS): string => {
   return ENUM_DEFAULTS[enumType];
+};
+
+export const batchCodeSchema = z
+  .string()
+  .transform((val) => val.trim())
+  .pipe(z.string().min(1, "Batch code cannot be empty"))
+  .optional()
+  .nullable();
+
+export const validateBatchCode = (
+  batchCode: string | null | undefined,
+  certificationType: string | null | undefined,
+): boolean => {
+  if (batchCode == null || certificationType == null) {
+    return true;
+  }
+
+  const trimmedBatchCode = batchCode.trim();
+  if (trimmedBatchCode.length === 0) {
+    return false;
+  }
+
+  const pattern = BATCH_CODE_PATTERNS[certificationType as CertificationType];
+  if (!pattern) {
+    return true;
+  }
+
+  return pattern.pattern.test(trimmedBatchCode);
+};
+
+export const parseBatchCode = (batchCode: string | null | undefined) => {
+  return batchCodeSchema.parse(batchCode);
+};
+
+export const safeParseBatchCode = (batchCode: string | null | undefined) => {
+  return batchCodeSchema.safeParse(batchCode);
+};
+
+export const getBatchCodeValidationError = (
+  batchCode: string | null | undefined,
+  certificationType: string | null | undefined,
+): string | null => {
+  if (batchCode == null || certificationType == null) {
+    return null;
+  }
+
+  const trimmedBatchCode = batchCode.trim();
+  if (trimmedBatchCode.length === 0) {
+    return "Batch code cannot be empty";
+  }
+
+  const pattern = BATCH_CODE_PATTERNS[certificationType as CertificationType];
+  if (!pattern) {
+    return null;
+  }
+
+  if (!pattern.pattern.test(trimmedBatchCode)) {
+    return `${pattern.message} (e.g., ${pattern.example})`;
+  }
+
+  return null;
+};
+
+export const validateCrossFieldBatchCode = (
+  batchCode: string | null | undefined,
+  certificationType: string | null | undefined,
+): string | null => {
+  return getBatchCodeValidationError(batchCode, certificationType);
+};
+
+export const validateBatchCodeFromExtraFields = (
+  extraFields: Record<string, unknown>,
+  certificationType: string | null | undefined,
+): string | null => {
+  const batchCode = extraFields.batch_code;
+
+  if (batchCode === null || batchCode === undefined) {
+    return null;
+  }
+
+  if (typeof batchCode !== "string") {
+    return "Batch code must be a string";
+  }
+
+  return getBatchCodeValidationError(batchCode, certificationType);
 };
