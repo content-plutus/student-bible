@@ -20,8 +20,9 @@ export type EmailUniquenessOptions = {
 };
 
 /**
- * Checks whether an email address already exists in the `students` table.
- * The email is normalised (trimmed + lowercased) before querying.
+ * Normalises the email (trim + lowercase) and returns `true` when the
+ * address is available (no matching record in `students`). Returns `false`
+ * when the email already exists.
  */
 export const isEmailUnique = async (
   supabase: SupabaseLike,

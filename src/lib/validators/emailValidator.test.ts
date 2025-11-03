@@ -24,7 +24,9 @@ const createQueryBuilder = (): MockBuilder => {
   return builder;
 };
 
-const createSupabaseMock = (builder: MockBuilder): SupabaseLike & {
+const createSupabaseMock = (
+  builder: MockBuilder,
+): SupabaseLike & {
   from: jest.Mock<StudentsFilterBuilder, [string]>;
 } => ({
   from: jest.fn().mockReturnValue(builder),
@@ -42,8 +44,7 @@ describe("isEmailUnique", () => {
   it("returns true when no matching email exists", async () => {
     builder.select.mockResolvedValueOnce({ error: null, count: 0 });
 
-    await expect(isEmailUnique(supabase, "Test@Example.com"))
-      .resolves.toBe(true);
+    await expect(isEmailUnique(supabase, "Test@Example.com")).resolves.toBe(true);
 
     expect(supabase.from).toHaveBeenCalledWith("students");
     expect(builder.eq).toHaveBeenCalledWith("email", "test@example.com");
@@ -53,8 +54,7 @@ describe("isEmailUnique", () => {
   it("returns false when email already exists", async () => {
     builder.select.mockResolvedValueOnce({ error: null, count: 1 });
 
-    await expect(isEmailUnique(supabase, "test@example.com"))
-      .resolves.toBe(false);
+    await expect(isEmailUnique(supabase, "test@example.com")).resolves.toBe(false);
   });
 
   it("excludes provided student id from uniqueness check", async () => {
@@ -73,7 +73,8 @@ describe("isEmailUnique", () => {
       count: null,
     });
 
-    await expect(isEmailUnique(supabase, "test@example.com"))
-      .rejects.toThrow("Failed to verify email uniqueness: boom");
+    await expect(isEmailUnique(supabase, "test@example.com")).rejects.toThrow(
+      "Failed to verify email uniqueness: boom",
+    );
   });
 });
