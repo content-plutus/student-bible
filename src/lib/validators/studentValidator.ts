@@ -24,10 +24,7 @@ export const guardianPhoneSchema = z
         VALIDATION_RULES.guardianPhone.minLength,
         `Guardian phone number must be exactly ${VALIDATION_RULES.guardianPhone.minLength} digits`,
       )
-      .regex(
-        VALIDATION_RULES.guardianPhone.pattern,
-        VALIDATION_RULES.guardianPhone.message,
-      ),
+      .regex(VALIDATION_RULES.guardianPhone.pattern, VALIDATION_RULES.guardianPhone.message),
   )
   .optional()
   .nullable();
