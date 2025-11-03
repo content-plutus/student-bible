@@ -18,7 +18,7 @@ describe("studentSchema", () => {
     gender: "Male",
     date_of_birth: "2000-01-01",
     guardian_phone: "9876543211",
-    salutation: "Mr.",
+    salutation: "Mr",
     father_name: "John Sr.",
     mother_name: "Jane Doe",
     aadhar_number: "123456789012",
@@ -127,6 +127,26 @@ describe("studentSchema", () => {
     const result = studentSchema.safeParse(studentWithUpperEmail);
     expect(result.success).toBe(true);
   });
+
+  it("should fallback unknown gender to 'Others'", () => {
+    const parsed = studentSchema.parse({ ...validStudent, gender: "Non-binary" });
+    expect(parsed.gender).toBe("Others");
+  });
+
+  it("should normalize gender casing", () => {
+    const parsed = studentSchema.parse({ ...validStudent, gender: "female" });
+    expect(parsed.gender).toBe("Female");
+  });
+
+  it("should fallback unknown salutation to null", () => {
+    const parsed = studentSchema.parse({ ...validStudent, salutation: "Dr" });
+    expect(parsed.salutation).toBeNull();
+  });
+
+  it("should normalize salutation with trailing period", () => {
+    const parsed = studentSchema.parse({ ...validStudent, salutation: "Ms." });
+    expect(parsed.salutation).toBe("Ms");
+  });
 });
 
 describe("studentInsertSchema", () => {
@@ -138,7 +158,7 @@ describe("studentInsertSchema", () => {
     gender: "Male",
     date_of_birth: "2000-01-01",
     guardian_phone: null,
-    salutation: "Mr.",
+    salutation: "Mr",
     father_name: "John Sr.",
     mother_name: "Jane Doe",
     aadhar_number: "123456789012",

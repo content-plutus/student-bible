@@ -1,4 +1,16 @@
 import { z } from "zod";
+import { createEnumWithFallback } from "./validations";
+
+export const genderValues = ["Male", "Female", "Others"] as const;
+export const salutationValues = ["Mr", "Ms", "Mrs"] as const;
+
+export type Gender = (typeof genderValues)[number];
+export type Salutation = (typeof salutationValues)[number];
+
+const genderSchema = createEnumWithFallback(genderValues, "Others");
+const salutationSchema = createEnumWithFallback(salutationValues, null, {
+  normalize: (value) => value.replace(/\.$/, ""),
+});
 
 export const studentSchema = z
   .object({
@@ -12,14 +24,14 @@ export const studentSchema = z
     email: z.string().email().toLowerCase(),
     first_name: z.string().min(1, "First name is required").trim(),
     last_name: z.string().trim().nullable(),
-    gender: z.string().nullable(),
+    gender: genderSchema.nullable(),
     date_of_birth: z.string().date().nullable(),
     guardian_phone: z
       .string()
       .length(10)
       .regex(/^[6-9][0-9]{9}$/, "Guardian phone must be a valid Indian mobile number")
       .nullable(),
-    salutation: z.string().nullable(),
+    salutation: salutationSchema.nullable(),
     father_name: z.string().trim().nullable(),
     mother_name: z.string().trim().nullable(),
     aadhar_number: z

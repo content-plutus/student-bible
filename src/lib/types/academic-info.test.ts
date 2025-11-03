@@ -83,6 +83,16 @@ describe("academicInfoSchema", () => {
     const result = academicInfoSchema.safeParse(academicInfoWithSpaces);
     expect(result.success).toBe(true);
   });
+
+  it("should fallback unknown stream_12th to 'Other'", () => {
+    const parsed = academicInfoSchema.parse({ ...validAcademicInfo, stream_12th: "Vocational" });
+    expect(parsed.stream_12th).toBe("Other");
+  });
+
+  it("should normalize stream_12th casing", () => {
+    const parsed = academicInfoSchema.parse({ ...validAcademicInfo, stream_12th: "science" });
+    expect(parsed.stream_12th).toBe("Science");
+  });
 });
 
 describe("academicInfoInsertSchema", () => {

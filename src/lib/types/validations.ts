@@ -28,6 +28,43 @@ export const createUpdateSchema = <T extends z.ZodObject<z.ZodRawShape>>(
   return createInsertSchema(schema, omitFields).partial();
 };
 
+type EnumFallbackOptions = {
+  caseInsensitive?: boolean;
+  trim?: boolean;
+  normalize?: (value: string) => string;
+};
+
+export const createEnumWithFallback = <
+  T extends [string, ...string[]],
+  F extends T[number] | null,
+>(values: T, fallback: F, options: EnumFallbackOptions = {}) => {
+  const { caseInsensitive = true, trim = true, normalize } = options;
+  const lookup = new Map<string, T[number]>();
+
+  for (const value of values) {
+    const normalizedValue = normalize ? normalize(value) : value;
+    const key = caseInsensitive ? normalizedValue.toLowerCase() : normalizedValue;
+    lookup.set(key, value);
+  }
+
+  return z.string().transform((input) => {
+    const trimmed = trim ? input.trim() : input;
+    if (!trimmed) {
+      return fallback;
+    }
+
+    const normalizedInput = normalize ? normalize(trimmed) : trimmed;
+    const key = caseInsensitive ? normalizedInput.toLowerCase() : normalizedInput;
+    const match = lookup.get(key);
+
+    if (match) {
+      return match;
+    }
+
+    return fallback;
+  }) as z.ZodEffects<z.ZodString, T[number] | F>;
+};
+
 export const validatePhoneNumber = (phone: string): boolean => {
   return /^[6-9][0-9]{9}$/.test(phone);
 };

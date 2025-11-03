@@ -1,5 +1,6 @@
 import { describe, it, expect } from "@jest/globals";
 import {
+  createEnumWithFallback,
   validatePhoneNumber,
   validateAadharNumber,
   validatePanNumber,
@@ -13,6 +14,35 @@ import {
   normalizeAadharNumber,
   normalizePanNumber,
 } from "./validations";
+
+describe("createEnumWithFallback", () => {
+  const values = ["Alpha", "Beta", "Gamma"] as const;
+
+  it("should return matching value for valid input", () => {
+    const schema = createEnumWithFallback(values, "Alpha");
+    expect(schema.parse("Beta")).toBe("Beta");
+  });
+
+  it("should return fallback for unknown input", () => {
+    const schema = createEnumWithFallback(values, "Alpha");
+    expect(schema.parse("Delta")).toBe("Alpha");
+  });
+
+  it("should handle case-insensitive matches", () => {
+    const schema = createEnumWithFallback(values, "Alpha");
+    expect(schema.parse("gamma")).toBe("Gamma");
+  });
+
+  it("should allow custom normalization", () => {
+    const salutationValues = ["Mr", "Ms", "Mrs"] as const;
+    const schema = createEnumWithFallback(salutationValues, null, {
+      normalize: (value) => value.replace(/\.$/, ""),
+    });
+
+    expect(schema.parse("Mr.")).toBe("Mr");
+    expect(schema.parse("Dr")).toBeNull();
+  });
+});
 
 describe("validatePhoneNumber", () => {
   it("should validate correct Indian phone numbers", () => {

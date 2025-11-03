@@ -1,12 +1,16 @@
 import { z } from "zod";
+import { createEnumWithFallback } from "./validations";
 
-export const certificationStatusEnum = z.enum([
+export const certificationStatusValues = [
   "planned",
   "in_progress",
   "completed",
   "on_hold",
   "dropped",
-]);
+] as const;
+
+export const certificationStatusEnum = z.enum(certificationStatusValues);
+const certificationStatusSchema = createEnumWithFallback(certificationStatusValues, "planned");
 
 export const studentCertificationSchema = z
   .object({
@@ -14,7 +18,7 @@ export const studentCertificationSchema = z
     student_id: z.string().uuid(),
     certification_id: z.string().uuid(),
     enrollment_date: z.string().date().nullable(),
-    status: certificationStatusEnum.default("planned"),
+    status: certificationStatusSchema.default("planned"),
     progress_papers_completed: z.number().int().min(0).default(0),
     total_papers_target: z.number().int().min(0).nullable(),
     batch_code: z.string().trim().nullable().optional(),

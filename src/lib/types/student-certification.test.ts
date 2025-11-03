@@ -142,10 +142,20 @@ describe("studentCertificationSchema", () => {
     expect(result.success).toBe(true);
   });
 
-  it("should reject invalid status", () => {
-    const invalidCertification = { ...validStudentCertification, status: "invalid" };
-    const result = studentCertificationSchema.safeParse(invalidCertification);
-    expect(result.success).toBe(false);
+  it("should fallback invalid status to 'planned'", () => {
+    const parsed = studentCertificationSchema.parse({
+      ...validStudentCertification,
+      status: "invalid" as unknown as typeof validStudentCertification.status,
+    });
+    expect(parsed.status).toBe("planned");
+  });
+
+  it("should normalize status casing", () => {
+    const parsed = studentCertificationSchema.parse({
+      ...validStudentCertification,
+      status: "COMPLETED" as unknown as typeof validStudentCertification.status,
+    });
+    expect(parsed.status).toBe("completed");
   });
 });
 

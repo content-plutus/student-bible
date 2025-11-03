@@ -1,6 +1,10 @@
 import { z } from "zod";
+import { createEnumWithFallback } from "./validations";
 
 const currentYear = new Date().getFullYear();
+export const stream12thValues = ["Commerce", "Arts", "Science", "Other"] as const;
+export type Stream12th = (typeof stream12thValues)[number];
+const stream12thSchema = createEnumWithFallback(stream12thValues, "Other");
 
 export const academicInfoSchema = z.object({
   id: z.string().uuid(),
@@ -15,7 +19,7 @@ export const academicInfoSchema = z.object({
     .min(1950, "Passing year must be 1950 or later")
     .max(currentYear + 5, `Passing year cannot be more than ${currentYear + 5}`)
     .nullable(),
-  stream_12th: z.string().nullable(),
+  stream_12th: stream12thSchema.nullable(),
   grades: z.record(z.string(), z.unknown()).nullable(),
   extra_fields: z.record(z.string(), z.unknown()).default({}),
   created_at: z.string().datetime(),
