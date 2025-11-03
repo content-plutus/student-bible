@@ -21,10 +21,11 @@ export const VALIDATION_RULES = {
 
 export const BATCH_CODE_PATTERNS = {
   "US CMA": {
-    pattern: /^CMA_P\d+_Sec[A-Z]_Batch_\d+_[WE]_[E]$/,
+    pattern:
+      /^CMA_(?:P\d+|PART\d+|[A-Z0-9]{1,10})_(?:(?:Sec[A-Z]_)?Batch|Group)_[0-9]{1,2}_[A-Z](?:_[A-Z])?$/,
     message:
-      "US CMA batch code must follow format: CMA_P{paper}_Sec{section}_Batch_{number}_{W|E}_{E}",
-    example: "CMA_P1_SecA_Batch_7_W_E",
+      "US CMA batch code must follow format: CMA_{identifier}_{Batch|SecX_Batch|Group}_{number}_{suffix}",
+    example: "CMA_PART1_Batch_3_E or CMA_P1_SecA_Batch_7_W_E",
   },
   ACCA: {
     pattern: /^ACCA_\d{4}_Batch_\d+$/,

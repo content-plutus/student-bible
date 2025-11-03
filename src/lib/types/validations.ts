@@ -274,7 +274,9 @@ export const batchCodeWithCertificationSchema = z
       const certificationType = data.certification_type;
 
       if (certificationType === "US CMA") {
-        return /^CMA_P\d+_Sec[A-Z]_Batch_\d+_[WE]_[E]$/.test(batchCode);
+        return /^CMA_(?:P\d+|PART\d+|[A-Z0-9]{1,10})_(?:(?:Sec[A-Z]_)?Batch|Group)_[0-9]{1,2}_[A-Z](?:_[A-Z])?$/.test(
+          batchCode,
+        );
       } else if (certificationType === "ACCA") {
         return /^ACCA_\d{4}_Batch_\d+$/.test(batchCode);
       } else if (certificationType === "CFA") {
@@ -290,7 +292,7 @@ export const batchCodeWithCertificationSchema = z
       if (certificationType === "US CMA") {
         return {
           message:
-            "US CMA batch code must follow format: CMA_P{paper}_Sec{section}_Batch_{number}_{W|E}_{E} (e.g., CMA_P1_SecA_Batch_7_W_E)",
+            "US CMA batch code must follow format: CMA_{identifier}_{Batch|SecX_Batch|Group}_{number}_{suffix} (e.g., CMA_PART1_Batch_3_E or CMA_P1_SecA_Batch_7_W_E)",
           path: ["batch_code"],
         };
       } else if (certificationType === "ACCA") {
