@@ -14,6 +14,44 @@ if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
+/**
+ * Validates the API key from the request header.
+ *
+ * SECURITY NOTE: These endpoints use the service-role key and bypass RLS.
+ * For internal tool use, protect these endpoints with:
+ * - Header-based API key (X-Internal-API-Key) - implemented below
+ * - Infrastructure-level auth (VPN, internal network)
+ * - Session-based auth (NextAuth, etc.) - can be added later
+ *
+ * Set INTERNAL_API_KEY environment variable to enable header-based auth.
+ * If not set, endpoints are unprotected (development only).
+ */
+function validateApiKey(request: NextRequest): NextResponse | null {
+  const apiKey = process.env.INTERNAL_API_KEY;
+
+  if (!apiKey) {
+    console.warn(
+      "WARNING: INTERNAL_API_KEY not set. API endpoints are unprotected. " +
+        "Set INTERNAL_API_KEY environment variable to secure these endpoints.",
+    );
+    return null;
+  }
+
+  const requestApiKey = request.headers.get("X-Internal-API-Key");
+
+  if (!requestApiKey || requestApiKey !== apiKey) {
+    return NextResponse.json(
+      {
+        success: false,
+        error: "Unauthorized. Valid X-Internal-API-Key header required.",
+      },
+      { status: 401 },
+    );
+  }
+
+  return null;
+}
+
 const studentSearchSchema = z
   .object({
     phone_number: z.string().optional(),
@@ -34,6 +72,11 @@ function getSupabaseClient() {
 }
 
 export async function POST(request: NextRequest) {
+  const authError = validateApiKey(request);
+  if (authError) {
+    return authError;
+  }
+
   try {
     const body = await request.json();
     const { studentData, options = {} } = body;
@@ -86,6 +129,11 @@ export async function POST(request: NextRequest) {
 }
 
 export async function PUT(request: NextRequest) {
+  const authError = validateApiKey(request);
+  if (authError) {
+    return authError;
+  }
+
   try {
     const body = await request.json();
     const { studentData, createIfNoDuplicates = false, options = {} } = body;
@@ -184,6 +232,11 @@ export async function PUT(request: NextRequest) {
 }
 
 export async function GET(request: NextRequest) {
+  const authError = validateApiKey(request);
+  if (authError) {
+    return authError;
+  }
+
   try {
     const searchParams = request.nextUrl.searchParams;
     const phone = searchParams.get("phone");

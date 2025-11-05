@@ -1,4 +1,4 @@
-import { SupabaseLike } from "./emailValidator";
+import { SupabaseClient } from "@supabase/supabase-js";
 import {
   calculateNameSimilarity,
   calculateIndianNameSimilarity,
@@ -69,7 +69,7 @@ export class DuplicateDetector {
   }
 
   public async findPotentialDuplicates(
-    supabase: SupabaseLike,
+    supabase: SupabaseClient,
     studentData: StudentInput,
     options: { excludeStudentId?: string } = {},
   ): Promise<DuplicateDetectionResult> {
@@ -98,7 +98,7 @@ export class DuplicateDetector {
   }
 
   private async fetchCandidates(
-    supabase: SupabaseLike,
+    supabase: SupabaseClient,
     studentData: StudentInput,
     options: { excludeStudentId?: string } = {},
   ): Promise<Student[]> {
@@ -192,7 +192,7 @@ export class DuplicateDetector {
   }
 
   private async fetchByPhone(
-    supabase: SupabaseLike,
+    supabase: SupabaseClient,
     phone: string,
     options: { excludeStudentId?: string } = {},
   ): Promise<Student[]> {
@@ -217,7 +217,7 @@ export class DuplicateDetector {
   }
 
   private async fetchByEmail(
-    supabase: SupabaseLike,
+    supabase: SupabaseClient,
     email: string,
     options: { excludeStudentId?: string } = {},
   ): Promise<Student[]> {
@@ -242,7 +242,7 @@ export class DuplicateDetector {
   }
 
   private async fetchByAadhar(
-    supabase: SupabaseLike,
+    supabase: SupabaseClient,
     aadhar: string,
     options: { excludeStudentId?: string } = {},
   ): Promise<Student[]> {
@@ -267,7 +267,7 @@ export class DuplicateDetector {
   }
 
   private async fetchByName(
-    supabase: SupabaseLike,
+    supabase: SupabaseClient,
     firstName?: string,
     lastName?: string,
     options: { excludeStudentId?: string } = {},
@@ -303,7 +303,7 @@ export class DuplicateDetector {
   }
 
   private async fetchByGuardianPhone(
-    supabase: SupabaseLike,
+    supabase: SupabaseClient,
     guardianPhone: string,
     options: { excludeStudentId?: string } = {},
   ): Promise<Student[]> {
@@ -328,7 +328,7 @@ export class DuplicateDetector {
   }
 
   private async fetchByPanNumber(
-    supabase: SupabaseLike,
+    supabase: SupabaseClient,
     panNumber: string,
     options: { excludeStudentId?: string } = {},
   ): Promise<Student[]> {
@@ -353,7 +353,7 @@ export class DuplicateDetector {
   }
 
   private async fetchByDateOfBirth(
-    supabase: SupabaseLike,
+    supabase: SupabaseClient,
     dateOfBirth: string | Date,
     options: { excludeStudentId?: string } = {},
   ): Promise<Student[]> {
@@ -583,7 +583,7 @@ export class DuplicateDetector {
 }
 
 export async function detectDuplicates(
-  supabase: SupabaseLike,
+  supabase: SupabaseClient,
   studentData: StudentInput,
   criteria: MatchingCriteria = DEFAULT_MATCHING_CRITERIA,
   options: { excludeStudentId?: string } = {},
