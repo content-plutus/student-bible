@@ -65,3 +65,48 @@ export type CertificationType = keyof typeof BATCH_CODE_PATTERNS;
 export type ValidationRules = typeof VALIDATION_RULES;
 export type EnumValues = typeof ENUM_VALUES;
 export type EnumDefaults = typeof ENUM_DEFAULTS;
+
+export const DUPLICATE_DETECTION_RULES = {
+  defaultThresholds: {
+    phone_number: 1.0,
+    email: 1.0,
+    first_name: 0.85,
+    last_name: 0.85,
+    full_name: 0.8,
+    aadhar_number: 1.0,
+    date_of_birth: 1.0,
+  },
+  defaultWeights: {
+    phone_number: 1.0,
+    email: 1.0,
+    first_name: 0.6,
+    last_name: 0.4,
+    full_name: 1.0,
+    aadhar_number: 1.0,
+    date_of_birth: 0.8,
+  },
+  confidenceLevels: {
+    high: 0.95,
+    medium: 0.8,
+    low: 0.7,
+  },
+  crossFieldRules: [
+    {
+      fields: ["first_name", "last_name", "date_of_birth"],
+      threshold: 0.9,
+      description: "Same name and date of birth",
+    },
+    {
+      fields: ["phone_number", "first_name"],
+      threshold: 0.85,
+      description: "Same phone and similar name",
+    },
+    {
+      fields: ["email", "first_name"],
+      threshold: 0.85,
+      description: "Same email and similar name",
+    },
+  ],
+} as const;
+
+export type DuplicateDetectionRules = typeof DUPLICATE_DETECTION_RULES;
