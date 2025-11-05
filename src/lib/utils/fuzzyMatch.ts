@@ -1,4 +1,3 @@
-import Fuse from "fuse.js";
 import { distance as levenshteinDistance } from "fastest-levenshtein";
 
 export interface SimilarityScore {
@@ -121,41 +120,6 @@ export function calculateDateSimilarity(date1: string | Date, date2: string | Da
   if (daysDiff <= 365) return 0.3;
 
   return 0;
-}
-
-export interface FuzzySearchOptions {
-  threshold?: number;
-  keys?: string[];
-  includeScore?: boolean;
-  minMatchCharLength?: number;
-  distance?: number;
-}
-
-export function createFuzzySearcher<T>(items: T[], options: FuzzySearchOptions = {}): Fuse<T> {
-  const defaultOptions: Fuse.IFuseOptions<T> = {
-    threshold: options.threshold ?? 0.4,
-    keys: options.keys ?? [],
-    includeScore: options.includeScore ?? true,
-    minMatchCharLength: options.minMatchCharLength ?? 2,
-    distance: options.distance ?? 100,
-    ignoreLocation: true,
-  };
-
-  return new Fuse(items, defaultOptions);
-}
-
-export function fuzzySearch<T>(
-  query: string,
-  items: T[],
-  options: FuzzySearchOptions = {},
-): Array<{ item: T; score: number }> {
-  const fuse = createFuzzySearcher(items, options);
-  const results = fuse.search(query);
-
-  return results.map((result) => ({
-    item: result.item,
-    score: result.score ?? 0,
-  }));
 }
 
 export function calculateAddressSimilarity(address1: string, address2: string): number {

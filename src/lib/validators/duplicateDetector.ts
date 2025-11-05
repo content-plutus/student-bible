@@ -23,6 +23,9 @@ import { Student } from "../types/student";
 
 export const CROSS_FIELD_RULE_THRESHOLD = 0.85;
 
+const CANDIDATE_FIELDS =
+  "id, first_name, last_name, phone_number, email, aadhar_number, date_of_birth, guardian_phone, pan_number";
+
 export interface DuplicateMatch {
   student: Student;
   overallScore: number;
@@ -157,7 +160,7 @@ export class DuplicateDetector {
   ): Promise<Student[]> {
     const normalized = normalizePhoneForMatching(phone);
 
-    let query = supabase.from("students").select("*").eq("phone_number", normalized);
+    let query = supabase.from("students").select(CANDIDATE_FIELDS).eq("phone_number", normalized);
 
     if (options.excludeStudentId) {
       query = query.neq("id", options.excludeStudentId);
@@ -182,7 +185,7 @@ export class DuplicateDetector {
   ): Promise<Student[]> {
     const normalized = normalizeEmailForMatching(email);
 
-    let query = supabase.from("students").select("*").eq("email", normalized);
+    let query = supabase.from("students").select(CANDIDATE_FIELDS).eq("email", normalized);
 
     if (options.excludeStudentId) {
       query = query.neq("id", options.excludeStudentId);
@@ -207,7 +210,7 @@ export class DuplicateDetector {
   ): Promise<Student[]> {
     const normalized = normalizeAadharForMatching(aadhar);
 
-    let query = supabase.from("students").select("*").eq("aadhar_number", normalized);
+    let query = supabase.from("students").select(CANDIDATE_FIELDS).eq("aadhar_number", normalized);
 
     if (options.excludeStudentId) {
       query = query.neq("id", options.excludeStudentId);
@@ -235,15 +238,15 @@ export class DuplicateDetector {
       return [];
     }
 
-    let query = supabase.from("students").select("*");
-
-    if (firstName) {
-      query = query.ilike("first_name", `%${firstName}%`);
+    const searchTerm = this.constructFullName(firstName, lastName).toLowerCase().trim();
+    if (!searchTerm) {
+      return [];
     }
 
-    if (lastName) {
-      query = query.ilike("last_name", `%${lastName}%`);
-    }
+    let query = supabase
+      .from("students")
+      .select(CANDIDATE_FIELDS)
+      .ilike("full_name", `%${searchTerm}%`);
 
     if (options.excludeStudentId) {
       query = query.neq("id", options.excludeStudentId);
