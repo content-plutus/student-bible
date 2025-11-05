@@ -24,7 +24,7 @@ import { Student } from "../types/student";
 export const CROSS_FIELD_RULE_THRESHOLD = 0.85;
 
 const CANDIDATE_FIELDS =
-  "id, first_name, last_name, phone_number, email, aadhar_number, date_of_birth, guardian_phone, pan_number";
+  "id, first_name, last_name, full_name, phone_number, email, aadhar_number, date_of_birth, guardian_phone, pan_number";
 
 export interface DuplicateMatch {
   student: Student;
