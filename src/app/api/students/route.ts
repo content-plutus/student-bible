@@ -11,6 +11,13 @@ if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_
   );
 }
 
+if (process.env.NODE_ENV === "production" && !process.env.INTERNAL_API_KEY) {
+  throw new Error(
+    "INTERNAL_API_KEY is required in production. These endpoints use service-role key and bypass RLS. " +
+      "Set INTERNAL_API_KEY environment variable to secure the /api/students endpoints.",
+  );
+}
+
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
@@ -18,13 +25,13 @@ const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
  * Validates the API key from the request header.
  *
  * SECURITY NOTE: These endpoints use the service-role key and bypass RLS.
- * For internal tool use, protect these endpoints with:
- * - Header-based API key (X-Internal-API-Key) - implemented below
- * - Infrastructure-level auth (VPN, internal network)
- * - Session-based auth (NextAuth, etc.) - can be added later
+ * INTERNAL_API_KEY is REQUIRED in production (enforced at module load).
+ * In non-production environments, if INTERNAL_API_KEY is not set, a warning
+ * is logged but requests are allowed (for development convenience).
  *
- * Set INTERNAL_API_KEY environment variable to enable header-based auth.
- * If not set, endpoints are unprotected (development only).
+ * Additional security layers recommended:
+ * - Infrastructure-level auth (VPN, internal network)
+ * - Session-based auth (NextAuth, etc.)
  */
 function validateApiKey(request: NextRequest): NextResponse | null {
   const apiKey = process.env.INTERNAL_API_KEY;
@@ -32,7 +39,7 @@ function validateApiKey(request: NextRequest): NextResponse | null {
   if (!apiKey) {
     console.warn(
       "WARNING: INTERNAL_API_KEY not set. API endpoints are unprotected. " +
-        "Set INTERNAL_API_KEY environment variable to secure these endpoints.",
+        "This is only allowed in non-production environments.",
     );
     return null;
   }
