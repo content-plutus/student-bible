@@ -150,6 +150,44 @@ export class DuplicateDetector {
       }
     }
 
+    if (studentData.guardian_phone) {
+      const guardianPhoneMatches = await this.fetchByGuardianPhone(
+        supabase,
+        studentData.guardian_phone,
+        options,
+      );
+      for (const match of guardianPhoneMatches) {
+        if (!seenIds.has(match.id)) {
+          candidates.push(match);
+          seenIds.add(match.id);
+        }
+      }
+    }
+
+    if (studentData.pan_number) {
+      const panMatches = await this.fetchByPanNumber(supabase, studentData.pan_number, options);
+      for (const match of panMatches) {
+        if (!seenIds.has(match.id)) {
+          candidates.push(match);
+          seenIds.add(match.id);
+        }
+      }
+    }
+
+    if (studentData.date_of_birth) {
+      const dobMatches = await this.fetchByDateOfBirth(
+        supabase,
+        studentData.date_of_birth,
+        options,
+      );
+      for (const match of dobMatches) {
+        if (!seenIds.has(match.id)) {
+          candidates.push(match);
+          seenIds.add(match.id);
+        }
+      }
+    }
+
     return candidates;
   }
 
@@ -262,6 +300,89 @@ export class DuplicateDetector {
     }
 
     return (data as Student[]) || [];
+  }
+
+  private async fetchByGuardianPhone(
+    supabase: SupabaseLike,
+    guardianPhone: string,
+    options: { excludeStudentId?: string } = {},
+  ): Promise<Student[]> {
+    const normalized = normalizePhoneForMatching(guardianPhone);
+
+    let query = supabase.from("students").select(CANDIDATE_FIELDS).eq("guardian_phone", normalized);
+
+    if (options.excludeStudentId) {
+      query = query.neq("id", options.excludeStudentId);
+    }
+
+    query = query.limit(100);
+
+    const { data, error } = await query;
+
+    if (error) {
+      console.error("Error fetching by guardian phone:", error);
+      throw new Error(`Database error fetching by guardian phone: ${error.message}`);
+    }
+
+    return (data as Student[]) || [];
+  }
+
+  private async fetchByPanNumber(
+    supabase: SupabaseLike,
+    panNumber: string,
+    options: { excludeStudentId?: string } = {},
+  ): Promise<Student[]> {
+    const normalized = panNumber.toUpperCase().trim();
+
+    let query = supabase.from("students").select(CANDIDATE_FIELDS).eq("pan_number", normalized);
+
+    if (options.excludeStudentId) {
+      query = query.neq("id", options.excludeStudentId);
+    }
+
+    query = query.limit(100);
+
+    const { data, error } = await query;
+
+    if (error) {
+      console.error("Error fetching by PAN number:", error);
+      throw new Error(`Database error fetching by PAN number: ${error.message}`);
+    }
+
+    return (data as Student[]) || [];
+  }
+
+  private async fetchByDateOfBirth(
+    supabase: SupabaseLike,
+    dateOfBirth: string | Date,
+    options: { excludeStudentId?: string } = {},
+  ): Promise<Student[]> {
+    const normalized = this.normalizeDateForMatching(dateOfBirth);
+
+    let query = supabase.from("students").select(CANDIDATE_FIELDS).eq("date_of_birth", normalized);
+
+    if (options.excludeStudentId) {
+      query = query.neq("id", options.excludeStudentId);
+    }
+
+    query = query.limit(100);
+
+    const { data, error } = await query;
+
+    if (error) {
+      console.error("Error fetching by date of birth:", error);
+      throw new Error(`Database error fetching by date of birth: ${error.message}`);
+    }
+
+    return (data as Student[]) || [];
+  }
+
+  private normalizeDateForMatching(date: string | Date): string {
+    if (typeof date === "string") {
+      const parsed = new Date(date);
+      return parsed.toISOString().slice(0, 10);
+    }
+    return date.toISOString().slice(0, 10);
   }
 
   private evaluateCandidate(studentData: StudentInput, candidate: Student): DuplicateMatch | null {
