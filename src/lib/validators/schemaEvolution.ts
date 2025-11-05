@@ -299,7 +299,6 @@ export const buildSchemaRegistry = (): SchemaRegistry => {
     dataType: "string",
     validation: batchCodeSchema,
     targetColumn: "extra_fields",
-    usageFrequency: 85,
     description: "Batch code for student certification enrollment",
     examples: ["ACCA_2024_Batch_5", "CMA_PART1_Batch_3_E"],
   });
@@ -309,7 +308,6 @@ export const buildSchemaRegistry = (): SchemaRegistry => {
     dataType: "string",
     validation: mentorIdSchema,
     targetColumn: "extra_fields",
-    usageFrequency: 70,
     description: "Unique identifier for assigned mentor",
     examples: ["MENTOR_001", "MENTOR_042"],
   });
@@ -319,7 +317,6 @@ export const buildSchemaRegistry = (): SchemaRegistry => {
     dataType: "string",
     validation: preferredContactTimeSchema,
     targetColumn: "extra_fields",
-    usageFrequency: 45,
     description: "Student's preferred time for contact",
     examples: ["Morning (9AM-12PM)", "Evening (6PM-9PM)"],
   });
@@ -329,7 +326,6 @@ export const buildSchemaRegistry = (): SchemaRegistry => {
     dataType: "string",
     validation: deliveryInstructionsSchema,
     targetColumn: "additional_data",
-    usageFrequency: 60,
     description: "Special instructions for book delivery",
     examples: ["Leave at gate", "Call before delivery"],
   });
@@ -339,7 +335,6 @@ export const buildSchemaRegistry = (): SchemaRegistry => {
     dataType: "string",
     validation: landmarkDetailsSchema,
     targetColumn: "additional_data",
-    usageFrequency: 75,
     description: "Detailed landmark information for address",
     examples: ["Near City Mall", "Opposite Metro Station"],
   });
@@ -349,7 +344,6 @@ export const buildSchemaRegistry = (): SchemaRegistry => {
     dataType: "object",
     validation: mockPerformanceSchema,
     targetColumn: "metadata",
-    usageFrequency: 55,
     description: "Performance data from mock exams",
     examples: [{ score: 85, rank: 12, percentile: 92.5 }],
   });
@@ -359,7 +353,6 @@ export const buildSchemaRegistry = (): SchemaRegistry => {
     dataType: "string",
     validation: examFeedbackSchema,
     targetColumn: "metadata",
-    usageFrequency: 40,
     description: "Feedback provided after exam attempt",
     examples: ["Good performance overall", "Needs improvement in theory"],
   });
@@ -369,7 +362,6 @@ export const buildSchemaRegistry = (): SchemaRegistry => {
     dataType: "number",
     validation: attentionScoreSchema,
     targetColumn: "extra_metrics",
-    usageFrequency: 65,
     description: "Student attention level during session (0-10)",
     examples: [8, 9, 7],
   });
@@ -379,7 +371,6 @@ export const buildSchemaRegistry = (): SchemaRegistry => {
     dataType: "number",
     validation: questionCountSchema,
     targetColumn: "extra_metrics",
-    usageFrequency: 50,
     description: "Number of questions asked during session",
     examples: [3, 5, 0],
   });
@@ -389,7 +380,6 @@ export const buildSchemaRegistry = (): SchemaRegistry => {
     dataType: "string",
     validation: participationNotesSchema,
     targetColumn: "extra_metrics",
-    usageFrequency: 55,
     description: "Notes about student participation",
     examples: ["Very active", "Asked insightful questions"],
   });
@@ -399,7 +389,6 @@ export const buildSchemaRegistry = (): SchemaRegistry => {
     dataType: "object",
     validation: scoreBreakdownSchema,
     targetColumn: "analysis_data",
-    usageFrequency: 70,
     description: "Detailed breakdown of test scores",
     examples: [{ theory: 45, practical: 40, total: 85 }],
   });
@@ -409,7 +398,6 @@ export const buildSchemaRegistry = (): SchemaRegistry => {
     dataType: "array",
     validation: weakAreasSchema,
     targetColumn: "analysis_data",
-    usageFrequency: 60,
     description: "Topics where student needs improvement",
     examples: [["Financial Accounting", "Cost Management"]],
   });
@@ -419,7 +407,6 @@ export const buildSchemaRegistry = (): SchemaRegistry => {
     dataType: "array",
     validation: strongAreasSchema,
     targetColumn: "analysis_data",
-    usageFrequency: 60,
     description: "Topics where student excels",
     examples: [["Taxation", "Audit"]],
   });
