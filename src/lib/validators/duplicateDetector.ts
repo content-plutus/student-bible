@@ -21,6 +21,8 @@ import {
 } from "./matchingRules";
 import { Student } from "../types/student";
 
+export const CROSS_FIELD_RULE_THRESHOLD = 0.85;
+
 export interface DuplicateMatch {
   student: Student;
   overallScore: number;
@@ -161,11 +163,13 @@ export class DuplicateDetector {
       query = query.neq("id", options.excludeStudentId);
     }
 
+    query = query.limit(100);
+
     const { data, error } = await query;
 
     if (error) {
       console.error("Error fetching by phone:", error);
-      return [];
+      throw new Error(`Database error fetching by phone: ${error.message}`);
     }
 
     return (data as Student[]) || [];
@@ -184,11 +188,13 @@ export class DuplicateDetector {
       query = query.neq("id", options.excludeStudentId);
     }
 
+    query = query.limit(100);
+
     const { data, error } = await query;
 
     if (error) {
       console.error("Error fetching by email:", error);
-      return [];
+      throw new Error(`Database error fetching by email: ${error.message}`);
     }
 
     return (data as Student[]) || [];
@@ -207,11 +213,13 @@ export class DuplicateDetector {
       query = query.neq("id", options.excludeStudentId);
     }
 
+    query = query.limit(100);
+
     const { data, error } = await query;
 
     if (error) {
       console.error("Error fetching by aadhar:", error);
-      return [];
+      throw new Error(`Database error fetching by aadhar: ${error.message}`);
     }
 
     return (data as Student[]) || [];
@@ -241,11 +249,13 @@ export class DuplicateDetector {
       query = query.neq("id", options.excludeStudentId);
     }
 
+    query = query.limit(100);
+
     const { data, error } = await query;
 
     if (error) {
       console.error("Error fetching by name:", error);
-      return [];
+      throw new Error(`Database error fetching by name: ${error.message}`);
     }
 
     return (data as Student[]) || [];
@@ -424,7 +434,7 @@ export class DuplicateDetector {
 
       for (const field of rule.fields) {
         const fieldScore = fieldScores.find((s) => s.field === field);
-        if (fieldScore && fieldScore.score >= 0.85) {
+        if (fieldScore && fieldScore.score >= CROSS_FIELD_RULE_THRESHOLD) {
           matchCount++;
         }
       }

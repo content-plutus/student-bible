@@ -5,13 +5,31 @@ import { DEFAULT_MATCHING_CRITERIA, getPreset } from "@/lib/validators/matchingR
 import { studentInsertSchema } from "@/lib/types/student";
 import { z } from "zod";
 
+if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+  throw new Error(
+    "Missing required Supabase environment variables: NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set",
+  );
+}
+
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
+const studentSearchSchema = z
+  .object({
+    phone_number: z.string().optional(),
+    email: z.string().email().optional(),
+    first_name: z.string().optional(),
+    last_name: z.string().optional(),
+    date_of_birth: z.union([z.string(), z.date()]).optional(),
+    aadhar_number: z.string().optional(),
+    guardian_phone: z.string().optional(),
+    pan_number: z.string().optional(),
+  })
+  .refine((data) => Object.values(data).some((v) => v !== undefined && v !== null), {
+    message: "At least one field must be provided for duplicate detection",
+  });
+
 function getSupabaseClient() {
-  if (!supabaseUrl || !supabaseServiceKey) {
-    throw new Error("Missing Supabase environment variables");
-  }
   return createClient(supabaseUrl, supabaseServiceKey);
 }
 
@@ -30,13 +48,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const validatedData = studentSearchSchema.parse(studentData);
+
     const supabase = getSupabaseClient();
 
     const criteria = options.preset
       ? getPreset(options.preset)?.criteria || DEFAULT_MATCHING_CRITERIA
       : options.criteria || DEFAULT_MATCHING_CRITERIA;
 
-    const result = await detectDuplicates(supabase, studentData, criteria, {
+    const result = await detectDuplicates(supabase, validatedData, criteria, {
       excludeStudentId: options.excludeStudentId,
     });
 
@@ -45,6 +65,15 @@ export async function POST(request: NextRequest) {
       result,
     });
   } catch (error) {
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: `Validation error: ${error.errors.map((e) => `${e.path.join(".")}: ${e.message}`).join(", ")}`,
+        },
+        { status: 400 },
+      );
+    }
     console.error("Error detecting duplicates:", error);
     return NextResponse.json(
       {
@@ -71,13 +100,15 @@ export async function PUT(request: NextRequest) {
       );
     }
 
+    const validatedSearchData = studentSearchSchema.parse(studentData);
+
     const supabase = getSupabaseClient();
 
     const criteria = options.preset
       ? getPreset(options.preset)?.criteria || DEFAULT_MATCHING_CRITERIA
       : options.criteria || DEFAULT_MATCHING_CRITERIA;
 
-    const result = await detectDuplicates(supabase, studentData, criteria, {
+    const result = await detectDuplicates(supabase, validatedSearchData, criteria, {
       excludeStudentId: options.excludeStudentId,
     });
 
@@ -132,6 +163,15 @@ export async function PUT(request: NextRequest) {
         : "No duplicates found but createIfNoDuplicates was false.",
     });
   } catch (error) {
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: `Validation error: ${error.errors.map((e) => `${e.path.join(".")}: ${e.message}`).join(", ")}`,
+        },
+        { status: 400 },
+      );
+    }
     console.error("Error in student creation with duplicate check:", error);
     return NextResponse.json(
       {

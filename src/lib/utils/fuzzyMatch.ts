@@ -1,4 +1,5 @@
 import Fuse from "fuse.js";
+import { distance as levenshteinDistance } from "fastest-levenshtein";
 
 export interface SimilarityScore {
   score: number;
@@ -7,35 +8,7 @@ export interface SimilarityScore {
   value2: string;
 }
 
-export function calculateLevenshteinDistance(str1: string, str2: string): number {
-  const len1 = str1.length;
-  const len2 = str2.length;
-  const matrix: number[][] = [];
-
-  if (len1 === 0) return len2;
-  if (len2 === 0) return len1;
-
-  for (let i = 0; i <= len1; i++) {
-    matrix[i] = [i];
-  }
-
-  for (let j = 0; j <= len2; j++) {
-    matrix[0][j] = j;
-  }
-
-  for (let i = 1; i <= len1; i++) {
-    for (let j = 1; j <= len2; j++) {
-      const cost = str1[i - 1] === str2[j - 1] ? 0 : 1;
-      matrix[i][j] = Math.min(
-        matrix[i - 1][j] + 1,
-        matrix[i][j - 1] + 1,
-        matrix[i - 1][j - 1] + cost,
-      );
-    }
-  }
-
-  return matrix[len1][len2];
-}
+export const NAME_LENGTH_PENALTY_FACTOR = 0.1;
 
 export function calculateStringSimilarity(str1: string, str2: string): number {
   if (!str1 || !str2) return 0;
@@ -45,7 +18,7 @@ export function calculateStringSimilarity(str1: string, str2: string): number {
 
   if (s1 === s2) return 1;
 
-  const distance = calculateLevenshteinDistance(s1, s2);
+  const distance = levenshteinDistance(s1, s2);
   const maxLength = Math.max(s1.length, s2.length);
 
   return 1 - distance / maxLength;
@@ -87,7 +60,7 @@ export function calculateNameSimilarity(name1: string, name2: string): number {
 
   const avgSimilarity = totalSimilarity / matchCount;
 
-  const lengthPenalty = Math.abs(words1.length - words2.length) * 0.1;
+  const lengthPenalty = Math.abs(words1.length - words2.length) * NAME_LENGTH_PENALTY_FACTOR;
 
   return Math.max(0, avgSimilarity - lengthPenalty);
 }
