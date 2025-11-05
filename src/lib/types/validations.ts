@@ -269,3 +269,147 @@ export const batchCodePartialSchema = batchCodeWithCertificationSchema.partial()
 
 export type CertificationType = z.infer<typeof certificationTypeSchema>;
 export type BatchCodeWithCertification = z.infer<typeof batchCodeWithCertificationSchema>;
+
+export const mentorIdSchema = z
+  .string()
+  .trim()
+  .min(1, "Mentor ID cannot be empty")
+  .nullable()
+  .optional();
+
+export const preferredContactTimeSchema = z
+  .string()
+  .trim()
+  .min(1, "Preferred contact time cannot be empty")
+  .nullable()
+  .optional();
+
+export const deliveryInstructionsSchema = z
+  .string()
+  .trim()
+  .min(1, "Delivery instructions cannot be empty")
+  .nullable()
+  .optional();
+
+export const landmarkDetailsSchema = z
+  .string()
+  .trim()
+  .min(1, "Landmark details cannot be empty")
+  .nullable()
+  .optional();
+
+export const mockPerformanceSchema = z
+  .object({
+    score: z.number().min(0).max(100).nullable().optional(),
+    rank: z.number().int().positive().nullable().optional(),
+    percentile: z.number().min(0).max(100).nullable().optional(),
+    feedback: z.string().trim().nullable().optional(),
+  })
+  .nullable()
+  .optional();
+
+export const examFeedbackSchema = z
+  .string()
+  .trim()
+  .min(1, "Exam feedback cannot be empty")
+  .nullable()
+  .optional();
+
+export const participationNotesSchema = z
+  .string()
+  .trim()
+  .min(1, "Participation notes cannot be empty")
+  .nullable()
+  .optional();
+
+export const attentionScoreSchema = z
+  .number()
+  .int()
+  .min(0, "Attention score must be between 0 and 10")
+  .max(10, "Attention score must be between 0 and 10")
+  .nullable()
+  .optional();
+
+export const questionCountSchema = z
+  .number()
+  .int()
+  .min(0, "Question count must be non-negative")
+  .nullable()
+  .optional();
+
+export const scoreBreakdownSchema = z
+  .object({
+    theory: z.number().min(0).nullable().optional(),
+    practical: z.number().min(0).nullable().optional(),
+    total: z.number().min(0).nullable().optional(),
+  })
+  .nullable()
+  .optional();
+
+export const weakAreasSchema = z.array(z.string().trim().min(1)).nullable().optional();
+
+export const strongAreasSchema = z.array(z.string().trim().min(1)).nullable().optional();
+
+export const studentExtraFieldsSchema = z.object({
+  batch_code: batchCodeSchema,
+  mentor_id: mentorIdSchema,
+  preferred_contact_time: preferredContactTimeSchema,
+});
+
+export const addressAdditionalDataSchema = z.object({
+  delivery_instructions: deliveryInstructionsSchema,
+  landmark_details: landmarkDetailsSchema,
+});
+
+export const certificationCustomFieldsSchema = z.object({
+  batch_code: batchCodeSchema,
+  mentor_id: mentorIdSchema,
+  projected_completion_date: z.string().nullable().optional(),
+  enrollment_notes: z.string().trim().nullable().optional(),
+});
+
+export const examAttemptMetadataSchema = z.object({
+  mock_performance: mockPerformanceSchema,
+  exam_feedback: examFeedbackSchema,
+  attempt_number: z.number().int().positive().nullable().optional(),
+  exam_center: z.string().trim().nullable().optional(),
+});
+
+export const attendanceExtraMetricsSchema = z.object({
+  attention_score: attentionScoreSchema,
+  question_count: questionCountSchema,
+  participation_notes: participationNotesSchema,
+  late_by_minutes: z.number().int().min(0).nullable().optional(),
+});
+
+export const testScoreAnalysisDataSchema = z.object({
+  score_breakdown: scoreBreakdownSchema,
+  weak_areas: weakAreasSchema,
+  strong_areas: strongAreasSchema,
+  percentile: z.number().min(0).max(100).nullable().optional(),
+});
+
+export const academicInfoExtraFieldsSchema = z.object({
+  scholarship_details: z.string().trim().nullable().optional(),
+  extracurricular_activities: z.array(z.string().trim()).nullable().optional(),
+  academic_awards: z.array(z.string().trim()).nullable().optional(),
+});
+
+export const formSubmissionRawDataSchema = z.record(z.unknown());
+
+export const studentExtraFieldsPartialSchema = studentExtraFieldsSchema.partial();
+export const addressAdditionalDataPartialSchema = addressAdditionalDataSchema.partial();
+export const certificationCustomFieldsPartialSchema = certificationCustomFieldsSchema.partial();
+export const examAttemptMetadataPartialSchema = examAttemptMetadataSchema.partial();
+export const attendanceExtraMetricsPartialSchema = attendanceExtraMetricsSchema.partial();
+export const testScoreAnalysisDataPartialSchema = testScoreAnalysisDataSchema.partial();
+export const academicInfoExtraFieldsPartialSchema = academicInfoExtraFieldsSchema.partial();
+
+export type StudentExtraFields = z.infer<typeof studentExtraFieldsSchema>;
+export type AddressAdditionalData = z.infer<typeof addressAdditionalDataSchema>;
+export type CertificationCustomFields = z.infer<typeof certificationCustomFieldsSchema>;
+export type ExamAttemptMetadata = z.infer<typeof examAttemptMetadataSchema>;
+export type AttendanceExtraMetrics = z.infer<typeof attendanceExtraMetricsSchema>;
+export type TestScoreAnalysisData = z.infer<typeof testScoreAnalysisDataSchema>;
+export type AcademicInfoExtraFields = z.infer<typeof academicInfoExtraFieldsSchema>;
+export type FormSubmissionRawData = z.infer<typeof formSubmissionRawDataSchema>;

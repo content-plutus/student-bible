@@ -427,3 +427,16 @@ export const validateBatchCodeFromExtraFields = (
 
   return getBatchCodeValidationError(batchCode, certificationType);
 };
+
+export {
+  validateStudentExtraFields,
+  validateAddressAdditionalData,
+  validateCertificationCustomFields,
+  validateExamAttemptMetadata,
+  validateAttendanceExtraMetrics,
+  validateTestScoreAnalysisData,
+  getSchemaRegistry,
+  lookupFieldSchema,
+  getFieldsByTargetColumn,
+  getHighFrequencyFields,
+} from "./schemaEvolution";

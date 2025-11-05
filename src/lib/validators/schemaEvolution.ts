@@ -1,5 +1,29 @@
 import { z } from "zod";
 import { BATCH_CODE_PATTERNS, CertificationType } from "./rules";
+import {
+  JSONBFieldSchema,
+  SchemaRegistry,
+  ValidationResult,
+  ValidationError,
+  ValidationWarning,
+  JSONBValidationContext,
+  JSONBColumnName,
+} from "../types/schema-registry";
+import {
+  batchCodeSchema,
+  mentorIdSchema,
+  preferredContactTimeSchema,
+  deliveryInstructionsSchema,
+  landmarkDetailsSchema,
+  mockPerformanceSchema,
+  examFeedbackSchema,
+  participationNotesSchema,
+  attentionScoreSchema,
+  questionCountSchema,
+  scoreBreakdownSchema,
+  weakAreasSchema,
+  strongAreasSchema,
+} from "../types/validations";
 
 export interface JsonbValidationResult<T = unknown> {
   success: boolean;
@@ -263,4 +287,381 @@ export const stripNullValuesFromExtraFields = (
   }
 
   return result;
+};
+
+let schemaRegistryInstance: SchemaRegistry | null = null;
+
+export const buildSchemaRegistry = (): SchemaRegistry => {
+  const registry: SchemaRegistry = new Map();
+
+  registry.set("batch_code", {
+    fieldName: "batch_code",
+    dataType: "string",
+    validation: batchCodeSchema,
+    targetColumn: "extra_fields",
+    usageFrequency: 85,
+    description: "Batch code for student certification enrollment",
+    examples: ["ACCA_2024_Batch_5", "CMA_PART1_Batch_3_E"],
+  });
+
+  registry.set("mentor_id", {
+    fieldName: "mentor_id",
+    dataType: "string",
+    validation: mentorIdSchema,
+    targetColumn: "extra_fields",
+    usageFrequency: 70,
+    description: "Unique identifier for assigned mentor",
+    examples: ["MENTOR_001", "MENTOR_042"],
+  });
+
+  registry.set("preferred_contact_time", {
+    fieldName: "preferred_contact_time",
+    dataType: "string",
+    validation: preferredContactTimeSchema,
+    targetColumn: "extra_fields",
+    usageFrequency: 45,
+    description: "Student's preferred time for contact",
+    examples: ["Morning (9AM-12PM)", "Evening (6PM-9PM)"],
+  });
+
+  registry.set("delivery_instructions", {
+    fieldName: "delivery_instructions",
+    dataType: "string",
+    validation: deliveryInstructionsSchema,
+    targetColumn: "additional_data",
+    usageFrequency: 60,
+    description: "Special instructions for book delivery",
+    examples: ["Leave at gate", "Call before delivery"],
+  });
+
+  registry.set("landmark_details", {
+    fieldName: "landmark_details",
+    dataType: "string",
+    validation: landmarkDetailsSchema,
+    targetColumn: "additional_data",
+    usageFrequency: 75,
+    description: "Detailed landmark information for address",
+    examples: ["Near City Mall", "Opposite Metro Station"],
+  });
+
+  registry.set("mock_performance", {
+    fieldName: "mock_performance",
+    dataType: "object",
+    validation: mockPerformanceSchema,
+    targetColumn: "metadata",
+    usageFrequency: 55,
+    description: "Performance data from mock exams",
+    examples: [{ score: 85, rank: 12, percentile: 92.5 }],
+  });
+
+  registry.set("exam_feedback", {
+    fieldName: "exam_feedback",
+    dataType: "string",
+    validation: examFeedbackSchema,
+    targetColumn: "metadata",
+    usageFrequency: 40,
+    description: "Feedback provided after exam attempt",
+    examples: ["Good performance overall", "Needs improvement in theory"],
+  });
+
+  registry.set("attention_score", {
+    fieldName: "attention_score",
+    dataType: "number",
+    validation: attentionScoreSchema,
+    targetColumn: "extra_metrics",
+    usageFrequency: 65,
+    description: "Student attention level during session (0-10)",
+    examples: [8, 9, 7],
+  });
+
+  registry.set("question_count", {
+    fieldName: "question_count",
+    dataType: "number",
+    validation: questionCountSchema,
+    targetColumn: "extra_metrics",
+    usageFrequency: 50,
+    description: "Number of questions asked during session",
+    examples: [3, 5, 0],
+  });
+
+  registry.set("participation_notes", {
+    fieldName: "participation_notes",
+    dataType: "string",
+    validation: participationNotesSchema,
+    targetColumn: "extra_metrics",
+    usageFrequency: 55,
+    description: "Notes about student participation",
+    examples: ["Very active", "Asked insightful questions"],
+  });
+
+  registry.set("score_breakdown", {
+    fieldName: "score_breakdown",
+    dataType: "object",
+    validation: scoreBreakdownSchema,
+    targetColumn: "analysis_data",
+    usageFrequency: 70,
+    description: "Detailed breakdown of test scores",
+    examples: [{ theory: 45, practical: 40, total: 85 }],
+  });
+
+  registry.set("weak_areas", {
+    fieldName: "weak_areas",
+    dataType: "array",
+    validation: weakAreasSchema,
+    targetColumn: "analysis_data",
+    usageFrequency: 60,
+    description: "Topics where student needs improvement",
+    examples: [["Financial Accounting", "Cost Management"]],
+  });
+
+  registry.set("strong_areas", {
+    fieldName: "strong_areas",
+    dataType: "array",
+    validation: strongAreasSchema,
+    targetColumn: "analysis_data",
+    usageFrequency: 60,
+    description: "Topics where student excels",
+    examples: [["Taxation", "Audit"]],
+  });
+
+  return registry;
+};
+
+export const getSchemaRegistry = (): SchemaRegistry => {
+  if (!schemaRegistryInstance) {
+    schemaRegistryInstance = buildSchemaRegistry();
+  }
+  return schemaRegistryInstance;
+};
+
+export const lookupFieldSchema = (fieldName: string): JSONBFieldSchema | undefined => {
+  const registry = getSchemaRegistry();
+  return registry.get(fieldName);
+};
+
+export const getFieldsByTargetColumn = (targetColumn: JSONBColumnName): JSONBFieldSchema[] => {
+  const registry = getSchemaRegistry();
+  const fields: JSONBFieldSchema[] = [];
+
+  for (const [, schema] of registry) {
+    if (schema.targetColumn === targetColumn) {
+      fields.push(schema);
+    }
+  }
+
+  return fields;
+};
+
+export const getHighFrequencyFields = (threshold: number = 20): JSONBFieldSchema[] => {
+  const registry = getSchemaRegistry();
+  const fields: JSONBFieldSchema[] = [];
+
+  for (const [, schema] of registry) {
+    if (schema.usageFrequency && schema.usageFrequency >= threshold) {
+      fields.push(schema);
+    }
+  }
+
+  return fields.sort((a, b) => (b.usageFrequency || 0) - (a.usageFrequency || 0));
+};
+
+export const validateJsonbData = (
+  data: Record<string, unknown>,
+  context: JSONBValidationContext,
+): ValidationResult => {
+  const errors: ValidationError[] = [];
+  const warnings: ValidationWarning[] = [];
+  const validatedData: Record<string, unknown> = {};
+
+  const allowUnknownFields = context.allowUnknownFields ?? true;
+  const strictMode = context.strictMode ?? false;
+
+  for (const [fieldName, value] of Object.entries(data)) {
+    const fieldSchema = lookupFieldSchema(fieldName);
+
+    if (!fieldSchema) {
+      if (allowUnknownFields) {
+        warnings.push({
+          field: fieldName,
+          message: `Unknown field "${fieldName}" - not in schema registry`,
+          code: "UNKNOWN_FIELD",
+        });
+        validatedData[fieldName] = value;
+      } else if (strictMode) {
+        errors.push({
+          field: fieldName,
+          message: `Unknown field "${fieldName}" is not allowed in strict mode`,
+          code: "UNKNOWN_FIELD_STRICT",
+        });
+      } else {
+        validatedData[fieldName] = value;
+      }
+      continue;
+    }
+
+    if (fieldSchema.targetColumn !== context.targetColumn) {
+      warnings.push({
+        field: fieldName,
+        message: `Field "${fieldName}" belongs to column "${fieldSchema.targetColumn}" but is being validated for "${context.targetColumn}"`,
+        code: "WRONG_TARGET_COLUMN",
+      });
+    }
+
+    const validationResult = fieldSchema.validation.safeParse(value);
+
+    if (validationResult.success) {
+      validatedData[fieldName] = validationResult.data;
+    } else {
+      const errorMessage = validationResult.error.issues[0]?.message || "Validation failed";
+      errors.push({
+        field: fieldName,
+        message: errorMessage,
+        code: "VALIDATION_FAILED",
+      });
+    }
+  }
+
+  if (errors.length > 0) {
+    return {
+      success: false,
+      errors,
+      warnings: warnings.length > 0 ? warnings : undefined,
+    };
+  }
+
+  return {
+    success: true,
+    data: validatedData,
+    warnings: warnings.length > 0 ? warnings : undefined,
+  };
+};
+
+export const validateStudentExtraFields = (data: unknown): ValidationResult => {
+  if (typeof data !== "object" || data === null) {
+    return {
+      success: false,
+      errors: [
+        {
+          field: "extra_fields",
+          message: "Extra fields must be an object",
+          code: "INVALID_TYPE",
+        },
+      ],
+    };
+  }
+
+  return validateJsonbData(data as Record<string, unknown>, {
+    targetColumn: "extra_fields",
+    allowUnknownFields: true,
+    strictMode: false,
+  });
+};
+
+export const validateAddressAdditionalData = (data: unknown): ValidationResult => {
+  if (typeof data !== "object" || data === null) {
+    return {
+      success: false,
+      errors: [
+        {
+          field: "additional_data",
+          message: "Additional data must be an object",
+          code: "INVALID_TYPE",
+        },
+      ],
+    };
+  }
+
+  return validateJsonbData(data as Record<string, unknown>, {
+    targetColumn: "additional_data",
+    allowUnknownFields: true,
+    strictMode: false,
+  });
+};
+
+export const validateCertificationCustomFields = (
+  data: unknown,
+  certificationType?: string | null,
+): ValidationResult => {
+  if (typeof data !== "object" || data === null) {
+    return {
+      success: false,
+      errors: [
+        {
+          field: "custom_fields",
+          message: "Custom fields must be an object",
+          code: "INVALID_TYPE",
+        },
+      ],
+    };
+  }
+
+  return validateJsonbData(data as Record<string, unknown>, {
+    targetColumn: "custom_fields",
+    allowUnknownFields: true,
+    strictMode: false,
+    certificationType,
+  });
+};
+
+export const validateExamAttemptMetadata = (data: unknown): ValidationResult => {
+  if (typeof data !== "object" || data === null) {
+    return {
+      success: false,
+      errors: [
+        {
+          field: "metadata",
+          message: "Metadata must be an object",
+          code: "INVALID_TYPE",
+        },
+      ],
+    };
+  }
+
+  return validateJsonbData(data as Record<string, unknown>, {
+    targetColumn: "metadata",
+    allowUnknownFields: true,
+    strictMode: false,
+  });
+};
+
+export const validateAttendanceExtraMetrics = (data: unknown): ValidationResult => {
+  if (typeof data !== "object" || data === null) {
+    return {
+      success: false,
+      errors: [
+        {
+          field: "extra_metrics",
+          message: "Extra metrics must be an object",
+          code: "INVALID_TYPE",
+        },
+      ],
+    };
+  }
+
+  return validateJsonbData(data as Record<string, unknown>, {
+    targetColumn: "extra_metrics",
+    allowUnknownFields: true,
+    strictMode: false,
+  });
+};
+
+export const validateTestScoreAnalysisData = (data: unknown): ValidationResult => {
+  if (typeof data !== "object" || data === null) {
+    return {
+      success: false,
+      errors: [
+        {
+          field: "analysis_data",
+          message: "Analysis data must be an object",
+          code: "INVALID_TYPE",
+        },
+      ],
+    };
+  }
+
+  return validateJsonbData(data as Record<string, unknown>, {
+    targetColumn: "analysis_data",
+    allowUnknownFields: true,
+    strictMode: false,
+  });
 };
