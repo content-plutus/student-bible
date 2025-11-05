@@ -102,7 +102,11 @@ describe("Validation Middleware", () => {
       const schema = z
         .object({
           phone_number: z.string().regex(/^[6-9][0-9]{9}$/),
-          guardian_phone: z.string().regex(/^[6-9][0-9]{9}$/).optional().nullable(),
+          guardian_phone: z
+            .string()
+            .regex(/^[6-9][0-9]{9}$/)
+            .optional()
+            .nullable(),
         })
         .refine((data) => !data.guardian_phone || data.guardian_phone !== data.phone_number, {
           message: "Guardian phone number must be different from student's phone number",
@@ -135,7 +139,11 @@ describe("Validation Middleware", () => {
       const schema = z
         .object({
           phone_number: z.string().regex(/^[6-9][0-9]{9}$/),
-          guardian_phone: z.string().regex(/^[6-9][0-9]{9}$/).optional().nullable(),
+          guardian_phone: z
+            .string()
+            .regex(/^[6-9][0-9]{9}$/)
+            .optional()
+            .nullable(),
         })
         .refine((data) => !data.guardian_phone || data.guardian_phone !== data.phone_number, {
           message: "Guardian phone number must be different from student's phone number",
@@ -214,7 +222,10 @@ describe("Validation Middleware", () => {
     it("should parse and validate query parameters", async () => {
       const schema = z.object({
         format: z.enum(["csv", "json", "xlsx"]),
-        limit: z.string().transform((val) => parseInt(val, 10)).pipe(z.number().int().min(1)),
+        limit: z
+          .string()
+          .transform((val) => parseInt(val, 10))
+          .pipe(z.number().int().min(1)),
       });
 
       const handler = withValidation(schema)(async (_req, data) => {
@@ -235,7 +246,10 @@ describe("Validation Middleware", () => {
 
     it("should return validation error for invalid query parameter type", async () => {
       const schema = z.object({
-        limit: z.string().transform((val) => parseInt(val, 10)).pipe(z.number().int().min(1)),
+        limit: z
+          .string()
+          .transform((val) => parseInt(val, 10))
+          .pipe(z.number().int().min(1)),
       });
 
       const handler = withValidation(schema)(async () => {

@@ -37,13 +37,10 @@ const syncDataSchema = z
     certification_type: certificationTypeSchema,
     extra_fields: z.record(z.unknown()).optional().default({}),
   })
-  .refine(
-    (data) => !data.guardian_phone || data.guardian_phone !== data.phone_number,
-    {
-      message: "Guardian phone number must be different from student's phone number",
-      path: ["guardian_phone"],
-    },
-  );
+  .refine((data) => !data.guardian_phone || data.guardian_phone !== data.phone_number, {
+    message: "Guardian phone number must be different from student's phone number",
+    path: ["guardian_phone"],
+  });
 
 type SyncData = z.infer<typeof syncDataSchema>;
 
