@@ -65,7 +65,14 @@ const studentSearchSchema = z
     email: z.string().email().optional(),
     first_name: z.string().optional(),
     last_name: z.string().optional(),
-    date_of_birth: z.union([z.string(), z.date()]).optional(),
+    date_of_birth: z
+      .union([
+        z.string().refine((s) => !Number.isNaN(new Date(s).getTime()), {
+          message: "Invalid date_of_birth format",
+        }),
+        z.date(),
+      ])
+      .optional(),
     aadhar_number: z.string().optional(),
     guardian_phone: z.string().optional(),
     pan_number: z.string().optional(),

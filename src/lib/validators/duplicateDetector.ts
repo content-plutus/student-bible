@@ -378,11 +378,11 @@ export class DuplicateDetector {
   }
 
   private normalizeDateForMatching(date: string | Date): string {
-    if (typeof date === "string") {
-      const parsed = new Date(date);
-      return parsed.toISOString().slice(0, 10);
+    const parsed = typeof date === "string" ? new Date(date) : date;
+    if (Number.isNaN(parsed.getTime())) {
+      throw new Error("Invalid date_of_birth: cannot parse date");
     }
-    return date.toISOString().slice(0, 10);
+    return parsed.toISOString().slice(0, 10);
   }
 
   private evaluateCandidate(studentData: StudentInput, candidate: Student): DuplicateMatch | null {
