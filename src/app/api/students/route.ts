@@ -1,10 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { detectDuplicates } from "@/lib/validators/duplicateDetector";
-import {
-  DEFAULT_MATCHING_CRITERIA,
-  getPreset,
-} from "@/lib/validators/matchingRules";
+import { DEFAULT_MATCHING_CRITERIA, getPreset } from "@/lib/validators/matchingRules";
 import { studentInsertSchema } from "@/lib/types/student";
 import { z } from "zod";
 
@@ -87,7 +84,7 @@ export async function PUT(request: NextRequest) {
     if (!result.hasPotentialDuplicates && createIfNoDuplicates) {
       try {
         const validatedData = studentInsertSchema.parse(studentData);
-        
+
         const { data: newStudent, error: insertError } = await supabase
           .from("students")
           .insert(validatedData)
@@ -160,7 +157,8 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(
         {
           success: false,
-          error: "At least one search parameter is required (phone, email, aadhar, firstName, or lastName)",
+          error:
+            "At least one search parameter is required (phone, email, aadhar, firstName, or lastName)",
         },
         { status: 400 },
       );

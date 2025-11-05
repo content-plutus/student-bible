@@ -74,7 +74,7 @@ export class DuplicateDetector {
 
     for (const candidate of candidates) {
       const match = this.evaluateCandidate(studentData, candidate);
-      
+
       if (match && match.overallScore >= this.criteria.overallThreshold) {
         matches.push(match);
       }
@@ -154,11 +154,8 @@ export class DuplicateDetector {
     options: { excludeStudentId?: string } = {},
   ): Promise<Student[]> {
     const normalized = normalizePhoneForMatching(phone);
-    
-    let query = supabase
-      .from("students")
-      .select("*")
-      .eq("phone_number", normalized);
+
+    let query = supabase.from("students").select("*").eq("phone_number", normalized);
 
     if (options.excludeStudentId) {
       query = query.neq("id", options.excludeStudentId);
@@ -180,11 +177,8 @@ export class DuplicateDetector {
     options: { excludeStudentId?: string } = {},
   ): Promise<Student[]> {
     const normalized = normalizeEmailForMatching(email);
-    
-    let query = supabase
-      .from("students")
-      .select("*")
-      .eq("email", normalized);
+
+    let query = supabase.from("students").select("*").eq("email", normalized);
 
     if (options.excludeStudentId) {
       query = query.neq("id", options.excludeStudentId);
@@ -206,11 +200,8 @@ export class DuplicateDetector {
     options: { excludeStudentId?: string } = {},
   ): Promise<Student[]> {
     const normalized = normalizeAadharForMatching(aadhar);
-    
-    let query = supabase
-      .from("students")
-      .select("*")
-      .eq("aadhar_number", normalized);
+
+    let query = supabase.from("students").select("*").eq("aadhar_number", normalized);
 
     if (options.excludeStudentId) {
       query = query.neq("id", options.excludeStudentId);
@@ -260,10 +251,7 @@ export class DuplicateDetector {
     return (data as Student[]) || [];
   }
 
-  private evaluateCandidate(
-    studentData: StudentInput,
-    candidate: Student,
-  ): DuplicateMatch | null {
+  private evaluateCandidate(studentData: StudentInput, candidate: Student): DuplicateMatch | null {
     const fieldScores: SimilarityScore[] = [];
     const enabledFieldRules = getEnabledFieldRules(this.criteria);
 
@@ -365,10 +353,7 @@ export class DuplicateDetector {
         break;
 
       case "full_name":
-        const fullName1 = this.constructFullName(
-          studentData.first_name,
-          studentData.last_name,
-        );
+        const fullName1 = this.constructFullName(studentData.first_name, studentData.last_name);
         const fullName2 = this.constructFullName(candidate.first_name, candidate.last_name);
         value1 = fullName1;
         value2 = fullName2;
@@ -452,10 +437,7 @@ export class DuplicateDetector {
     return matchedRules;
   }
 
-  private determineConfidence(
-    score: number,
-    crossFieldMatches: number,
-  ): "high" | "medium" | "low" {
+  private determineConfidence(score: number, crossFieldMatches: number): "high" | "medium" | "low" {
     if (score >= 0.9 || crossFieldMatches >= 2) {
       return "high";
     } else if (score >= 0.75 || crossFieldMatches >= 1) {

@@ -279,9 +279,10 @@ export const MATCHING_PRESETS: Record<string, MatchingRulesPreset> = {
       overallThreshold: 0.6,
       fieldRules: Object.entries(DEFAULT_FIELD_THRESHOLDS).map(([field, threshold]) => ({
         field: field as MatchableField,
-        threshold: field === "phone_number" || field === "email" || field === "aadhar_number" 
-          ? threshold 
-          : Math.max(0.7, threshold - 0.15),
+        threshold:
+          field === "phone_number" || field === "email" || field === "aadhar_number"
+            ? threshold
+            : Math.max(0.7, threshold - 0.15),
         weight: DEFAULT_FIELD_WEIGHTS[field as MatchableField],
         enabled: true,
         matchType: DEFAULT_FIELD_MATCH_TYPES[field as MatchableField],
@@ -297,7 +298,13 @@ export const MATCHING_PRESETS: Record<string, MatchingRulesPreset> = {
         field: field as MatchableField,
         threshold,
         weight: DEFAULT_FIELD_WEIGHTS[field as MatchableField],
-        enabled: ["phone_number", "email", "aadhar_number", "guardian_phone", "pan_number"].includes(field),
+        enabled: [
+          "phone_number",
+          "email",
+          "aadhar_number",
+          "guardian_phone",
+          "pan_number",
+        ].includes(field),
         matchType: DEFAULT_FIELD_MATCH_TYPES[field as MatchableField],
       })),
     }),
