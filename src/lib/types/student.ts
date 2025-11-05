@@ -12,6 +12,7 @@ export const studentSchema = z
     email: z.string().email().toLowerCase(),
     first_name: z.string().min(1, "First name is required").trim(),
     last_name: z.string().trim().nullable(),
+    full_name: z.string().optional(),
     gender: z.string().nullable(),
     date_of_birth: z.string().date().nullable(),
     guardian_phone: z
