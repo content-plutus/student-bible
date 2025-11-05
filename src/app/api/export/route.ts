@@ -30,7 +30,7 @@ const exportParamsSchema = z.object({
 
 type ExportParams = z.infer<typeof exportParamsSchema>;
 
-async function handleExport(req: NextRequest, validatedData: ExportParams) {
+async function handleExport(req: NextRequest, validatedData: ExportParams, _rawData: unknown) {
   const { format, filters, fields, include_extra_fields, limit, offset } = validatedData;
 
   return NextResponse.json({
@@ -66,7 +66,7 @@ const exportQuerySchema = z.object({
 
 type ExportQuery = z.infer<typeof exportQuerySchema>;
 
-async function handleExportGet(req: NextRequest, validatedData: ExportQuery) {
+async function handleExportGet(req: NextRequest, validatedData: ExportQuery, _rawData: unknown) {
   return NextResponse.json({
     success: true,
     message: "Export query validated successfully",

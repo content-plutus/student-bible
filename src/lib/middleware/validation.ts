@@ -15,34 +15,46 @@ export interface ValidationErrorResponse {
 export type ValidatedHandler<T> = (
   req: NextRequest,
   validatedData: T,
+  rawData: unknown,
 ) => Promise<Response> | Response;
+
+const FIELD_ERROR_CODE_MAP: Record<string, string> = {
+  phone_number: "INVALID_PHONE_FORMAT",
+  guardian_phone: "INVALID_PHONE_FORMAT",
+  aadhar_number: "INVALID_AADHAR_FORMAT",
+  pan_number: "INVALID_PAN_FORMAT",
+  postal_code: "INVALID_POSTAL_CODE",
+  email: "INVALID_EMAIL_FORMAT",
+  date_of_birth: "INVALID_DATE_OF_BIRTH",
+};
 
 function formatZodError(error: ZodError): ValidationError[] {
   return error.issues.map((issue) => {
     const field = issue.path.join(".");
     const message = issue.message;
+    const fieldName = issue.path[issue.path.length - 1] as string;
 
     let code = "VALIDATION_ERROR";
 
     if (issue.code === "invalid_type") {
       code = "INVALID_TYPE";
     } else if (issue.code === "invalid_string") {
-      if (issue.validation === "email") {
+      const validation = (issue as { validation?: string }).validation;
+      if (validation === "email") {
         code = "INVALID_EMAIL_FORMAT";
-      } else if (issue.validation === "regex") {
-        if (message.includes("phone")) {
-          code = "INVALID_PHONE_FORMAT";
-        } else if (message.includes("AADHAR")) {
-          code = "INVALID_AADHAR_FORMAT";
-        } else if (message.includes("PAN")) {
-          code = "INVALID_PAN_FORMAT";
-        } else if (message.includes("PIN")) {
-          code = "INVALID_POSTAL_CODE";
-        } else {
-          code = "INVALID_FORMAT";
-        }
+      } else if (validation === "regex") {
+        code = FIELD_ERROR_CODE_MAP[fieldName] || "INVALID_FORMAT";
       } else {
         code = "INVALID_STRING";
+      }
+    } else if (issue.code === "invalid_format") {
+      const format = (issue as { format?: string }).format;
+      if (format === "email") {
+        code = "INVALID_EMAIL_FORMAT";
+      } else if (format === "regex") {
+        code = FIELD_ERROR_CODE_MAP[fieldName] || "INVALID_FORMAT";
+      } else {
+        code = "INVALID_FORMAT";
       }
     } else if (issue.code === "too_small") {
       code = "VALUE_TOO_SMALL";
@@ -53,6 +65,8 @@ function formatZodError(error: ZodError): ValidationError[] {
         code = "INVALID_AGE";
       } else if (message.includes("checksum")) {
         code = "INVALID_CHECKSUM";
+      } else if (message.includes("Guardian phone")) {
+        code = "INVALID_CROSS_FIELD_VALIDATION";
       } else {
         code = "CUSTOM_VALIDATION_FAILED";
       }
@@ -136,11 +150,15 @@ async function parseRequestData(req: NextRequest): Promise<unknown> {
       return data;
     }
 
+    if (contentType && !contentType.includes("application/json")) {
+      throw new Error(`Unsupported content type: ${contentType}`);
+    }
+
     try {
       const body = await req.json();
       return body;
     } catch {
-      return {};
+      throw new Error("Invalid JSON in request body");
     }
   }
 
@@ -160,7 +178,7 @@ export function withValidation<T>(schema: ZodSchema<T>) {
           return createErrorResponse("Validation failed", validationErrors, 400);
         }
 
-        return await handler(req, result.data);
+        return await handler(req, result.data, rawData);
       } catch (error) {
         if (error instanceof Error) {
           if (error.message === "Invalid JSON in request body") {
@@ -174,6 +192,20 @@ export function withValidation<T>(schema: ZodSchema<T>) {
                 },
               ],
               400,
+            );
+          }
+
+          if (error.message.startsWith("Unsupported content type:")) {
+            return createErrorResponse(
+              "Unsupported content type",
+              [
+                {
+                  field: "content-type",
+                  message: error.message,
+                  code: "UNSUPPORTED_CONTENT_TYPE",
+                },
+              ],
+              415,
             );
           }
 

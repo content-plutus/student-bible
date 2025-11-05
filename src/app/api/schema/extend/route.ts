@@ -85,7 +85,11 @@ const schemaExtensionSchema = z.object({
 
 type SchemaExtension = z.infer<typeof schemaExtensionSchema>;
 
-async function handleSchemaExtension(req: NextRequest, validatedData: SchemaExtension) {
+async function handleSchemaExtension(
+  req: NextRequest,
+  validatedData: SchemaExtension,
+  _rawData: unknown,
+) {
   const { table_name, jsonb_column, fields, migration_strategy, apply_to_existing } = validatedData;
 
   const fieldNames = fields.map((f) => f.field_name);
