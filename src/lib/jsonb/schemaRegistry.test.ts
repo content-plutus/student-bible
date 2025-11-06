@@ -57,6 +57,27 @@ describe("jsonb schema registry", () => {
     expect(result.data).toEqual({ notes: "Partial payload" });
   });
 
+  it("applies compatibility rules for legacy extra fields", () => {
+    const result = validateJsonbPayload(
+      "students",
+      "extra_fields",
+      {
+        mentorName: "Riya Sharma",
+        certificationType: "USCMA",
+      },
+      { allowPartial: true },
+    );
+
+    expect(result.success).toBe(true);
+    expect(result.data).toEqual({
+      mentor_name: "Riya Sharma",
+      certification_type: "US CMA",
+    });
+    expect(result.appliedCompatibilityRules).toContain(
+      "Rename legacy camelCase keys to snake_case equivalents",
+    );
+  });
+
   it("returns an error when schema is not registered", () => {
     const result = validateJsonbPayload("unknown", "column", {});
 

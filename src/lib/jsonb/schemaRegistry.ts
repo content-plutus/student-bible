@@ -5,6 +5,7 @@ import {
   emailSchema,
   phoneNumberSchema,
 } from "@/lib/types/validations";
+import { applyCompatibilityRules, registerCompatibilityRule } from "@/lib/jsonb/compatibility";
 
 type JsonbSchemaKey = `${string}.${string}`;
 
@@ -34,6 +35,7 @@ export interface JsonbValidationResult<T = unknown> {
   errors?: JsonbValidationError[];
   unknownKeys?: string[];
   version?: number;
+  appliedCompatibilityRules?: string[];
 }
 
 const mapZodIssues = (issues: ZodIssue[]): JsonbValidationError[] => {
@@ -85,8 +87,13 @@ class JsonbSchemaRegistry {
       };
     }
 
+    const compatibilityResult =
+      payload && typeof payload === "object"
+        ? applyCompatibilityRules(table, column, payload as Record<string, unknown>)
+        : { data: payload, appliedRules: [] };
+
     const schemaToUse = this.prepareSchema(definition.schema, definition.allowUnknownKeys, options);
-    const result = schemaToUse.safeParse(payload);
+    const result = schemaToUse.safeParse(compatibilityResult.data);
 
     if (!result.success) {
       return {
@@ -98,7 +105,7 @@ class JsonbSchemaRegistry {
 
     const unknownKeys = this.computeUnknownKeys(
       definition.schema,
-      payload,
+      compatibilityResult.data,
       definition.allowUnknownKeys,
     );
 
@@ -107,6 +114,7 @@ class JsonbSchemaRegistry {
       data: result.data,
       unknownKeys,
       version: definition.version,
+      appliedCompatibilityRules: compatibilityResult.appliedRules,
     };
   }
 
@@ -315,6 +323,33 @@ jsonbSchemaRegistry.register({
   allowUnknownKeys: true,
 });
 
+registerCompatibilityRule("students", "extra_fields", [
+  {
+    description: "Rename legacy camelCase keys to snake_case equivalents",
+    rename: {
+      mentorName: "mentor_name",
+      mentorAssigned: "mentor_assigned",
+      guardianEmail: "guardian_email",
+      alternatePhone: "alternate_phone",
+      preferredContactTime: "preferred_contact_time",
+      preferredContactChannel: "preferred_contact_channel",
+      consentCapturedAt: "consent_captured_at",
+      lastFormSubmissionId: "last_form_submission_id",
+      certificationType: "certification_type",
+    },
+  },
+  {
+    description: "Normalize legacy certification type identifiers",
+    valueMap: {
+      certification_type: {
+        USCMA: "US CMA",
+        US_CMA: "US CMA",
+        ACCA_FND: "ACCA",
+      },
+    },
+  },
+]);
+
 jsonbSchemaRegistry.register({
   table: "student_addresses",
   column: "additional_data",
@@ -332,6 +367,20 @@ jsonbSchemaRegistry.register({
   description: "Program-specific metadata for student certification enrolments.",
   allowUnknownKeys: true,
 });
+
+registerCompatibilityRule("student_certifications", "custom_fields", [
+  {
+    description: "Rename legacy custom field keys to canonical snake_case",
+    rename: {
+      mentorName: "mentor_name",
+      mentorId: "mentor_id",
+      studyPlanUrl: "study_plan_url",
+      cohortStart: "cohort_start_date",
+      cohortEnd: "cohort_end_date",
+      cohortLead: "cohort_lead",
+    },
+  },
+]);
 
 jsonbSchemaRegistry.register({
   table: "certifications",
