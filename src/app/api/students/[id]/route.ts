@@ -124,7 +124,8 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
 
     const supabase = getSupabaseClient();
 
-    const { extra_fields, ...coreFields } = validatedData;
+    const { full_name, extra_fields, ...coreFields } = validatedData;
+    void full_name;
 
     const { data: updatedStudent, error: rpcError } = await supabase.rpc(
       "students_update_profile",
