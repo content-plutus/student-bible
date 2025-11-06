@@ -3,7 +3,12 @@ import { createClient } from "@supabase/supabase-js";
 import { detectDuplicates } from "@/lib/validators/duplicateDetector";
 import { DEFAULT_MATCHING_CRITERIA, getPreset } from "@/lib/validators/matchingRules";
 import { studentInsertSchema } from "@/lib/types/student";
-import { studentExtraFieldsSchema } from "@/lib/jsonb/schemaRegistry";
+import { studentExtraFieldsSchema, validateJsonbPayload } from "@/lib/jsonb/schemaRegistry";
+import {
+  validateBatchCodeFromExtraFields,
+  stripNullValuesFromExtraFields,
+} from "@/lib/validators/schemaEvolution";
+import { CertificationType } from "@/lib/validators/rules";
 import { z } from "zod";
 
 if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
@@ -214,9 +219,68 @@ export async function PUT(request: NextRequest) {
       try {
         const validatedData = studentInsertSchema.parse(studentData);
 
+        const extraFields = validatedData.extra_fields ?? {};
+
+        const registryValidation = validateJsonbPayload("students", "extra_fields", extraFields, {
+          allowPartial: false,
+          stripUnknownKeys: false,
+        });
+
+        if (!registryValidation.success) {
+          return NextResponse.json(
+            {
+              success: false,
+              created: false,
+              error: "Extra fields validation failed",
+              fieldErrors: registryValidation.errors,
+              unknownKeys: registryValidation.unknownKeys,
+              duplicateCheckResult: result,
+            },
+            { status: 400 },
+          );
+        }
+
+        const sanitizedExtraFields = stripNullValuesFromExtraFields(
+          (registryValidation.data as Record<string, unknown>) ?? extraFields,
+        );
+
+        const certificationType = sanitizedExtraFields.certification_type as
+          | CertificationType
+          | null
+          | undefined;
+
+        const batchValidation = validateBatchCodeFromExtraFields(
+          sanitizedExtraFields,
+          certificationType,
+        );
+
+        if (!batchValidation.success) {
+          return NextResponse.json(
+            {
+              success: false,
+              created: false,
+              error: "Invalid batch_code",
+              fieldErrors: [
+                {
+                  path: "extra_fields.batch_code",
+                  message: batchValidation.error,
+                  code: "invalid_batch_code",
+                },
+              ],
+              duplicateCheckResult: result,
+            },
+            { status: 400 },
+          );
+        }
+
+        const dataToInsert = {
+          ...validatedData,
+          extra_fields: sanitizedExtraFields,
+        };
+
         const { data: newStudent, error: insertError } = await supabase
           .from("students")
-          .insert(validatedData)
+          .insert(dataToInsert)
           .select()
           .single();
 
@@ -238,13 +302,25 @@ export async function PUT(request: NextRequest) {
           duplicateCheckResult: result,
         });
       } catch (validationError) {
+        if (validationError instanceof z.ZodError) {
+          return NextResponse.json(
+            {
+              success: false,
+              error: "Validation error",
+              fieldErrors: validationError.errors.map((e) => ({
+                path: e.path.join("."),
+                message: e.message,
+                code: e.code,
+              })),
+              duplicateCheckResult: result,
+            },
+            { status: 400 },
+          );
+        }
         return NextResponse.json(
           {
             success: false,
-            error:
-              validationError instanceof z.ZodError
-                ? `Validation error: ${validationError.errors.map((e) => e.message).join(", ")}`
-                : "Validation error occurred",
+            error: "Validation error occurred",
             duplicateCheckResult: result,
           },
           { status: 400 },
