@@ -1,4 +1,4 @@
-import { z, ZodIssue, ZodObject, ZodTypeAny } from "zod";
+import { z, ZodIssue, ZodObject, ZodRawShape, ZodTypeAny } from "zod";
 import {
   batchCodePartialSchema,
   certificationTypeSchema,
@@ -144,7 +144,7 @@ class JsonbSchemaRegistry {
       return undefined;
     }
 
-    const structuralSchema = schema as unknown as ZodObject<any>;
+    const structuralSchema = schema as ZodObject<ZodRawShape>;
     const knownKeys = new Set(Object.keys(structuralSchema.shape));
     const payloadKeys = Object.keys(payload as Record<string, unknown>);
     const unknownKeys = payloadKeys.filter((key) => !knownKeys.has(key));

@@ -14,33 +14,54 @@ type Filter = {
   value: unknown;
 };
 
-type Resolver = (args: { table: string; filters: Filter[] }) => { data: DuplicateRecord[] | null; error: { message: string } | null };
+type ResolverResult = {
+  data: DuplicateRecord[] | null;
+  error: { message: string } | null;
+};
+
+type Resolver = (args: { table: string; filters: Filter[] }) => ResolverResult;
+
+type FilterQuery = {
+  eq: jest.Mock<FilterQuery, [string, unknown]>;
+  neq: jest.Mock<FilterQuery, [string, unknown]>;
+  then: jest.Mock<
+    Promise<unknown>,
+    [
+      (value: ResolverResult) => unknown,
+      ((reason: unknown) => unknown) | undefined
+    ]
+  >;
+};
 
 const createFilterQuery = (table: string, resolver: Resolver) => {
   const filters: Filter[] = [];
 
-  const filterQuery: any = {};
+  const filterQuery = {} as FilterQuery;
 
-  filterQuery.eq = jest.fn((column: string, value: unknown) => {
+  filterQuery.eq = jest.fn<FilterQuery, [string, unknown]>((column, value) => {
     filters.push({ type: "eq", column, value });
     return filterQuery;
   });
 
-  filterQuery.neq = jest.fn((column: string, value: unknown) => {
+  filterQuery.neq = jest.fn<FilterQuery, [string, unknown]>((column, value) => {
     filters.push({ type: "neq", column, value });
     return filterQuery;
-    });
+  });
 
-  filterQuery.then = jest.fn(
-    (onFulfilled: (value: { data: DuplicateRecord[] | null; error: { message: string } | null }) => unknown, onRejected?: (reason: unknown) => unknown) => {
-      try {
-        const result = resolver({ table, filters });
-        return Promise.resolve(result).then(onFulfilled, onRejected);
-      } catch (error) {
-        return Promise.reject(error).then(onFulfilled, onRejected);
-      }
-    },
-  );
+  filterQuery.then = jest.fn<
+    Promise<unknown>,
+    [
+      (value: ResolverResult) => unknown,
+      ((reason: unknown) => unknown) | undefined
+    ]
+  >((onFulfilled, onRejected) => {
+    try {
+      const result = resolver({ table, filters });
+      return Promise.resolve(result).then(onFulfilled, onRejected);
+    } catch (error) {
+      return Promise.reject(error).then(onFulfilled, onRejected);
+    }
+  });
 
   return filterQuery;
 };
