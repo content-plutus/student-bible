@@ -16,8 +16,8 @@ if (process.env.NODE_ENV === "production" && !process.env.INTERNAL_API_KEY) {
   );
 }
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
 /**
  * Validates the API key from the request header.
@@ -145,6 +145,17 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
       throw fetchError;
     }
 
+    if (Object.keys(coreFields).length > 0) {
+      const { error: updateError } = await supabase
+        .from("students")
+        .update(coreFields)
+        .eq("id", params.id);
+
+      if (updateError) {
+        throw updateError;
+      }
+    }
+
     if (extra_fields && Object.keys(extra_fields).length > 0) {
       const { error: rpcError } = await supabase.rpc("students_update_extra_fields", {
         student_id: params.id,
@@ -154,17 +165,6 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
 
       if (rpcError) {
         throw rpcError;
-      }
-    }
-
-    if (Object.keys(coreFields).length > 0) {
-      const { error: updateError } = await supabase
-        .from("students")
-        .update(coreFields)
-        .eq("id", params.id);
-
-      if (updateError) {
-        throw updateError;
       }
     }
 
