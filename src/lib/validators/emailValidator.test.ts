@@ -1,60 +1,64 @@
 import { beforeEach, describe, expect, it, jest } from "@jest/globals";
-import { isEmailUnique, type SupabaseLike } from "./emailValidator";
 
-type SelectResult = { error: { message: string } | null; count: number | null };
+jest.mock("@supabase/auth-helpers-nextjs", () => {
+  type SelectResult = { error: { message: string } | null; count: number | null };
 
-type FilterQueryMock = {
-  eq: jest.Mock<FilterQueryMock, [string, unknown]>;
-  neq: jest.Mock<FilterQueryMock, [string, unknown]>;
-  setResponse: (result: SelectResult) => void;
-  then: jest.Mock<ReturnType<FilterQueryMock["then"]>, Parameters<FilterQueryMock["then"]>>;
-} & PromiseLike<SelectResult>;
+  type FilterQueryMock = {
+    eq: jest.Mock<FilterQueryMock, [string, unknown]>;
+    neq: jest.Mock<FilterQueryMock, [string, unknown]>;
+    setResponse: (result: SelectResult) => void;
+    then: jest.Mock<ReturnType<FilterQueryMock["then"]>, Parameters<FilterQueryMock["then"]>>;
+  } & PromiseLike<SelectResult>;
 
-const createFilterQuery = (initial: SelectResult = { error: null, count: 0 }): FilterQueryMock => {
-  const state = { result: initial };
+  const createFilterQuery = (initial = { error: null, count: 0 }): FilterQueryMock => {
+    const state = { result: initial };
+    const q: Partial<FilterQueryMock> = {};
 
-  const filterQuery: Partial<FilterQueryMock> = {};
+    const thenImpl: FilterQueryMock["then"] = (onFulfilled, onRejected) =>
+      Promise.resolve(state.result).then(onFulfilled, onRejected);
 
-  const thenImpl: FilterQueryMock["then"] = (onFulfilled, onRejected) =>
-    Promise.resolve(state.result).then(onFulfilled, onRejected);
+    q.eq = jest.fn(() => q as FilterQueryMock);
+    q.neq = jest.fn(() => q as FilterQueryMock);
+    q.then = jest.fn(thenImpl);
+    q.setResponse = (res: SelectResult) => {
+      state.result = res;
+    };
 
-  filterQuery.eq = jest.fn().mockImplementation(() => filterQuery as FilterQueryMock);
-  filterQuery.neq = jest.fn().mockImplementation(() => filterQuery as FilterQueryMock);
-  filterQuery.then = jest.fn(thenImpl);
-  filterQuery.setResponse = (result: SelectResult) => {
-    state.result = result;
+    return q as FilterQueryMock;
   };
 
-  return filterQuery as FilterQueryMock;
-};
+  const filterQuery = createFilterQuery();
+  const select = jest.fn(() => filterQuery);
+  const from = jest.fn(() => ({ select }));
 
-const createSupabaseMock = (filterQuery: FilterQueryMock) => {
-  const select = jest.fn().mockReturnValue(filterQuery);
-  const tableBuilder = { select };
-  const from = jest.fn().mockReturnValue(tableBuilder);
-  const supabase = { from } as SupabaseLike & {
-    from: typeof from;
+  return {
+    createClientComponentClient: jest.fn(() => ({ from })),
+    __test: { filterQuery, select, from },
   };
+});
 
-  return { supabase, select, filterQuery };
-};
+process.env.NEXT_PUBLIC_SUPABASE_URL = "http://localhost:54321";
+process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = "test-anon-key";
+
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const { isEmailUnique } = require("./emailValidator");
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const { __test } = require("@supabase/auth-helpers-nextjs");
+const { filterQuery, select, from } = __test;
 
 describe("isEmailUnique", () => {
-  let filterQuery: FilterQueryMock;
-  let supabaseFactory: ReturnType<typeof createSupabaseMock>;
-
   beforeEach(() => {
-    filterQuery = createFilterQuery();
-    supabaseFactory = createSupabaseMock(filterQuery);
+    jest.clearAllMocks();
+    filterQuery.setResponse({ error: null, count: 0 });
   });
 
   it("returns true when no matching email exists", async () => {
     filterQuery.setResponse({ error: null, count: 0 });
 
-    await expect(isEmailUnique(supabaseFactory.supabase, "Test@Example.com")).resolves.toBe(true);
+    await expect(isEmailUnique("Test@Example.com")).resolves.toBe(true);
 
-    expect(supabaseFactory.supabase.from).toHaveBeenCalledWith("students");
-    expect(supabaseFactory.select).toHaveBeenCalledWith("id", {
+    expect(from).toHaveBeenCalledWith("students");
+    expect(select).toHaveBeenCalledWith("id", {
       count: "exact",
       head: true,
     });
@@ -65,13 +69,13 @@ describe("isEmailUnique", () => {
   it("returns false when email already exists", async () => {
     filterQuery.setResponse({ error: null, count: 1 });
 
-    await expect(isEmailUnique(supabaseFactory.supabase, "test@example.com")).resolves.toBe(false);
+    await expect(isEmailUnique("test@example.com")).resolves.toBe(false);
   });
 
   it("excludes provided student id from uniqueness check", async () => {
     filterQuery.setResponse({ error: null, count: 0 });
 
-    await isEmailUnique(supabaseFactory.supabase, "test@example.com", {
+    await isEmailUnique("test@example.com", {
       excludeStudentId: "123",
     });
 
@@ -81,7 +85,7 @@ describe("isEmailUnique", () => {
   it("throws when supabase returns an error", async () => {
     filterQuery.setResponse({ error: { message: "boom" }, count: null });
 
-    await expect(isEmailUnique(supabaseFactory.supabase, "test@example.com")).rejects.toThrow(
+    await expect(isEmailUnique("test@example.com")).rejects.toThrow(
       "Failed to verify email uniqueness: boom",
     );
   });

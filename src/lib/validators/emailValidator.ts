@@ -1,21 +1,5 @@
 import { normalizeEmail } from "../types/validations";
-
-type QueryError = { message: string } | null;
-type SelectOptions = { head?: boolean; count?: "exact" | "planned" | "estimated" };
-type SelectResult = { error: QueryError; count: number | null };
-
-type FilterQuery = PromiseLike<SelectResult> & {
-  eq: (column: string, value: unknown) => FilterQuery;
-  neq: (column: string, value: unknown) => FilterQuery;
-};
-
-type StudentsTableBuilder = {
-  select: (columns?: string, options?: SelectOptions) => FilterQuery;
-};
-
-export type SupabaseLike = {
-  from: (table: string) => StudentsTableBuilder;
-};
+import { supabase } from "../supabase/client";
 
 export type EmailUniquenessOptions = {
   /** Student id to exclude (useful when updating an existing record) */
@@ -28,7 +12,6 @@ export type EmailUniquenessOptions = {
  * when the email already exists.
  */
 export const isEmailUnique = async (
-  supabase: SupabaseLike,
   email: string,
   options: EmailUniquenessOptions = {},
 ): Promise<boolean> => {
