@@ -37,6 +37,9 @@ jest.mock("@supabase/auth-helpers-nextjs", () => {
   };
 });
 
+process.env.NEXT_PUBLIC_SUPABASE_URL = "http://localhost:54321";
+process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = "test-anon-key";
+
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { isEmailUnique } = require("./emailValidator");
 // eslint-disable-next-line @typescript-eslint/no-require-imports
