@@ -703,6 +703,63 @@ Database-level CHECK constraints provide the final layer of validation enforceme
 
 The error code system provides a structured way to categorize and handle validation failures. All error codes are defined and mapped in `src/lib/utils/errorFormatter.ts`.
 
+### Two Families of Error Codes
+
+The validation system uses two distinct families of error codes depending on where the validation occurs:
+
+#### Application-Level (Zod) Error Codes
+
+When validation fails at the application level (before reaching the database), the `formatValidationErrors` function passes through Zod's native error codes unchanged. These codes are intentionally not normalized to preserve Zod's standard error taxonomy.
+
+**Code Reference**: `src/lib/utils/errorFormatter.ts:13-30` (line 24 sets `code: issue.code`)
+
+**Common Zod Error Codes**:
+
+| Zod Code             | When It Occurs                                | Example Scenario                                 |
+| -------------------- | --------------------------------------------- | ------------------------------------------------ |
+| `invalid_type`       | Value type doesn't match schema               | Passing number when string expected              |
+| `invalid_string`     | String validation failed (regex, email, etc.) | Phone number fails regex pattern                 |
+| `too_small`          | Value below minimum (length, number, date)    | String shorter than minimum length               |
+| `too_big`            | Value above maximum (length, number, date)    | String longer than maximum length                |
+| `invalid_enum_value` | Value not in allowed enum values              | Gender value not in ["Male", "Female", "Others"] |
+| `unrecognized_keys`  | Object has unexpected properties              | Extra fields in validated object                 |
+| `invalid_union`      | None of union options matched                 | Value doesn't match any union type               |
+| `custom`             | Custom validation function failed             | AADHAR checksum verification failed              |
+
+**Example Application-Level Error**:
+
+```json
+{
+  "phone_number": {
+    "field": "phone_number",
+    "message": "Phone number must be 10 digits starting with 6-9",
+    "code": "invalid_string"
+  }
+}
+```
+
+#### Database-Level (Normalized) Error Codes
+
+When validation fails at the database level (constraint violations, unique violations, etc.), the `formatDatabaseError` function normalizes PostgreSQL error messages into a consistent set of error codes. These codes are system-defined and provide a higher-level categorization.
+
+**Code Reference**: `src/lib/utils/errorFormatter.ts:72-259`
+
+**Normalized Error Codes**: `constraint_violation`, `unique_violation`, `invalid_format`, `foreign_key_violation`, `not_null_violation`, `cross_field_validation`, `async_validation`, `unknown_error`
+
+**Example Database-Level Error**:
+
+```json
+{
+  "email": {
+    "field": "email",
+    "message": "This email address is already registered",
+    "code": "unique_violation"
+  }
+}
+```
+
+---
+
 ### Error Code Categories
 
 #### 1. constraint_violation
@@ -1348,6 +1405,8 @@ export async function POST(request: Request) {
 
 **Example Error Response**:
 
+This example demonstrates both error code families in a single response:
+
 ```json
 {
   "success": false,
@@ -1355,7 +1414,7 @@ export async function POST(request: Request) {
     "phone_number": {
       "field": "phone_number",
       "message": "Phone number must be 10 digits starting with 6-9",
-      "code": "invalid_type"
+      "code": "invalid_string"
     },
     "email": {
       "field": "email",
@@ -1365,6 +1424,8 @@ export async function POST(request: Request) {
   }
 }
 ```
+
+**Note**: The `phone_number` error uses the Zod error code `invalid_string` (application-level validation), while the `email` error uses the normalized code `unique_violation` (database-level validation).
 
 ---
 
@@ -1376,18 +1437,18 @@ The validation system includes comprehensive test suites that demonstrate expect
 
 **File**: `src/lib/types/validations.test.ts`
 
-**Lines**: 1-159
+**Lines**: 1-158
 
 **Coverage**:
 
 - Phone number validation (lines 17-32)
 - AADHAR number validation with Verhoeff checksum (lines 34-53)
-- PAN number validation (lines 55-68)
-- Postal code validation (lines 70-82)
+- PAN number validation (lines 54-69)
+- Postal code validation (lines 70-83)
 - Email validation (lines 84-95)
-- Date range validation (lines 97-107)
-- Age validation (lines 109-121)
-- Normalization functions (lines 123-158)
+- Date range validation (lines 96-107)
+- Age validation (lines 108-119)
+- Normalization functions (lines 120-158)
 
 **Key Test Cases**:
 
@@ -1399,7 +1460,7 @@ The validation system includes comprehensive test suites that demonstrate expect
    - Valid: 12-digit numbers with valid Verhoeff checksum
    - Invalid: Wrong length, invalid checksum, non-numeric
 
-3. **PAN Validation** (lines 55-68):
+3. **PAN Validation** (lines 54-69):
    - Valid: Uppercase format (5 letters, 4 digits, 1 letter)
    - Invalid: Lowercase, wrong format, wrong length
 
