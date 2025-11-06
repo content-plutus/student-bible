@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { attendanceExtraMetricsSchema } from "@/lib/jsonb/schemaRegistry";
 
 export const attendanceRecordSchema = z.object({
   id: z.string().uuid(),
@@ -8,7 +9,7 @@ export const attendanceRecordSchema = z.object({
   attendance_status: z.string().min(1, "Attendance status is required"),
   engagement_score: z.number().int().min(0).max(10).nullable(),
   participation_notes: z.string().nullable(),
-  extra_metrics: z.record(z.string(), z.unknown()).default({}),
+  extra_metrics: attendanceExtraMetricsSchema.default({}),
   created_at: z.string().datetime(),
   updated_at: z.string().datetime(),
 });

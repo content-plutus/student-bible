@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { certificationMetadataSchema } from "@/lib/jsonb/schemaRegistry";
 
 export const certificationSchema = z.object({
   id: z.string().uuid(),
@@ -7,7 +8,7 @@ export const certificationSchema = z.object({
   description: z.string().nullable(),
   total_papers: z.number().int().positive().nullable(),
   organization: z.string().nullable(),
-  metadata: z.record(z.string(), z.unknown()).default({}),
+  metadata: certificationMetadataSchema.default({}),
   created_at: z.string().datetime(),
   updated_at: z.string().datetime(),
 });

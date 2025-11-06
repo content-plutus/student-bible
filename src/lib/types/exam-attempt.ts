@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { examAttemptMetadataSchema } from "@/lib/jsonb/schemaRegistry";
 
 export const examAttemptSchema = z.object({
   id: z.string().uuid(),
@@ -7,7 +8,7 @@ export const examAttemptSchema = z.object({
   attempt_date: z.string().date().nullable(),
   result: z.string().nullable(),
   score: z.number().min(0).max(999.99).nullable(),
-  metadata: z.record(z.string(), z.unknown()).default({}),
+  metadata: examAttemptMetadataSchema.default({}),
   created_at: z.string().datetime(),
   updated_at: z.string().datetime(),
 });

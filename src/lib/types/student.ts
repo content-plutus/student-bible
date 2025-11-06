@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { studentExtraFieldsSchema } from "@/lib/jsonb/schemaRegistry";
 
 export const studentSchema = z
   .object({
@@ -12,6 +13,7 @@ export const studentSchema = z
     email: z.string().email().toLowerCase(),
     first_name: z.string().min(1, "First name is required").trim(),
     last_name: z.string().trim().nullable(),
+    full_name: z.string().optional(),
     gender: z.string().nullable(),
     date_of_birth: z.string().date().nullable(),
     guardian_phone: z
@@ -36,7 +38,7 @@ export const studentSchema = z
       )
       .nullable(),
     enrollment_status: z.string().nullable(),
-    extra_fields: z.record(z.string(), z.unknown()).default({}),
+    extra_fields: studentExtraFieldsSchema.default({}),
   })
   .refine(
     (data) => {

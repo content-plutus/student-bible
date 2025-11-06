@@ -19,6 +19,7 @@
     "aadhaar-validator-ts": "^1.0.3",
     "csv-parse": "^6.1.0",
     "date-fns": "^4.1.0",
+    "fastest-levenshtein": "^1.0.16",
     "next": "16.0.1",
     "react": "19.2.0",
     "react-dom": "19.2.0",

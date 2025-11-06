@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { BATCH_CODE_PATTERNS, CertificationType } from "./rules";
+import { validateJsonbPayload } from "@/lib/jsonb/schemaRegistry";
 
 export interface JsonbValidationResult<T = unknown> {
   success: boolean;
@@ -85,7 +86,23 @@ export const validateExtraFieldsWithBatchCode = (
   extraFields: Record<string, unknown>,
   certificationType: CertificationType | null | undefined,
 ): JsonbValidationResult<Record<string, unknown>> => {
-  const batchCodeResult = validateBatchCodeFromExtraFields(extraFields, certificationType);
+  const registryValidation = validateJsonbPayload(
+    "students",
+    "extra_fields",
+    extraFields,
+    { allowPartial: true, stripUnknownKeys: false },
+  );
+
+  if (!registryValidation.success) {
+    return {
+      success: false,
+      error: registryValidation.errors?.[0]?.message || "Extra fields validation failed",
+    };
+  }
+
+  const sanitizedExtraFields =
+    (registryValidation.data as Record<string, unknown>) ?? extraFields;
+  const batchCodeResult = validateBatchCodeFromExtraFields(sanitizedExtraFields, certificationType);
 
   if (!batchCodeResult.success) {
     return {
@@ -96,7 +113,7 @@ export const validateExtraFieldsWithBatchCode = (
 
   return {
     success: true,
-    data: extraFields,
+    data: sanitizedExtraFields,
   };
 };
 

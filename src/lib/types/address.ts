@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { addressAdditionalDataSchema } from "@/lib/jsonb/schemaRegistry";
 
 export const studentAddressSchema = z
   .object({
@@ -15,7 +16,7 @@ export const studentAddressSchema = z
       .length(6)
       .regex(/^[0-9]{6}$/, "Postal code must be exactly 6 digits"),
     country: z.string().default("India"),
-    additional_data: z.record(z.string(), z.unknown()).default({}),
+    additional_data: addressAdditionalDataSchema.default({}),
     created_at: z.string().datetime(),
     updated_at: z.string().datetime(),
   })

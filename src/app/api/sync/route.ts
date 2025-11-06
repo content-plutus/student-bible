@@ -1,104 +1,87 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { withValidation } from "@/lib/middleware/withValidation";
+import { withValidation } from "@/lib/middleware/validation";
 import {
-  safeParseGender,
-  safeParseSalutation,
-  safeParseEducationLevel,
-  safeParseStream,
-  safeParseCertificationType,
-  isKnownEnumValue,
+  phoneNumberSchema,
+  emailSchema,
+  aadharNumberSchema,
+  panNumberSchema,
 } from "@/lib/validators/studentValidator";
+import {
+  genderSchema,
+  salutationSchema,
+  educationLevelSchema,
+  streamSchema,
+  certificationTypeSchema,
+  dateOfBirthSchema,
+} from "@/lib/types/validations";
+import { isKnownEnumValue } from "@/lib/validators/rules";
+import { studentExtraFieldsSchema } from "@/lib/jsonb/schemaRegistry";
 
-const optionalEnumInput = z
-  .union([z.string().transform((value) => value.trim()), z.null()])
-  .optional();
-
-const syncRequestSchema = z
+const syncDataSchema = z
   .object({
-    gender: optionalEnumInput,
-    salutation: optionalEnumInput,
-    education_level: optionalEnumInput,
-    stream: optionalEnumInput,
-    certification_type: optionalEnumInput,
+    phone_number: phoneNumberSchema,
+    email: emailSchema,
+    first_name: z.string().trim().min(1, "First name is required"),
+    last_name: z.string().trim().optional().nullable(),
+    gender: genderSchema,
+    date_of_birth: dateOfBirthSchema,
+    guardian_phone: phoneNumberSchema.optional().nullable(),
+    salutation: salutationSchema,
+    father_name: z.string().trim().optional().nullable(),
+    mother_name: z.string().trim().optional().nullable(),
+    aadhar_number: aadharNumberSchema,
+    pan_number: panNumberSchema,
+    enrollment_status: z.string().trim().optional().nullable(),
+    education_level: educationLevelSchema,
+    stream: streamSchema,
+    certification_type: certificationTypeSchema,
+    extra_fields: studentExtraFieldsSchema.optional().default({}),
   })
-  .passthrough();
+  .refine((data) => !data.guardian_phone || data.guardian_phone !== data.phone_number, {
+    message: "Guardian phone number must be different from student's phone number",
+    path: ["guardian_phone"],
+  });
 
-const ENUM_FIELD_CONFIG = [
-  {
-    field: "gender",
-    safeParse: safeParseGender,
-    enumType: "gender",
-    responseKey: "gender",
-    originalKey: "original_gender",
-  },
-  {
-    field: "salutation",
-    safeParse: safeParseSalutation,
-    enumType: "salutation",
-    responseKey: "salutation",
-    originalKey: "original_salutation",
-  },
-  {
-    field: "education_level",
-    safeParse: safeParseEducationLevel,
-    enumType: "educationLevel",
-    responseKey: "education_level",
-    originalKey: "original_education_level",
-  },
-  {
-    field: "stream",
-    safeParse: safeParseStream,
-    enumType: "stream",
-    responseKey: "stream",
-    originalKey: "original_stream",
-  },
-  {
-    field: "certification_type",
-    safeParse: safeParseCertificationType,
-    enumType: "certificationType",
-    responseKey: "certification_type",
-    originalKey: "original_certification_type",
-  },
-] as const;
+type SyncData = z.infer<typeof syncDataSchema>;
 
-export const POST = withValidation(syncRequestSchema, async ({ validatedData }) => {
-  try {
-    const enumValues: Record<string, unknown> = {};
-    const unknownEnumValues: Record<string, string> = {};
+async function handleSync(req: NextRequest, validatedData: SyncData, rawData: unknown) {
+  const unknownEnumValues: Record<string, string> = {};
+  const rawObj = rawData as Record<string, unknown>;
 
-    ENUM_FIELD_CONFIG.forEach((config) => {
-      const value = validatedData[config.field];
-      if (value === undefined || value === null) {
-        return;
-      }
-
-      const parsed = config.safeParse(value);
-      if (!parsed.success) {
-        return;
-      }
-
-      enumValues[config.responseKey] = parsed.data;
-
-      if (typeof value === "string" && !isKnownEnumValue(value, config.enumType)) {
-        unknownEnumValues[config.originalKey] = value;
-      }
-    });
-
-    return NextResponse.json({
-      success: true,
-      message: "Data validated successfully with enum fallback support",
-      validatedData: enumValues,
-      unknownEnumValues: Object.keys(unknownEnumValues).length > 0 ? unknownEnumValues : undefined,
-      note: "Unknown enum values were defaulted to known values. Original values are preserved in unknownEnumValues for JSONB storage.",
-    });
-  } catch (error) {
-    return NextResponse.json(
-      {
-        success: false,
-        error: error instanceof Error ? error.message : "Unknown error occurred",
-      },
-      { status: 500 },
-    );
+  if (rawObj.gender && !isKnownEnumValue(String(rawObj.gender), "gender")) {
+    unknownEnumValues.original_gender = String(rawObj.gender);
   }
-});
+
+  if (rawObj.salutation && !isKnownEnumValue(String(rawObj.salutation), "salutation")) {
+    unknownEnumValues.original_salutation = String(rawObj.salutation);
+  }
+
+  if (
+    rawObj.education_level &&
+    !isKnownEnumValue(String(rawObj.education_level), "educationLevel")
+  ) {
+    unknownEnumValues.original_education_level = String(rawObj.education_level);
+  }
+
+  if (rawObj.stream && !isKnownEnumValue(String(rawObj.stream), "stream")) {
+    unknownEnumValues.original_stream = String(rawObj.stream);
+  }
+
+  if (
+    rawObj.certification_type &&
+    !isKnownEnumValue(String(rawObj.certification_type), "certificationType")
+  ) {
+    unknownEnumValues.original_certification_type = String(rawObj.certification_type);
+  }
+
+  return NextResponse.json({
+    success: true,
+    message: "Data synchronized successfully",
+    data: validatedData,
+    unknownEnumValues: Object.keys(unknownEnumValues).length > 0 ? unknownEnumValues : undefined,
+    note: "This is a placeholder implementation. In production, this would sync data to the database. Unknown enum values were defaulted to known values and are preserved in unknownEnumValues for JSONB storage.",
+  });
+}
+
+export const POST = withValidation(syncDataSchema)(handleSync);
