@@ -1,4 +1,6 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
+import { z } from "zod";
+import { withValidation } from "@/lib/middleware/withValidation";
 import {
   safeParseGender,
   safeParseSalutation,
@@ -8,67 +10,85 @@ import {
   isKnownEnumValue,
 } from "@/lib/validators/studentValidator";
 
-export async function POST(request: NextRequest) {
-  try {
-    const body = await request.json();
+const optionalEnumInput = z
+  .union([z.string().transform((value) => value.trim()), z.null()])
+  .optional();
 
-    const validatedData: Record<string, unknown> = {};
+const syncRequestSchema = z
+  .object({
+    gender: optionalEnumInput,
+    salutation: optionalEnumInput,
+    education_level: optionalEnumInput,
+    stream: optionalEnumInput,
+    certification_type: optionalEnumInput,
+  })
+  .passthrough();
+
+const ENUM_FIELD_CONFIG = [
+  {
+    field: "gender",
+    safeParse: safeParseGender,
+    enumType: "gender",
+    responseKey: "gender",
+    originalKey: "original_gender",
+  },
+  {
+    field: "salutation",
+    safeParse: safeParseSalutation,
+    enumType: "salutation",
+    responseKey: "salutation",
+    originalKey: "original_salutation",
+  },
+  {
+    field: "education_level",
+    safeParse: safeParseEducationLevel,
+    enumType: "educationLevel",
+    responseKey: "education_level",
+    originalKey: "original_education_level",
+  },
+  {
+    field: "stream",
+    safeParse: safeParseStream,
+    enumType: "stream",
+    responseKey: "stream",
+    originalKey: "original_stream",
+  },
+  {
+    field: "certification_type",
+    safeParse: safeParseCertificationType,
+    enumType: "certificationType",
+    responseKey: "certification_type",
+    originalKey: "original_certification_type",
+  },
+] as const;
+
+export const POST = withValidation(syncRequestSchema, async ({ validatedData }) => {
+  try {
+    const enumValues: Record<string, unknown> = {};
     const unknownEnumValues: Record<string, string> = {};
 
-    if (body.gender !== undefined && body.gender !== null) {
-      const genderResult = safeParseGender(body.gender);
-      if (genderResult.success) {
-        validatedData.gender = genderResult.data;
-        if (!isKnownEnumValue(body.gender, "gender")) {
-          unknownEnumValues.original_gender = body.gender;
-        }
+    ENUM_FIELD_CONFIG.forEach((config) => {
+      const value = validatedData[config.field];
+      if (value === undefined || value === null) {
+        return;
       }
-    }
 
-    if (body.salutation !== undefined && body.salutation !== null) {
-      const salutationResult = safeParseSalutation(body.salutation);
-      if (salutationResult.success) {
-        validatedData.salutation = salutationResult.data;
-        if (!isKnownEnumValue(body.salutation, "salutation")) {
-          unknownEnumValues.original_salutation = body.salutation;
-        }
+      const parsed = config.safeParse(value);
+      if (!parsed.success) {
+        return;
       }
-    }
 
-    if (body.education_level !== undefined && body.education_level !== null) {
-      const educationLevelResult = safeParseEducationLevel(body.education_level);
-      if (educationLevelResult.success) {
-        validatedData.education_level = educationLevelResult.data;
-        if (!isKnownEnumValue(body.education_level, "educationLevel")) {
-          unknownEnumValues.original_education_level = body.education_level;
-        }
-      }
-    }
+      enumValues[config.responseKey] = parsed.data;
 
-    if (body.stream !== undefined && body.stream !== null) {
-      const streamResult = safeParseStream(body.stream);
-      if (streamResult.success) {
-        validatedData.stream = streamResult.data;
-        if (!isKnownEnumValue(body.stream, "stream")) {
-          unknownEnumValues.original_stream = body.stream;
-        }
+      if (typeof value === "string" && !isKnownEnumValue(value, config.enumType)) {
+        unknownEnumValues[config.originalKey] = value;
       }
-    }
-
-    if (body.certification_type !== undefined && body.certification_type !== null) {
-      const certificationTypeResult = safeParseCertificationType(body.certification_type);
-      if (certificationTypeResult.success) {
-        validatedData.certification_type = certificationTypeResult.data;
-        if (!isKnownEnumValue(body.certification_type, "certificationType")) {
-          unknownEnumValues.original_certification_type = body.certification_type;
-        }
-      }
-    }
+    });
 
     return NextResponse.json({
       success: true,
       message: "Data validated successfully with enum fallback support",
-      validatedData,
+      validatedData: enumValues,
       unknownEnumValues: Object.keys(unknownEnumValues).length > 0 ? unknownEnumValues : undefined,
       note: "Unknown enum values were defaulted to known values. Original values are preserved in unknownEnumValues for JSONB storage.",
     });
@@ -81,4 +101,4 @@ export async function POST(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+});
