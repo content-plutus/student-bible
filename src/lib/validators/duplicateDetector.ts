@@ -592,6 +592,19 @@ export async function detectDuplicates(
   return detector.findPotentialDuplicates(supabase, studentData, options);
 }
 
+export async function detectDuplicateStudents(
+  supabase: SupabaseClient,
+  studentData: StudentInput,
+  options: {
+    criteria?: MatchingCriteria;
+    excludeStudentId?: string;
+  } = {},
+): Promise<DuplicateDetectionResult> {
+  return detectDuplicates(supabase, studentData, options.criteria ?? DEFAULT_MATCHING_CRITERIA, {
+    excludeStudentId: options.excludeStudentId,
+  });
+}
+
 export function createDuplicateDetector(
   criteria: MatchingCriteria = DEFAULT_MATCHING_CRITERIA,
 ): DuplicateDetector {
