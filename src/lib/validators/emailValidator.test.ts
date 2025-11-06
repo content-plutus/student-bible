@@ -1,18 +1,30 @@
 import { beforeEach, describe, expect, it, jest } from "@jest/globals";
 
 jest.mock("@supabase/auth-helpers-nextjs", () => {
-  const createFilterQuery = (initial = { error: null, count: 0 }) => {
-    let state = { result: initial };
-    const q = {} as any;
-    q.eq = jest.fn(() => q);
-    q.neq = jest.fn(() => q);
-    q.then = jest.fn((onFulfilled, onRejected) =>
-      Promise.resolve(state.result).then(onFulfilled, onRejected),
-    );
-    q.setResponse = (res: any) => {
+  type SelectResult = { error: { message: string } | null; count: number | null };
+
+  type FilterQueryMock = {
+    eq: jest.Mock<FilterQueryMock, [string, unknown]>;
+    neq: jest.Mock<FilterQueryMock, [string, unknown]>;
+    setResponse: (result: SelectResult) => void;
+    then: jest.Mock<ReturnType<FilterQueryMock["then"]>, Parameters<FilterQueryMock["then"]>>;
+  } & PromiseLike<SelectResult>;
+
+  const createFilterQuery = (initial = { error: null, count: 0 }): FilterQueryMock => {
+    const state = { result: initial };
+    const q: Partial<FilterQueryMock> = {};
+
+    const thenImpl: FilterQueryMock["then"] = (onFulfilled, onRejected) =>
+      Promise.resolve(state.result).then(onFulfilled, onRejected);
+
+    q.eq = jest.fn(() => q as FilterQueryMock);
+    q.neq = jest.fn(() => q as FilterQueryMock);
+    q.then = jest.fn(thenImpl);
+    q.setResponse = (res: SelectResult) => {
       state.result = res;
     };
-    return q;
+
+    return q as FilterQueryMock;
   };
 
   const filterQuery = createFilterQuery();
@@ -25,7 +37,9 @@ jest.mock("@supabase/auth-helpers-nextjs", () => {
   };
 });
 
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 const { isEmailUnique } = require("./emailValidator");
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 const { __test } = require("@supabase/auth-helpers-nextjs");
 const { filterQuery, select, from } = __test;
 
