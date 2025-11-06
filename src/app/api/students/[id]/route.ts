@@ -120,20 +120,24 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
   try {
     const body = await request.json();
 
-    const validatedData = studentUpdateSchema.partial().parse(body);
+    const validatedData = studentUpdateSchema.parse(body);
 
     const supabase = getSupabaseClient();
 
     const { extra_fields, ...coreFields } = validatedData;
 
-    const { error: fetchError } = await supabase
-      .from("students")
-      .select("id")
-      .eq("id", params.id)
-      .single();
+    const { data: updatedStudent, error: rpcError } = await supabase.rpc(
+      "students_update_profile",
+      {
+        student_id: params.id,
+        core_patch: coreFields,
+        extra_patch: extra_fields || {},
+        strip_nulls: true,
+      },
+    );
 
-    if (fetchError) {
-      if (fetchError.code === "PGRST116") {
+    if (rpcError) {
+      if (rpcError.message && rpcError.message.includes("not found")) {
         return NextResponse.json(
           {
             success: false,
@@ -142,40 +146,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
           { status: 404 },
         );
       }
-      throw fetchError;
-    }
-
-    if (Object.keys(coreFields).length > 0) {
-      const { error: updateError } = await supabase
-        .from("students")
-        .update(coreFields)
-        .eq("id", params.id);
-
-      if (updateError) {
-        throw updateError;
-      }
-    }
-
-    if (extra_fields && Object.keys(extra_fields).length > 0) {
-      const { error: rpcError } = await supabase.rpc("students_update_extra_fields", {
-        student_id: params.id,
-        patch: extra_fields,
-        strip_nulls: true,
-      });
-
-      if (rpcError) {
-        throw rpcError;
-      }
-    }
-
-    const { data: updatedStudent, error: refetchError } = await supabase
-      .from("students")
-      .select("*")
-      .eq("id", params.id)
-      .single();
-
-    if (refetchError) {
-      throw refetchError;
+      throw rpcError;
     }
 
     const { extra_fields: updatedExtraFields, ...updatedCoreFields } = updatedStudent;
