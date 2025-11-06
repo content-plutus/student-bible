@@ -100,6 +100,27 @@ function validateExtraFieldKeys(extraFields: Record<string, unknown>): string[] 
   return invalidKeys;
 }
 
+function coerceExtraFieldTypes(extraFields: Record<string, unknown>): Record<string, unknown> {
+  const coerced: Record<string, unknown> = {};
+  const booleanFields = ["mentor_assigned", "whatsapp_opt_in"];
+
+  for (const [key, value] of Object.entries(extraFields)) {
+    if (booleanFields.includes(key) && typeof value === "string") {
+      if (value.toLowerCase() === "true") {
+        coerced[key] = true;
+      } else if (value.toLowerCase() === "false") {
+        coerced[key] = false;
+      } else {
+        coerced[key] = value;
+      }
+    } else {
+      coerced[key] = value;
+    }
+  }
+
+  return coerced;
+}
+
 export async function POST(request: NextRequest) {
   const authError = validateApiKey(request);
   if (authError) {
@@ -352,12 +373,28 @@ export async function GET(request: NextRequest) {
     const result = await detectDuplicates(supabase, studentData, criteria);
 
     if (hasExtraFields && result.matches && result.matches.length > 0) {
-      const filteredMatches = result.matches.filter((match) => {
-        const studentExtraFields = match.student.extra_fields || {};
-        return Object.entries(extraFields).every(([key, value]) => {
-          return studentExtraFields[key] === value;
-        });
-      });
+      const matchedIds = result.matches.map((match) => match.student.id);
+
+      const coercedExtraFields = coerceExtraFieldTypes(extraFields);
+
+      const { data: matchingStudents, error: filterError } = await supabase
+        .from("students")
+        .select("id")
+        .in("id", matchedIds)
+        .contains("extra_fields", coercedExtraFields);
+
+      if (filterError) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: `Error filtering by extra fields: ${filterError.message}`,
+          },
+          { status: 500 },
+        );
+      }
+
+      const matchingIdSet = new Set(matchingStudents?.map((s) => s.id) || []);
+      const filteredMatches = result.matches.filter((match) => matchingIdSet.has(match.student.id));
 
       return NextResponse.json({
         success: true,
