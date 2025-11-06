@@ -86,12 +86,10 @@ export const validateExtraFieldsWithBatchCode = (
   extraFields: Record<string, unknown>,
   certificationType: CertificationType | null | undefined,
 ): JsonbValidationResult<Record<string, unknown>> => {
-  const registryValidation = validateJsonbPayload(
-    "students",
-    "extra_fields",
-    extraFields,
-    { allowPartial: true, stripUnknownKeys: false },
-  );
+  const registryValidation = validateJsonbPayload("students", "extra_fields", extraFields, {
+    allowPartial: true,
+    stripUnknownKeys: false,
+  });
 
   if (!registryValidation.success) {
     return {
@@ -100,8 +98,7 @@ export const validateExtraFieldsWithBatchCode = (
     };
   }
 
-  const sanitizedExtraFields =
-    (registryValidation.data as Record<string, unknown>) ?? extraFields;
+  const sanitizedExtraFields = (registryValidation.data as Record<string, unknown>) ?? extraFields;
   const batchCodeResult = validateBatchCodeFromExtraFields(sanitizedExtraFields, certificationType);
 
   if (!batchCodeResult.success) {

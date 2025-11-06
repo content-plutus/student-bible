@@ -52,9 +52,10 @@ class JsonbSchemaRegistry {
     this.schemas.set(key, definition);
   }
 
-  public get<TSchema extends ZodTypeAny>(table: string, column: string):
-    | JsonbSchemaDefinition<TSchema>
-    | undefined {
+  public get<TSchema extends ZodTypeAny>(
+    table: string,
+    column: string,
+  ): JsonbSchemaDefinition<TSchema> | undefined {
     const key = this.getKey(table, column);
     return this.schemas.get(key) as JsonbSchemaDefinition<TSchema> | undefined;
   }
@@ -95,7 +96,11 @@ class JsonbSchemaRegistry {
       };
     }
 
-    const unknownKeys = this.computeUnknownKeys(definition.schema, payload, definition.allowUnknownKeys);
+    const unknownKeys = this.computeUnknownKeys(
+      definition.schema,
+      payload,
+      definition.allowUnknownKeys,
+    );
 
     return {
       success: true,
@@ -211,8 +216,18 @@ const studentCertificationCustomFieldsSchema = z
     cohort_start_date: z.string().datetime().optional().nullable(),
     cohort_end_date: z.string().datetime().optional().nullable(),
     cohort_lead: z.string().trim().max(120).optional().nullable(),
-    batch_prefix: z.string().trim().regex(/^[A-Z0-9_-]{2,10}$/).optional().nullable(),
-    batch_identifier: z.string().trim().regex(/^[A-Z0-9_-]{2,20}$/).optional().nullable(),
+    batch_prefix: z
+      .string()
+      .trim()
+      .regex(/^[A-Z0-9_-]{2,10}$/)
+      .optional()
+      .nullable(),
+    batch_identifier: z
+      .string()
+      .trim()
+      .regex(/^[A-Z0-9_-]{2,20}$/)
+      .optional()
+      .nullable(),
     enrollment_channel: leadSourceSchema.optional().nullable(),
     notes: z.string().trim().max(4000).optional().nullable(),
   })

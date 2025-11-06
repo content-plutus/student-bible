@@ -26,10 +26,7 @@ type FilterQuery = {
   neq: jest.Mock<FilterQuery, [string, unknown]>;
   then: jest.Mock<
     Promise<unknown>,
-    [
-      (value: ResolverResult) => unknown,
-      ((reason: unknown) => unknown) | undefined
-    ]
+    [(value: ResolverResult) => unknown, ((reason: unknown) => unknown) | undefined]
   >;
 };
 
@@ -50,10 +47,7 @@ const createFilterQuery = (table: string, resolver: Resolver) => {
 
   filterQuery.then = jest.fn<
     Promise<unknown>,
-    [
-      (value: ResolverResult) => unknown,
-      ((reason: unknown) => unknown) | undefined
-    ]
+    [(value: ResolverResult) => unknown, ((reason: unknown) => unknown) | undefined]
   >((onFulfilled, onRejected) => {
     try {
       const result = resolver({ table, filters });
@@ -103,10 +97,11 @@ describe("detectDuplicateStudents", () => {
   it("returns empty result when no identifiers are provided", async () => {
     const supabase = createSupabaseMock(() => ({ data: [], error: null }));
 
-    const result = await detectDuplicateStudents(
-      supabase,
-      { email: null, phoneNumber: undefined, guardianPhone: "" },
-    );
+    const result = await detectDuplicateStudents(supabase, {
+      email: null,
+      phoneNumber: undefined,
+      guardianPhone: "",
+    });
 
     expect(result.hasMatches).toBe(false);
     expect(result.matches).toHaveLength(0);
@@ -197,8 +192,8 @@ describe("detectDuplicateStudents", () => {
       error: { message: "database unreachable" },
     }));
 
-    await expect(
-      detectDuplicateStudents(supabase, { email: "error@example.com" }),
-    ).rejects.toThrow("Failed to check duplicates by email: database unreachable");
+    await expect(detectDuplicateStudents(supabase, { email: "error@example.com" })).rejects.toThrow(
+      "Failed to check duplicates by email: database unreachable",
+    );
   });
 });

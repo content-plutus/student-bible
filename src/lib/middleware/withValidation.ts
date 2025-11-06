@@ -2,11 +2,7 @@ import { NextResponse } from "next/server";
 import type { ZodError, ZodTypeAny, z } from "zod";
 import { formatValidationErrors } from "@/lib/utils/errorFormatter";
 
-type BodyParser =
-  | "json"
-  | "formData"
-  | "text"
-  | ((request: Request) => Promise<unknown>);
+type BodyParser = "json" | "formData" | "text" | ((request: Request) => Promise<unknown>);
 
 export interface WithValidationOptions {
   /**
@@ -102,7 +98,7 @@ export function withValidation<TSchema extends ZodTypeAny, TContext = unknown>(
 
     return handler({
       request,
-      context: (context ?? ({} as TContext)),
+      context: context ?? ({} as TContext),
       validatedData: validationResult.data,
       rawInput,
     });
