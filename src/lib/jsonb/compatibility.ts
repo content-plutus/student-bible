@@ -185,6 +185,10 @@ class JsonbCompatibilityRegistry {
 
     return false;
   }
+
+  public clear(): void {
+    this.rules.clear();
+  }
 }
 
 export const jsonbCompatibilityRegistry = new JsonbCompatibilityRegistry();

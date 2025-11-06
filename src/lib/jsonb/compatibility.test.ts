@@ -1,5 +1,13 @@
-import { describe, expect, it } from "@jest/globals";
-import { applyCompatibilityRules, registerCompatibilityRule } from "@/lib/jsonb/compatibility";
+import { afterEach, describe, expect, it } from "@jest/globals";
+import {
+  applyCompatibilityRules,
+  registerCompatibilityRule,
+  jsonbCompatibilityRegistry,
+} from "@/lib/jsonb/compatibility";
+
+afterEach(() => {
+  jsonbCompatibilityRegistry.clear();
+});
 
 describe("jsonb compatibility registry", () => {
   it("tracks nested mutations performed inside transform callbacks", () => {
