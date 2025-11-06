@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { academicInfoExtraFieldsSchema } from "@/lib/jsonb/schemaRegistry";
 
 const currentYear = new Date().getFullYear();
 
@@ -17,7 +18,7 @@ export const academicInfoSchema = z.object({
     .nullable(),
   stream_12th: z.string().nullable(),
   grades: z.record(z.string(), z.unknown()).nullable(),
-  extra_fields: z.record(z.string(), z.unknown()).default({}),
+  extra_fields: academicInfoExtraFieldsSchema.default({}),
   created_at: z.string().datetime(),
   updated_at: z.string().datetime(),
 });

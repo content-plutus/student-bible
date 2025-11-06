@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { studentCertificationCustomFieldsSchema } from "@/lib/jsonb/schemaRegistry";
 
 export const certificationStatusEnum = z.enum([
   "planned",
@@ -21,7 +22,7 @@ export const studentCertificationSchema = z
     total_papers_target: z.number().int().min(0).nullable(),
     batch_code: z.string().trim().nullable().optional(),
     projected_exam: z.string().date().nullable(),
-    custom_fields: z.record(z.string(), z.unknown()).default({}),
+    custom_fields: studentCertificationCustomFieldsSchema.default({}),
     created_at: z.string().datetime(),
     updated_at: z.string().datetime(),
   })

@@ -76,7 +76,7 @@
   - [x] 1.14 Create initial documentation structure in `/docs` folder
   - [x] 1.15 Configure GitHub Actions for CI/CD pipeline
 
-- [ ] 2.0 Design and Implement Extensible Database Schema with JSONB Support
+- [x] 2.0 Design and Implement Extensible Database Schema with JSONB Support
   - [x] 2.1 Create `students` table with core fields and `extra_fields JSONB` column for future extensions
   - [x] 2.2 Add identification fields with proper constraints (aadhar_number UNIQUE WHERE NOT NULL)
   - [x] 2.3 Create `addresses` table with `additional_data JSONB` for unmapped address fields
@@ -108,16 +108,16 @@
   - [x] 3.7 Create dynamic batch code validation based on certification type
   - [x] 3.8 Implement date validations with business logic (age >= 16, passing year <= current+5)
   - [x] 3.9 Create cross-field validation rules using Zod refinements
-  - [ ] 3.10 Implement enum validations with fallback for unknown values
+  - [x] 3.10 Implement enum validations with fallback for unknown values
   - [x] 3.11 Create data normalization functions (title case, trim, phone formatting)
-  - [ ] 3.12 Build duplicate detection with configurable matching criteria
-  - [ ] 3.13 Create validation error formatter with field-specific messages
-  - [ ] 3.14 Implement validation middleware for Next.js API routes
-  - [ ] 3.15 Create validation for JSONB fields with schema registry
+  - [x] 3.12 Build duplicate detection with configurable matching criteria
+    - Keep this lightweight: reuse Supabase lookups on email + phone (optional guardian phone) with simple threshold flags instead of fuzzy matching frameworks.
+  - [x] 3.13 Create validation error formatter with field-specific messages
+  - [x] 3.14 Implement validation middleware for Next.js API routes
+- [x] 3.15 Create validation for JSONB fields with schema registry
   - [ ] 3.16 Build backward compatibility layer for schema changes
-  - [ ] 3.17 Implement optional field validation with NULL handling
-  - [ ] 3.18 Create validation performance monitoring and caching
-  - [ ] 3.19 Write comprehensive unit tests for all validators
+  - [x] 3.17 Implement optional field validation with NULL handling
+  - [x] 3.19 Write comprehensive unit tests for all validators
   - [ ] 3.20 Document validation rules and error codes
 
 - [ ] 4.0 Develop Core Backend Services with Dynamic Field Handling
@@ -131,7 +131,6 @@
   - [ ] 4.8 Implement batch import API with progress tracking and rollback
   - [ ] 4.9 Create authentication middleware with JWT validation
   - [ ] 4.10 Build comprehensive error handling with error classification
-  - [ ] 4.11 Implement rate limiting using Redis or in-memory store
   - [ ] 4.12 Create health check endpoint with dependency status
   - [ ] 4.13 Build OpenAPI documentation with dynamic schema generation
   - [ ] 4.14 Implement JSONB query builder for dynamic field searches
@@ -178,10 +177,7 @@
   - [ ] 6.13 Build retry mechanism with exponential backoff
   - [ ] 6.14 Create detailed sync logging with error categorization
   - [ ] 6.15 Implement data reconciliation with diff generation
-  - [ ] 6.16 Build schema evolution detector for new form fields
   - [ ] 6.17 Create field mapping UI for administrators
-  - [ ] 6.18 Implement data quality monitoring with alerts
-  - [ ] 6.19 Build sync performance optimization with batching
   - [ ] 6.20 Write end-to-end integration tests
 
 - [ ] 7.0 Setup Migration Tools with Schema Extension Capabilities
@@ -225,3 +221,10 @@
   - [ ] 8.17 Set up log aggregation with search capabilities
   - [ ] 8.18 Implement security scanning and dependency updates
   - [ ] 8.19 Conduct load testing and performance optimization
+
+### Stretch Goals (Enterprise Enhancements)
+- [ ] 3.18 Create validation performance monitoring and caching
+- [ ] 4.11 Implement rate limiting using Redis or in-memory store
+- [ ] 6.16 Build schema evolution detector for new form fields
+- [ ] 6.18 Implement data quality monitoring with alerts
+- [ ] 6.19 Build sync performance optimization with batching

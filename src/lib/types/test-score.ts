@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { testScoreAnalysisSchema } from "@/lib/jsonb/schemaRegistry";
 
 export const testScoreSchema = z.object({
   id: z.string().uuid(),
@@ -9,7 +10,7 @@ export const testScoreSchema = z.object({
   score: z.number().min(0).max(999.99).nullable(),
   max_score: z.number().min(0).max(999.99).nullable(),
   weighted_score: z.number().min(0).max(999.99).nullable(),
-  analysis_data: z.record(z.string(), z.unknown()).default({}),
+  analysis_data: testScoreAnalysisSchema.default({}),
   created_at: z.string().datetime(),
   updated_at: z.string().datetime(),
 });

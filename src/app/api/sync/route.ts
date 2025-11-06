@@ -16,6 +16,7 @@ import {
   dateOfBirthSchema,
 } from "@/lib/types/validations";
 import { isKnownEnumValue } from "@/lib/validators/rules";
+import { studentExtraFieldsSchema } from "@/lib/jsonb/schemaRegistry";
 
 const syncDataSchema = z
   .object({
@@ -35,7 +36,7 @@ const syncDataSchema = z
     education_level: educationLevelSchema,
     stream: streamSchema,
     certification_type: certificationTypeSchema,
-    extra_fields: z.record(z.unknown()).optional().default({}),
+    extra_fields: studentExtraFieldsSchema.optional().default({}),
   })
   .refine((data) => !data.guardian_phone || data.guardian_phone !== data.phone_number, {
     message: "Guardian phone number must be different from student's phone number",

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { formSubmissionRawDataSchema } from "@/lib/jsonb/schemaRegistry";
 
 export const formSubmissionSchema = z.object({
   id: z.string().uuid(),
@@ -6,7 +7,7 @@ export const formSubmissionSchema = z.object({
   form_name: z.string().min(1, "Form name is required"),
   submission_id: z.string().nullable(),
   submitted_at: z.string().datetime().nullable(),
-  raw_data: z.record(z.string(), z.unknown()),
+  raw_data: formSubmissionRawDataSchema,
   processed: z.boolean().default(false),
   created_at: z.string().datetime(),
   updated_at: z.string().datetime(),

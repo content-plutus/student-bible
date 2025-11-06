@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { studentExtraFieldsSchema } from "@/lib/jsonb/schemaRegistry";
 
 export const studentSchema = z
   .object({
@@ -37,7 +38,7 @@ export const studentSchema = z
       )
       .nullable(),
     enrollment_status: z.string().nullable(),
-    extra_fields: z.record(z.string(), z.unknown()).default({}),
+    extra_fields: studentExtraFieldsSchema.default({}),
   })
   .refine(
     (data) => {
