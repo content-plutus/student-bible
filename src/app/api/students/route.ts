@@ -3,6 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 import { detectDuplicates } from "@/lib/validators/duplicateDetector";
 import { DEFAULT_MATCHING_CRITERIA, getPreset } from "@/lib/validators/matchingRules";
 import { studentInsertSchema } from "@/lib/types/student";
+import { studentExtraFieldsSchema } from "@/lib/jsonb/schemaRegistry";
 import { z } from "zod";
 
 if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
@@ -76,6 +77,7 @@ const studentSearchSchema = z
     aadhar_number: z.string().optional(),
     guardian_phone: z.string().optional(),
     pan_number: z.string().optional(),
+    extraFields: z.record(z.string(), z.unknown()).optional(),
   })
   .refine((data) => Object.values(data).some((v) => v !== undefined && v !== null), {
     message: "At least one field must be provided for duplicate detection",
@@ -83,6 +85,19 @@ const studentSearchSchema = z
 
 function getSupabaseClient() {
   return createClient(supabaseUrl, supabaseServiceKey);
+}
+
+function validateExtraFieldKeys(extraFields: Record<string, unknown>): string[] {
+  const invalidKeys: string[] = [];
+  const schemaShape = studentExtraFieldsSchema.shape;
+
+  for (const key of Object.keys(extraFields)) {
+    if (!(key in schemaShape)) {
+      invalidKeys.push(key);
+    }
+  }
+
+  return invalidKeys;
 }
 
 export async function POST(request: NextRequest) {
@@ -260,18 +275,68 @@ export async function GET(request: NextRequest) {
     const lastName = searchParams.get("lastName");
     const preset = searchParams.get("preset");
 
-    if (!phone && !email && !aadhar && !firstName && !lastName) {
+    const extraFields: Record<string, unknown> = {};
+    for (const [key, value] of searchParams.entries()) {
+      const match = key.match(/^extraField\[(.+)\]$/);
+      if (match) {
+        extraFields[match[1]] = value;
+      }
+    }
+
+    const hasStandardFields = phone || email || aadhar || firstName || lastName;
+    const hasExtraFields = Object.keys(extraFields).length > 0;
+
+    if (!hasStandardFields && !hasExtraFields) {
       return NextResponse.json(
         {
           success: false,
           error:
-            "At least one search parameter is required (phone, email, aadhar, firstName, or lastName)",
+            "At least one search parameter is required (phone, email, aadhar, firstName, lastName, or extraField[key])",
         },
         { status: 400 },
       );
     }
 
+    if (hasExtraFields) {
+      const invalidKeys = validateExtraFieldKeys(extraFields);
+      if (invalidKeys.length > 0) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: `Invalid extra field keys: ${invalidKeys.join(", ")}. Please use valid fields from the students.extra_fields schema.`,
+          },
+          { status: 400 },
+        );
+      }
+    }
+
     const supabase = getSupabaseClient();
+
+    if (!hasStandardFields && hasExtraFields) {
+      const { data: students, error: searchError } = await supabase
+        .from("students")
+        .select("*")
+        .contains("extra_fields", extraFields);
+
+      if (searchError) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: `Search error: ${searchError.message}`,
+          },
+          { status: 500 },
+        );
+      }
+
+      return NextResponse.json({
+        success: true,
+        result: {
+          hasPotentialDuplicates: students && students.length > 0,
+          matches: students || [],
+          totalMatches: students?.length || 0,
+        },
+      });
+    }
 
     const studentData: Record<string, string> = {};
     if (phone) studentData.phone_number = phone;
@@ -285,6 +350,25 @@ export async function GET(request: NextRequest) {
       : DEFAULT_MATCHING_CRITERIA;
 
     const result = await detectDuplicates(supabase, studentData, criteria);
+
+    if (hasExtraFields && result.matches && result.matches.length > 0) {
+      const filteredMatches = result.matches.filter((match) => {
+        const studentExtraFields = match.student.extra_fields || {};
+        return Object.entries(extraFields).every(([key, value]) => {
+          return studentExtraFields[key] === value;
+        });
+      });
+
+      return NextResponse.json({
+        success: true,
+        result: {
+          ...result,
+          matches: filteredMatches,
+          totalMatches: filteredMatches.length,
+          hasPotentialDuplicates: filteredMatches.length > 0,
+        },
+      });
+    }
 
     return NextResponse.json({
       success: true,
