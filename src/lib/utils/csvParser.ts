@@ -9,11 +9,6 @@ import {
   validatePanNumber,
   validatePostalCode,
   validateGuardianPhone,
-  validateGender,
-  validateSalutation,
-  validateEducationLevel,
-  validateStream,
-  validateCertificationType,
   validateBatchCode,
 } from "@/lib/validators/studentValidator";
 import { ENUM_VALUES } from "@/lib/validators/rules";
@@ -373,8 +368,12 @@ export class DynamicCsvParser {
           const fieldWithoutUnderscores = field.replace(/_/g, "");
           return (
             fieldWithoutUnderscores.toLowerCase() === normalizedWithoutUnderscores.toLowerCase() ||
-            normalizedWithoutUnderscores.toLowerCase().startsWith(fieldWithoutUnderscores.toLowerCase()) ||
-            fieldWithoutUnderscores.toLowerCase().startsWith(normalizedWithoutUnderscores.toLowerCase())
+            normalizedWithoutUnderscores
+              .toLowerCase()
+              .startsWith(fieldWithoutUnderscores.toLowerCase()) ||
+            fieldWithoutUnderscores
+              .toLowerCase()
+              .startsWith(normalizedWithoutUnderscores.toLowerCase())
           );
         });
         if (fuzzyMatch) {
@@ -473,7 +472,9 @@ export class DynamicCsvParser {
 
       case "education_level":
         if (!value) return null;
-        return ENUM_VALUES.educationLevel.includes(value as never) ? null : "Invalid education level";
+        return ENUM_VALUES.educationLevel.includes(value as never)
+          ? null
+          : "Invalid education level";
 
       case "stream":
         if (!value) return null;
