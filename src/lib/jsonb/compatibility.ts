@@ -47,7 +47,7 @@ class JsonbCompatibilityRegistry {
     }
 
     const appliedRules: string[] = [];
-    const workingPayload = { ...payload };
+    const workingPayload = this.clonePayload(payload);
 
     for (const rule of rules) {
       let changed = false;
@@ -96,9 +96,11 @@ class JsonbCompatibilityRegistry {
       }
 
       if (rule.transform) {
-        const snapshot = { ...workingPayload };
+        const snapshot = this.clonePayload(workingPayload);
         rule.transform(workingPayload);
-        changed = changed || this.detectDifference(snapshot, workingPayload);
+        if (this.detectDifference(snapshot, workingPayload)) {
+          changed = true;
+        }
       }
 
       if (changed) {
@@ -113,18 +115,75 @@ class JsonbCompatibilityRegistry {
   }
 
   private detectDifference(before: Record<string, unknown>, after: Record<string, unknown>) {
-    const beforeKeys = Object.keys(before);
-    const afterKeys = Object.keys(after);
-
-    if (beforeKeys.length !== afterKeys.length) {
-      return true;
-    }
-
-    return beforeKeys.some((key) => before[key] !== after[key]);
+    return !this.deepEqual(before, after);
   }
 
   private getKey(table: string, column: string): JsonbKey {
     return `${table}.${column}`;
+  }
+
+  private clonePayload<T>(payload: T): T {
+    const globalWithClone = globalThis as {
+      structuredClone?: <U>(value: U) => U;
+    };
+
+    if (typeof globalWithClone.structuredClone === "function") {
+      try {
+        return globalWithClone.structuredClone(payload);
+      } catch {
+        // fall through to JSON clone
+      }
+    }
+
+    return JSON.parse(JSON.stringify(payload));
+  }
+
+  private deepEqual(a: unknown, b: unknown): boolean {
+    if (Object.is(a, b)) {
+      return true;
+    }
+
+    if (typeof a !== typeof b) {
+      return false;
+    }
+
+    if (a === null || b === null) {
+      return a === b;
+    }
+
+    if (Array.isArray(a) && Array.isArray(b)) {
+      if (a.length !== b.length) {
+        return false;
+      }
+
+      for (let i = 0; i < a.length; i += 1) {
+        if (!this.deepEqual(a[i], b[i])) {
+          return false;
+        }
+      }
+      return true;
+    }
+
+    if (typeof a === "object" && typeof b === "object") {
+      const aKeys = Object.keys(a as Record<string, unknown>);
+      const bKeys = Object.keys(b as Record<string, unknown>);
+
+      if (aKeys.length !== bKeys.length) {
+        return false;
+      }
+
+      for (const key of aKeys) {
+        if (
+          !this.deepEqual((a as Record<string, unknown>)[key], (b as Record<string, unknown>)[key])
+        ) {
+          return false;
+        }
+      }
+
+      return true;
+    }
+
+    return false;
   }
 }
 

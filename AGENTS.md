@@ -27,3 +27,7 @@ Jest plus Testing Library back our unit and interaction tests. Place new specs b
 ## Commit & Pull Request Guidelines
 
 Write imperative, present-tense commit subjects under 72 characters (e.g., `Add conditional landmark requirement`). Group related changes per commit and note follow-up work in the body if required. Pull requests need a concise summary, linked Linear/Jira issue when available, screenshots or Looms for UI updates, and verification notes for database-affecting work.
+
+## Issue Resolution Playbook
+
+Before applying fixes for recurring problems, review `docs/processes/issues-log.md` for previously successful approaches, and append any new lessons after resolving an issue.
