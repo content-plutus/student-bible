@@ -30,5 +30,21 @@ describe("schemaEvolution", () => {
       expect(result.success).toBe(false);
       expect(result.error).toBe("Please enter a valid email address");
     });
+
+    it("upgrades legacy camelCase keys and values", () => {
+      const result = validateExtraFieldsWithBatchCode(
+        {
+          mentorName: "Legacy Mentor",
+          certificationType: "USCMA",
+        },
+        null,
+      );
+
+      expect(result.success).toBe(true);
+      expect(result.data).toEqual({
+        mentor_name: "Legacy Mentor",
+        certification_type: "US CMA",
+      });
+    });
   });
 });
