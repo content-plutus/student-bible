@@ -128,7 +128,7 @@ function isPostgrestError(error: unknown): error is PostgrestError {
 /**
  * Validate and throw ValidationError if validation fails
  */
-export function validateOrThrow<T>(
+export function validateOrThrow(
   isValid: boolean,
   message: string,
   options?: { field?: string; details?: Array<{ field?: string; message: string }> },
