@@ -109,6 +109,7 @@ export interface ErrorResponse {
     field?: string;
     timestamp: string;
     requestId?: string;
+    metadata?: ErrorMetadata;
   };
 }
 
