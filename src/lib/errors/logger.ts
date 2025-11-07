@@ -1,5 +1,5 @@
 import { AppError } from "./AppError";
-import { ErrorCategory, ErrorSeverity, ErrorMetadata } from "./types";
+import { ErrorSeverity, ErrorMetadata } from "./types";
 
 /**
  * Error logger interface for extensibility

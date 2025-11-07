@@ -9,7 +9,6 @@ import {
   handleDatabaseOperation,
   ErrorCode,
 } from "@/lib/errors";
-import { logError } from "@/lib/errors/logger";
 
 if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
   throw new Error(

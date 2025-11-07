@@ -1,7 +1,8 @@
 import { NextRequest } from "next/server";
-import { AppError, ValidationError, DatabaseError } from "./AppError";
+import { AppError, ValidationError } from "./AppError";
 import { createErrorResponse, createSuccessResponse } from "./errorHandler";
 import { ErrorMetadata } from "./types";
+import type { PostgrestError } from "@supabase/supabase-js";
 
 /**
  * Generate request ID from headers or create new one
@@ -98,18 +99,30 @@ export async function handleDatabaseOperation<T>(
       throw error;
     }
 
-    // Convert database errors to DatabaseError
-    if (error && typeof error === "object" && "code" in error) {
-      const dbError = error as { code?: string; message: string };
-      throw new DatabaseError(dbError.message || "Database operation failed", undefined, {
-        severity: undefined,
-        metadata: context?.metadata,
-      });
+    // Propagate Postgrest/Supabase errors so the response formatter can classify them
+    if (isPostgrestError(error)) {
+      const enrichedError: PostgrestError & { metadata?: ErrorMetadata } = {
+        ...error,
+        metadata: {
+          ...(error as { metadata?: ErrorMetadata }).metadata,
+          ...(context?.metadata ?? {}),
+        },
+      };
+      throw enrichedError;
     }
 
     // Re-throw unknown errors
     throw error;
   }
+}
+
+function isPostgrestError(error: unknown): error is PostgrestError {
+  if (!error || typeof error !== "object") {
+    return false;
+  }
+
+  const maybeError = error as { code?: unknown; message?: unknown };
+  return typeof maybeError.code === "string" && typeof maybeError.message === "string";
 }
 
 /**
