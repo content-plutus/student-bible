@@ -167,7 +167,14 @@ function getErrorCode(error: unknown): string {
 }
 
 export function handleError(error: unknown, req?: NextRequest): NextResponse<ErrorResponse> {
-  const requestInfo = req ? { method: req.method, path: new URL(req.url).pathname } : undefined;
+  let requestInfo: { method: string; path: string } | undefined;
+  if (req) {
+    try {
+      requestInfo = { method: req.method, path: new URL(req.url).pathname };
+    } catch {
+      requestInfo = { method: req.method, path: req.url || "unknown" };
+    }
+  }
   console.error("Error in API handler:", error, requestInfo);
 
   if (error instanceof ZodError) {
