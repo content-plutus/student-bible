@@ -122,7 +122,7 @@ export interface JsonbQueryOptions {
  * ```
  */
 export class JsonbQueryBuilder<T> {
-  private query: PostgrestFilterBuilder<any, any, T>;
+  private query: PostgrestFilterBuilder<unknown, unknown, T>;
   private column: string;
   private usePathOperators: boolean;
 
@@ -132,7 +132,10 @@ export class JsonbQueryBuilder<T> {
    * @param queryBuilder - Supabase PostgREST query builder instance
    * @param options - Query builder options
    */
-  constructor(queryBuilder: PostgrestQueryBuilder<any, any, T>, options: JsonbQueryOptions = {}) {
+  constructor(
+    queryBuilder: PostgrestQueryBuilder<unknown, unknown, T>,
+    options: JsonbQueryOptions = {},
+  ) {
     this.query = queryBuilder.select("*");
     this.column = options.column || "extra_fields";
     this.usePathOperators = options.usePathOperators ?? true;
@@ -381,14 +384,14 @@ export class JsonbQueryBuilder<T> {
    * Gets the underlying Supabase query builder
    * Use this to add additional non-JSONB filters or execute the query
    */
-  getQuery(): PostgrestFilterBuilder<any, any, T> {
+  getQuery(): PostgrestFilterBuilder<unknown, unknown, T> {
     return this.query;
   }
 
   /**
    * Executes the query and returns results
    */
-  async execute(): Promise<{ data: T[] | null; error: any }> {
+  async execute(): Promise<{ data: T[] | null; error: unknown }> {
     return await this.query;
   }
 }
@@ -401,7 +404,7 @@ export class JsonbQueryBuilder<T> {
  * @returns New JsonbQueryBuilder instance
  */
 export function createJsonbQueryBuilder<T>(
-  queryBuilder: PostgrestQueryBuilder<any, any, T>,
+  queryBuilder: PostgrestQueryBuilder<unknown, unknown, T>,
   options?: JsonbQueryOptions,
 ): JsonbQueryBuilder<T> {
   return new JsonbQueryBuilder(queryBuilder, options);
@@ -417,10 +420,10 @@ export function createJsonbQueryBuilder<T>(
  * @returns Modified query builder
  */
 export function jsonbContains<T>(
-  queryBuilder: PostgrestQueryBuilder<any, any, T>,
+  queryBuilder: PostgrestQueryBuilder<unknown, unknown, T>,
   column: string,
   fields: Record<string, JsonbValue>,
-): PostgrestFilterBuilder<any, any, T> {
+): PostgrestFilterBuilder<unknown, unknown, T> {
   return queryBuilder.contains(column, fields);
 }
 
@@ -433,10 +436,10 @@ export function jsonbContains<T>(
  * @returns Modified query builder
  */
 export function jsonbKeyExists<T>(
-  queryBuilder: PostgrestQueryBuilder<any, any, T>,
+  queryBuilder: PostgrestQueryBuilder<unknown, unknown, T>,
   column: string,
   key: string,
-): PostgrestFilterBuilder<any, any, T> {
+): PostgrestFilterBuilder<unknown, unknown, T> {
   // Use the ? operator via contains with a minimal object
   return queryBuilder.contains(column, { [key]: null });
 }

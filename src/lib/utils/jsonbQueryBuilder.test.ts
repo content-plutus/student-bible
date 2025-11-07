@@ -1,5 +1,5 @@
 import { JsonbQueryBuilder, createJsonbQueryBuilder, jsonbContains, jsonbKeyExists } from "./jsonbQueryBuilder";
-import type { PostgrestQueryBuilder, PostgrestFilterBuilder } from "@supabase/supabase-js";
+import type { PostgrestQueryBuilder } from "@supabase/supabase-js";
 
 // Mock Supabase query builder
 const createMockQueryBuilder = () => {
@@ -33,17 +33,21 @@ const createMockQueryBuilder = () => {
 
 describe("JsonbQueryBuilder", () => {
   let mockQuery: ReturnType<typeof createMockQueryBuilder>;
-  let queryBuilder: PostgrestQueryBuilder<any, any, any>;
+  let queryBuilder: PostgrestQueryBuilder<unknown, unknown, unknown>;
 
   beforeEach(() => {
     mockQuery = createMockQueryBuilder();
-    queryBuilder = mockQuery.from("students") as unknown as PostgrestQueryBuilder<any, any, any>;
+    queryBuilder = mockQuery.from("students") as unknown as PostgrestQueryBuilder<
+      unknown,
+      unknown,
+      unknown
+    >;
     jest.clearAllMocks();
   });
 
   describe("constructor", () => {
     it("should create a query builder with default options", () => {
-      const builder = new JsonbQueryBuilder(queryBuilder);
+      new JsonbQueryBuilder(queryBuilder);
       expect(mockQuery.mockFilterMethods.select).toHaveBeenCalledWith("*");
     });
 
@@ -300,9 +304,9 @@ describe("createJsonbQueryBuilder", () => {
   it("should create a JsonbQueryBuilder instance", () => {
     const mockQuery = createMockQueryBuilder();
     const queryBuilder = mockQuery.from("students") as unknown as PostgrestQueryBuilder<
-      any,
-      any,
-      any
+      unknown,
+      unknown,
+      unknown
     >;
     const builder = createJsonbQueryBuilder(queryBuilder);
 
@@ -312,9 +316,9 @@ describe("createJsonbQueryBuilder", () => {
   it("should create a JsonbQueryBuilder with options", () => {
     const mockQuery = createMockQueryBuilder();
     const queryBuilder = mockQuery.from("students") as unknown as PostgrestQueryBuilder<
-      any,
-      any,
-      any
+      unknown,
+      unknown,
+      unknown
     >;
     const builder = createJsonbQueryBuilder(queryBuilder, { column: "custom_fields" });
 
@@ -326,9 +330,9 @@ describe("jsonbContains", () => {
   it("should add a contains filter", () => {
     const mockQuery = createMockQueryBuilder();
     const queryBuilder = mockQuery.from("students") as unknown as PostgrestQueryBuilder<
-      any,
-      any,
-      any
+      unknown,
+      unknown,
+      unknown
     >;
     const fields = { batch_code: "ACCA_2024_Batch_5" };
 
@@ -342,9 +346,9 @@ describe("jsonbKeyExists", () => {
   it("should check if a key exists", () => {
     const mockQuery = createMockQueryBuilder();
     const queryBuilder = mockQuery.from("students") as unknown as PostgrestQueryBuilder<
-      any,
-      any,
-      any
+      unknown,
+      unknown,
+      unknown
     >;
 
     jsonbKeyExists(queryBuilder, "extra_fields", "batch_code");
