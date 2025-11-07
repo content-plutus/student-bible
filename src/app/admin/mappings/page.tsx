@@ -1,17 +1,14 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import {
-  VALID_TABLE_COLUMN_COMBINATIONS,
-  VALID_TABLES,
-} from "@/lib/constants/tableColumns";
+import { VALID_TABLE_COLUMN_COMBINATIONS, VALID_TABLES } from "@/lib/constants/tableColumns";
 
 /**
  * Field Mapping Configuration Admin UI
- * 
+ *
  * NOTE: This client-side component calls /api/mappings and /api/transform endpoints
  * without the X-Internal-API-Key header. In production, these endpoints require the key.
- * 
+ *
  * TODO (follow-up): Move admin operations to server-side (Server Actions or proxy endpoints)
  * and implement proper admin authentication. The internal API key should never reach the client.
  * See CodeRabbit review feedback for details.

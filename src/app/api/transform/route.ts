@@ -154,7 +154,10 @@ export async function GET(request: NextRequest) {
 
     const validatedParams = getTransformRequestSchema.parse({ table, column });
 
-    const validationError = validateTableColumnCombination(validatedParams.table, validatedParams.column);
+    const validationError = validateTableColumnCombination(
+      validatedParams.table,
+      validatedParams.column,
+    );
     if (validationError) {
       return NextResponse.json(
         {
