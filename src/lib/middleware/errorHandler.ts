@@ -39,36 +39,82 @@ const ERROR_CODE_TO_STATUS: Record<string, number> = {
   PGRST116: 404,
 };
 
-function getStatusCodeFromError(error: unknown): number {
-  if (error instanceof Error) {
-    const errorMessage = error.message.toLowerCase();
+/**
+ * Extracts a numeric HTTP status code from an error object's structured properties.
+ * Checks both `status` and `statusCode` properties and validates they're in the valid HTTP range.
+ */
+function extractStatusFromError(error: unknown): number | undefined {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const anyErr = error as any;
 
-    if (errorMessage.includes("not found")) {
+  if (typeof anyErr.status === "number" && anyErr.status >= 100 && anyErr.status <= 599) {
+    return anyErr.status;
+  }
+
+  if (
+    typeof anyErr.statusCode === "number" &&
+    anyErr.statusCode >= 100 &&
+    anyErr.statusCode <= 599
+  ) {
+    return anyErr.statusCode;
+  }
+
+  const statusNum = Number(anyErr.status);
+  if (Number.isFinite(statusNum) && statusNum >= 100 && statusNum <= 599) {
+    return statusNum;
+  }
+
+  const statusCodeNum = Number(anyErr.statusCode);
+  if (Number.isFinite(statusCodeNum) && statusCodeNum >= 100 && statusCodeNum <= 599) {
+    return statusCodeNum;
+  }
+
+  return undefined;
+}
+
+/**
+ * Determines the appropriate HTTP status code for an error.
+ *
+ * Precedence (from highest to lowest):
+ * 1. Structured properties: error.status or error.statusCode (numeric, 100-599)
+ * 2. DatabaseError.code mapped via ERROR_CODE_TO_STATUS
+ * 3. Message-based heuristics (fallback only, using word-boundary regex)
+ *
+ * Note: Message-based classification is fragile and should be a last resort.
+ * Prefer structured error properties when available.
+ */
+function getStatusCodeFromError(error: unknown): number {
+  const structuredStatus = extractStatusFromError(error);
+  if (structuredStatus !== undefined) {
+    return structuredStatus;
+  }
+
+  if (error instanceof Error) {
+    const dbError = error as DatabaseError;
+    if (dbError.code && ERROR_CODE_TO_STATUS[dbError.code]) {
+      return ERROR_CODE_TO_STATUS[dbError.code];
+    }
+
+    const errorMessage = error.message;
+
+    if (/\bnot found\b/i.test(errorMessage)) {
       return 404;
     }
 
-    if (errorMessage.includes("unauthorized") || errorMessage.includes("authentication")) {
+    if (/\bunauthorized\b|\bauthentication\b/i.test(errorMessage)) {
       return 401;
     }
 
-    if (errorMessage.includes("forbidden") || errorMessage.includes("permission")) {
+    if (/\bforbidden\b|\bpermission\b/i.test(errorMessage)) {
       return 403;
     }
 
-    if (errorMessage.includes("conflict") || errorMessage.includes("duplicate")) {
+    if (/\bconflict\b|\bduplicate\b/i.test(errorMessage)) {
       return 409;
     }
 
-    if (errorMessage.includes("invalid") || errorMessage.includes("validation")) {
+    if (/\binvalid\b|\bvalidation\b/i.test(errorMessage)) {
       return 400;
-    }
-
-    const dbError = error as DatabaseError;
-    if (dbError.code) {
-      const statusFromCode = ERROR_CODE_TO_STATUS[dbError.code];
-      if (statusFromCode) {
-        return statusFromCode;
-      }
     }
   }
 
@@ -188,7 +234,10 @@ export function handleError(error: unknown, req?: NextRequest): NextResponse<Err
       errorLower.includes("not null")
     ) {
       const formattedError = formatDatabaseError(error);
-      const statusCode = ERROR_CODE_TO_STATUS[formattedError.code || "unknown_error"] || 500;
+      const statusCode =
+        (dbError.code && ERROR_CODE_TO_STATUS[dbError.code]) ||
+        ERROR_CODE_TO_STATUS[formattedError.code || "unknown_error"] ||
+        500;
 
       return NextResponse.json(
         {
@@ -203,16 +252,6 @@ export function handleError(error: unknown, req?: NextRequest): NextResponse<Err
           ],
         },
         { status: statusCode },
-      );
-    }
-
-    if (dbError.code === "PGRST116") {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Resource not found",
-        },
-        { status: 404 },
       );
     }
 
