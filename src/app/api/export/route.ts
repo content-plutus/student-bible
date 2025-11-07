@@ -82,7 +82,7 @@ const exportParamsSchema = z.object({
 type ExportParams = z.infer<typeof exportParamsSchema>;
 
 /**
- * Calculates date of birth range for age filtering
+ * Calculates date of birth range for age filtering using precise dates
  * Returns the date range that corresponds to the age range
  */
 function getDateOfBirthRange(
@@ -100,18 +100,17 @@ function getDateOfBirthRange(
     // This means date_of_birth must be <= (today - minAge years)
     const maxDate = new Date(today);
     maxDate.setFullYear(today.getFullYear() - minAge);
-    maxDate.setMonth(0);
-    maxDate.setDate(1); // Start of year to include all students who turned minAge this year
+    // Use today's month/day for precise cutoff
     result.maxDate = maxDate.toISOString().split("T")[0];
   }
 
   if (maxAge !== undefined) {
     // For max age, we want students who are at most maxAge years old
-    // This means date_of_birth must be >= (today - maxAge - 1 years)
+    // This means date_of_birth must be >= (today - (maxAge + 1) years + 1 day)
     const minDate = new Date(today);
-    minDate.setFullYear(today.getFullYear() - maxAge - 1);
-    minDate.setMonth(11);
-    minDate.setDate(31); // End of year to include all students who turned maxAge this year
+    minDate.setFullYear(today.getFullYear() - (maxAge + 1));
+    // Add one day to make it inclusive of students who turned maxAge today
+    minDate.setDate(minDate.getDate() + 1);
     result.minDate = minDate.toISOString().split("T")[0];
   }
 
@@ -269,16 +268,14 @@ const exportQuerySchema = z.object({
   gender: z.enum(["Male", "Female", "Others"]).optional(),
   limit: z
     .string()
-    .transform((val) => parseInt(val, 10))
-    .pipe(z.number().int().min(1).max(10000))
     .optional()
-    .default("1000"),
+    .transform((val) => (val ? parseInt(val, 10) : 1000))
+    .pipe(z.number().int().min(1).max(10000)),
   offset: z
     .string()
-    .transform((val) => parseInt(val, 10))
-    .pipe(z.number().int().min(0))
     .optional()
-    .default("0"),
+    .transform((val) => (val ? parseInt(val, 10) : 0))
+    .pipe(z.number().int().min(0)),
   fields: z
     .string()
     .transform((val) =>
