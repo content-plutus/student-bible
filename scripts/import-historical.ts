@@ -122,7 +122,7 @@ async function importHistoricalData(options: ImportOptions): Promise<void> {
           ...record.structuredFields,
         };
 
-        const jsonbColumn = parser["options"].jsonbColumn || "extra_fields";
+        const jsonbColumn = parser.getJsonbColumn();
         if (Object.keys(record.jsonbFields).length > 0) {
           data[jsonbColumn] = record.jsonbFields;
         }
@@ -153,7 +153,7 @@ async function importHistoricalData(options: ImportOptions): Promise<void> {
               ...batch[j].structuredFields,
             };
 
-            const jsonbColumn = parser["options"].jsonbColumn || "extra_fields";
+            const jsonbColumn = parser.getJsonbColumn();
             if (Object.keys(batch[j].jsonbFields).length > 0) {
               singleData[jsonbColumn] = batch[j].jsonbFields;
             }

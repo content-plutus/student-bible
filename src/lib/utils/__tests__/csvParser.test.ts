@@ -343,6 +343,48 @@ describe("DynamicCsvParser", () => {
       expect(result.errors[0].message).toContain("different from student phone");
       expect(result.records.length).toBe(1);
     });
+
+    it("should validate cross-field rules when columns are out of order (guardian_phone before phone_number)", async () => {
+      const csvContent = `email,guardian_phone,phone_number
+test@example.com,9876543210,9876543210
+test2@example.com,9876543212,9876543211`;
+
+      const filePath = join(TEST_DIR, "test-students-invalid.csv");
+      writeFileSync(filePath, csvContent, "utf-8");
+
+      const parser = new DynamicCsvParser({
+        targetTable: "students",
+      });
+
+      const result = await parser.parseAndTransform(filePath);
+
+      expect(result.errors.length).toBeGreaterThan(0);
+      expect(result.errors[0].row).toBe(2);
+      expect(result.errors[0].column).toBe("guardian_phone");
+      expect(result.errors[0].message).toContain("different from student phone");
+      expect(result.records.length).toBe(1);
+    });
+
+    it("should validate batch_code with certification_type when columns are out of order", async () => {
+      const csvContent = `email,batch_code,certification_type
+test@example.com,ACCA_2024_Batch_1,ACCA
+test2@example.com,CMA_P1_Batch_3_E,US CMA`;
+
+      const filePath = join(TEST_DIR, "test-students-valid.csv");
+      writeFileSync(filePath, csvContent, "utf-8");
+
+      const parser = new DynamicCsvParser({
+        targetTable: "students",
+      });
+
+      const result = await parser.parseAndTransform(filePath);
+
+      expect(result.records.length).toBe(2);
+      expect(result.records[0].jsonbFields.batch_code).toBe("ACCA_2024_Batch_1");
+      expect(result.records[0].jsonbFields.certification_type).toBe("ACCA");
+      expect(result.records[1].jsonbFields.batch_code).toBe("CMA_P1_Batch_3_E");
+      expect(result.records[1].jsonbFields.certification_type).toBe("US CMA");
+    });
   });
 
   describe("Batch Processing", () => {

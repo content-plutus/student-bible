@@ -174,6 +174,10 @@ export class DynamicCsvParser {
     };
   }
 
+  public getJsonbColumn(): string {
+    return this.options.jsonbColumn;
+  }
+
   async parse(filePath: string): Promise<CsvParseResult> {
     const fileContent = this.readFile(filePath);
     const { records } = this.parseCSV(fileContent);
@@ -217,7 +221,9 @@ export class DynamicCsvParser {
     }
 
     if (buffer.length >= 2 && buffer[0] === 0xfe && buffer[1] === 0xff) {
-      return "utf16le";
+      throw new Error(
+        "UTF-16 BE (Big Endian) encoding is not supported. Please convert the file to UTF-8 or UTF-16 LE before importing.",
+      );
     }
 
     return this.options.encoding;
@@ -346,6 +352,7 @@ export class DynamicCsvParser {
     const structuredFields: Record<string, unknown> = {};
     const jsonbFields: Record<string, unknown> = {};
     const errors: CsvParseError[] = [];
+    const fieldMapping: Array<{ csvColumn: string; targetField: string; value: string }> = [];
 
     const structuredFieldNames = STRUCTURED_FIELD_MAPPINGS[this.options.targetTable] || [];
 
@@ -382,19 +389,23 @@ export class DynamicCsvParser {
       }
 
       if (targetField) {
-        const validationError = this.validateField(targetField, trimmedValue, structuredFields);
-        if (validationError) {
-          errors.push({
-            row: rowNumber,
-            column: csvColumn,
-            message: validationError,
-            value: trimmedValue,
-          });
-        } else {
-          structuredFields[targetField] = trimmedValue;
-        }
+        fieldMapping.push({ csvColumn, targetField, value: trimmedValue });
+        structuredFields[targetField] = trimmedValue;
       } else {
         jsonbFields[mappedColumn] = trimmedValue;
+      }
+    }
+
+    for (const { csvColumn, targetField, value } of fieldMapping) {
+      const validationError = this.validateField(targetField, value, structuredFields);
+      if (validationError) {
+        errors.push({
+          row: rowNumber,
+          column: csvColumn,
+          message: validationError,
+          value,
+        });
+        delete structuredFields[targetField];
       }
     }
 
@@ -486,11 +497,12 @@ export class DynamicCsvParser {
           ? null
           : "Invalid certification type";
 
-      case "batch_code":
+      case "batch_code": {
         const certificationType = allFields.certification_type as string | undefined;
         return validateBatchCode(value, certificationType) ? null : "Invalid batch code format";
+      }
 
-      case "date_of_birth":
+      case "date_of_birth": {
         const date = new Date(value);
         if (isNaN(date.getTime())) {
           return "Invalid date format";
@@ -500,6 +512,7 @@ export class DynamicCsvParser {
           return "Date of birth must be between 1950 and 2010";
         }
         return null;
+      }
 
       default:
         return null;
