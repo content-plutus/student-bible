@@ -236,7 +236,7 @@ export async function PUT(request: NextRequest) {
     }
 
     if (replace) {
-      transformationService.clearMappingsFor(table, column);
+      transformationService.resetMappingsFor(table, column);
     }
 
     transformationService.registerFieldMapping(table, column, rules);
@@ -246,7 +246,7 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({
       success: true,
       message: replace
-        ? `Field mapping rules replaced successfully for ${table}.${column}`
+        ? `Replaced rules for ${table}.${column} (restored defaults, then applied ${rules.length} new rules)`
         : "Field mapping rules updated successfully",
       table,
       column,
@@ -309,14 +309,14 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    transformationService.clearMappingsFor(table, column);
+    transformationService.resetMappingsFor(table, column);
 
     return NextResponse.json({
       success: true,
-      message: `Field mapping rules cleared successfully for ${table}.${column}`,
+      message: `Cleared custom rules and restored defaults for ${table}.${column}`,
       table,
       column,
-      note: "In-memory only - not persisted to database.",
+      note: "In-memory only - not persisted to database. Seeded defaults have been restored.",
     });
   } catch (error) {
     if (error instanceof z.ZodError) {

@@ -46,13 +46,12 @@ function validateTableColumnCombination(table: string, column: string): string |
   return null;
 }
 
-const compatibilityRuleSchema: z.ZodType<CompatibilityRule> = z.object({
+const compatibilityRuleSchema: z.ZodType<Omit<CompatibilityRule, "transform">> = z.object({
   description: z.string().optional(),
   rename: z.record(z.string(), z.string()).optional(),
   valueMap: z.record(z.string(), z.record(z.string(), z.unknown())).optional(),
   defaults: z.record(z.string(), z.unknown()).optional(),
   drop: z.array(z.string()).optional(),
-  transform: z.function().optional(),
 });
 
 const transformRequestSchema = z.object({

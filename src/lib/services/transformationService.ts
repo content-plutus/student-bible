@@ -4,6 +4,7 @@ import {
   type CompatibilityResult,
 } from "@/lib/jsonb/compatibility";
 import "@/lib/jsonb/schemaRegistry";
+import { VALID_TABLE_COLUMN_COMBINATIONS } from "@/lib/constants/tableColumns";
 
 export interface TransformationPreview {
   original: Record<string, unknown>;
@@ -12,6 +13,35 @@ export interface TransformationPreview {
 }
 
 export class TransformationService {
+  private seededDefaults: Map<string, CompatibilityRule[]> = new Map();
+
+  constructor() {
+    for (const [table, columns] of Object.entries(VALID_TABLE_COLUMN_COMBINATIONS)) {
+      for (const column of columns) {
+        const key = `${table}.${column}`;
+        const currentRules = this.getAvailableMappings(table, column);
+        if (currentRules.length > 0) {
+          this.seededDefaults.set(key, this.cloneRules(currentRules));
+        }
+      }
+    }
+  }
+
+  private cloneRules(rules: CompatibilityRule[]): CompatibilityRule[] {
+    return rules.map((rule) => ({
+      ...rule,
+      rename: rule.rename ? { ...rule.rename } : undefined,
+      valueMap: rule.valueMap
+        ? Object.fromEntries(
+            Object.entries(rule.valueMap).map(([k, v]) => [k, { ...v }]),
+          )
+        : undefined,
+      defaults: rule.defaults ? { ...rule.defaults } : undefined,
+      drop: rule.drop ? [...rule.drop] : undefined,
+      transform: rule.transform,
+    }));
+  }
+
   registerFieldMapping(
     table: string,
     column: string,
@@ -72,12 +102,18 @@ export class TransformationService {
     jsonbCompatibilityRegistry.clear();
   }
 
-  clearMappingsFor(table: string, column: string): void {
-    const key = `${table}.${column}` as const;
+  resetMappingsFor(table: string, column: string): void {
+    const key = `${table}.${column}`;
     const registry = jsonbCompatibilityRegistry as {
       rules: Map<string, CompatibilityRule[]>;
     };
-    registry.rules.delete(key);
+
+    const seededDefaults = this.seededDefaults.get(key);
+    if (seededDefaults && seededDefaults.length > 0) {
+      registry.rules.set(key, this.cloneRules(seededDefaults));
+    } else {
+      registry.rules.delete(key);
+    }
   }
 }
 
