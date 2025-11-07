@@ -201,22 +201,26 @@ describe("JsonbQueryBuilder", () => {
   });
 
   describe("exists", () => {
-    it("should check if a key exists", () => {
+    it("should check if a key exists using ? operator", () => {
       const builder = new JsonbQueryBuilder(queryBuilder);
       builder.where("mentor_assigned", "exists");
 
-      expect(mockQuery.mockFilterMethods.contains).toHaveBeenCalledWith("extra_fields", {
-        mentor_assigned: null,
-      });
+      expect(mockQuery.mockFilterMethods.filter).toHaveBeenCalledWith(
+        "extra_fields",
+        "?",
+        "mentor_assigned",
+      );
     });
 
-    it("should handle nested paths in exists by building nested objects", () => {
+    it("should handle nested paths in exists using ? operator", () => {
       const builder = new JsonbQueryBuilder(queryBuilder);
       builder.where("address.city", "exists");
 
-      expect(mockQuery.mockFilterMethods.contains).toHaveBeenCalledWith("extra_fields", {
-        address: { city: null },
-      });
+      expect(mockQuery.mockFilterMethods.filter).toHaveBeenCalledWith(
+        "extra_fields->'address'",
+        "?",
+        "city",
+      );
     });
   });
 
@@ -319,6 +323,36 @@ describe("JsonbQueryBuilder", () => {
       ]);
 
       expect(mockQuery.mockFilterMethods.or).toHaveBeenCalled();
+    });
+
+    it("should handle OR groups with contains operator and nested paths", () => {
+      const builder = new JsonbQueryBuilder(queryBuilder);
+      builder.whereGroup("OR", [
+        { path: "address.city", operator: "contains", value: "Mumbai" },
+        { path: "address.state", operator: "contains", value: "Maharashtra" },
+      ]);
+
+      expect(mockQuery.mockFilterMethods.or).toHaveBeenCalled();
+      const orCall = mockQuery.mockFilterMethods.or.mock.calls[0][0];
+      // Should contain nested object structure for address.city
+      expect(orCall).toContain('"address":{"city":"Mumbai"}');
+      // Should contain nested object structure for address.state
+      expect(orCall).toContain('"address":{"state":"Maharashtra"}');
+    });
+
+    it("should handle OR groups with exists operator", () => {
+      const builder = new JsonbQueryBuilder(queryBuilder);
+      builder.whereGroup("OR", [
+        { path: "mentor_assigned", operator: "exists" },
+        { path: "address.city", operator: "exists" },
+      ]);
+
+      expect(mockQuery.mockFilterMethods.or).toHaveBeenCalled();
+      const orCall = mockQuery.mockFilterMethods.or.mock.calls[0][0];
+      // Should contain ? operator for simple path
+      expect(orCall).toContain("extra_fields?.mentor_assigned");
+      // Should contain ? operator for nested path
+      expect(orCall).toContain("extra_fields->'address'?.city");
     });
 
     it("should preserve nested AND groups inside OR queries", () => {
@@ -446,14 +480,16 @@ describe("jsonbContains", () => {
 });
 
 describe("jsonbKeyExists", () => {
-  it("should check if a key exists", () => {
+  it("should check if a key exists using ? operator", () => {
     const mockQuery = createMockQueryBuilder();
     const queryBuilder = mockQuery.from("students") as unknown as MockQueryBuilder;
 
     jsonbKeyExists(queryBuilder, "extra_fields", "batch_code");
 
-    expect(mockQuery.mockFilterMethods.contains).toHaveBeenCalledWith("extra_fields", {
-      batch_code: null,
-    });
+    expect(mockQuery.mockFilterMethods.filter).toHaveBeenCalledWith(
+      "extra_fields",
+      "?",
+      "batch_code",
+    );
   });
 });

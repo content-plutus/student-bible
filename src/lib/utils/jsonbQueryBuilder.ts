@@ -281,13 +281,20 @@ export class JsonbQueryBuilder<T> {
         }
         break;
       case "exists":
-        // Check if key exists using contains with null value
-        // If path contains dots, build nested object structure
+        // Check if key exists using PostgREST's ? operator for key existence
+        // This is value-agnostic and correctly checks for key presence regardless of value
         if (path.includes(".")) {
-          const nestedObject = this.buildNestedObject(path, null);
-          this.query = this.query.contains(this.column, nestedObject);
+          // For nested paths, build the path to check: column->'nested'?key
+          const parts = path.split(".");
+          let nestedPath = this.column;
+          for (let i = 0; i < parts.length - 1; i++) {
+            nestedPath += `->'${parts[i]}'`;
+          }
+          // Use filter with ? operator for the final key
+          this.query = this.query.filter(nestedPath, "?", parts[parts.length - 1]);
         } else {
-          this.query = this.query.contains(this.column, { [path]: null });
+          // Use PostgREST's ? operator: column?key
+          this.query = this.query.filter(this.column, "?", path);
         }
         break;
       case "not_exists":
@@ -384,9 +391,57 @@ export class JsonbQueryBuilder<T> {
         }
         return null;
       case "contains":
-        return `${this.column}.cs.${JSON.stringify(value)}`;
-      default:
+        // Build nested object structure if path contains dots, matching applyCondition behavior
+        if (path.includes(".")) {
+          const nestedObject = this.buildNestedObject(path, value);
+          return `${this.column}.cs.${JSON.stringify(nestedObject)}`;
+        } else if (typeof value === "object" && value !== null && !Array.isArray(value)) {
+          // Already an object, use as-is
+          return `${this.column}.cs.${JSON.stringify(value)}`;
+        } else {
+          // Single key-value containment
+          return `${this.column}.cs.${JSON.stringify({ [path]: value })}`;
+        }
+      case "contained":
+        // Build nested object structure if path contains dots
+        if (path.includes(".")) {
+          const nestedObject = this.buildNestedObject(path, value);
+          return `${this.column}.cd.${JSON.stringify(nestedObject)}`;
+        } else if (typeof value === "object" && value !== null && !Array.isArray(value)) {
+          // Already an object, use as-is
+          return `${this.column}.cd.${JSON.stringify(value)}`;
+        } else {
+          // Single key-value containment
+          return `${this.column}.cd.${JSON.stringify({ [path]: value })}`;
+        }
+      case "exists":
+        // For simple paths: column?key
+        // For nested paths: column->'nested'?key
+        if (path.includes(".")) {
+          const parts = path.split(".");
+          let nestedPath = this.column;
+          for (let i = 0; i < parts.length - 1; i++) {
+            nestedPath += `->'${parts[i]}'`;
+          }
+          return `${nestedPath}?.${parts[parts.length - 1]}`;
+        }
+        return `${this.column}?.${path}`;
+      case "not_exists":
+        throw new Error(
+          `The "not_exists" operator cannot be used in OR groups. ` +
+            `PostgREST cannot distinguish between a missing key and a key with a null value. ` +
+            `Please handle this case in application logic.`,
+        );
+      case "not_in":
+        if (Array.isArray(value)) {
+          return `${columnPath}.not.in.(${value.map(String).join(",")})`;
+        }
         return null;
+      default:
+        throw new Error(
+          `Unsupported operator "${operator}" in OR group. ` +
+            `Supported operators in OR groups: eq, neq, gt, gte, lt, lte, like, ilike, in, not_in, contains, contained, exists.`,
+        );
     }
   }
 
@@ -518,6 +573,6 @@ export function jsonbKeyExists<T>(
   column: string,
   key: string,
 ): PostgrestFilterBuilder<unknown, unknown, T> {
-  // Use the ? operator via contains with a minimal object
-  return queryBuilder.contains(column, { [key]: null });
+  // Use PostgREST's ? operator for key existence (value-agnostic)
+  return queryBuilder.filter(column, "?", key);
 }
