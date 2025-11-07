@@ -1,7 +1,14 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { studentUpdateSchema } from "@/lib/types/student";
-import { z } from "zod";
+import {
+  withErrorHandling,
+  createSuccessResponse,
+  NotFoundError,
+  AuthenticationError,
+  handleDatabaseOperation,
+  ErrorCode,
+} from "@/lib/errors";
 
 if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
   throw new Error(
@@ -31,7 +38,7 @@ const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
  * - Infrastructure-level auth (VPN, internal network)
  * - Session-based auth (NextAuth, etc.)
  */
-function validateApiKey(request: NextRequest): NextResponse | null {
+function validateApiKey(request: NextRequest): void {
   const apiKey = process.env.INTERNAL_API_KEY;
 
   if (!apiKey) {
@@ -39,87 +46,75 @@ function validateApiKey(request: NextRequest): NextResponse | null {
       "WARNING: INTERNAL_API_KEY not set. API endpoints are unprotected. " +
         "This is only allowed in non-production environments.",
     );
-    return null;
+    return;
   }
 
   const requestApiKey = request.headers.get("X-Internal-API-Key");
 
   if (!requestApiKey || requestApiKey !== apiKey) {
-    return NextResponse.json(
+    throw new AuthenticationError(
+      "Unauthorized. Valid X-Internal-API-Key header required.",
+      ErrorCode.UNAUTHORIZED,
       {
-        success: false,
-        error: "Unauthorized. Valid X-Internal-API-Key header required.",
+        metadata: {
+          endpoint: request.nextUrl.pathname,
+          method: request.method,
+        },
       },
-      { status: 401 },
     );
   }
-
-  return null;
 }
 
 function getSupabaseClient() {
   return createClient(supabaseUrl, supabaseServiceKey);
 }
 
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
-  const authError = validateApiKey(request);
-  if (authError) {
-    return authError;
-  }
+export const GET = withErrorHandling(
+  async (request: NextRequest, { params }: { params: { id: string } }) => {
+    validateApiKey(request);
 
-  try {
     const supabase = getSupabaseClient();
 
-    const { data: student, error } = await supabase
-      .from("students")
-      .select("*")
-      .eq("id", params.id)
-      .single();
+    const result = await supabase.from("students").select("*").eq("id", params.id).single();
 
-    if (error) {
-      if (error.code === "PGRST116") {
-        return NextResponse.json(
-          {
-            success: false,
-            error: "Student not found",
+    if (result.error) {
+      // Handle "not found" case (PGRST116 is Supabase's "no rows returned" code)
+      if (result.error.code === "PGRST116") {
+        throw new NotFoundError(`Student with ID ${params.id} not found`, {
+          metadata: {
+            endpoint: request.nextUrl.pathname,
+            method: request.method,
           },
-          { status: 404 },
-        );
+        });
       }
-      throw error;
+      // Re-throw other database errors to be classified by error handler
+      throw result.error;
     }
 
-    const { extra_fields, ...coreFields } = student;
+    if (!result.data) {
+      throw new NotFoundError(`Student with ID ${params.id} not found`, {
+        metadata: {
+          endpoint: request.nextUrl.pathname,
+          method: request.method,
+        },
+      });
+    }
+
+    const { extra_fields, ...coreFields } = result.data;
     const mergedStudent = {
       ...coreFields,
       ...(extra_fields || {}),
     };
 
-    return NextResponse.json({
-      success: true,
-      student: mergedStudent,
-    });
-  } catch (error) {
-    console.error("Error retrieving student:", error);
-    return NextResponse.json(
-      {
-        success: false,
-        error: error instanceof Error ? error.message : "Unknown error occurred",
-      },
-      { status: 500 },
-    );
-  }
-}
+    return createSuccessResponse({ student: mergedStudent });
+  },
+);
 
-export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
-  const authError = validateApiKey(request);
-  if (authError) {
-    return authError;
-  }
+export const PATCH = withErrorHandling(
+  async (request: NextRequest, { params }: { params: { id: string } }) => {
+    validateApiKey(request);
 
-  try {
     const body = await request.json();
-
     const validatedData = studentUpdateSchema.parse(body);
 
     const supabase = getSupabaseClient();
@@ -127,28 +122,45 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
     const { full_name, extra_fields, ...coreFields } = validatedData;
     void full_name;
 
-    const { data: updatedStudent, error: rpcError } = await supabase.rpc(
-      "students_update_profile",
+    const updatedStudent = await handleDatabaseOperation(
+      async () => {
+        const { data, error: rpcError } = await supabase.rpc("students_update_profile", {
+          student_id: params.id,
+          core_patch: coreFields,
+          extra_patch: extra_fields || {},
+          strip_nulls: true,
+        });
+
+        if (rpcError) {
+          if (rpcError.message && rpcError.message.includes("not found")) {
+            throw new NotFoundError(`Student with ID ${params.id} not found`, {
+              metadata: {
+                endpoint: request.nextUrl.pathname,
+                method: request.method,
+              },
+            });
+          }
+          throw rpcError;
+        }
+
+        if (!data) {
+          throw new NotFoundError(`Student with ID ${params.id} not found`, {
+            metadata: {
+              endpoint: request.nextUrl.pathname,
+              method: request.method,
+            },
+          });
+        }
+
+        return data;
+      },
       {
-        student_id: params.id,
-        core_patch: coreFields,
-        extra_patch: extra_fields || {},
-        strip_nulls: true,
+        metadata: {
+          endpoint: request.nextUrl.pathname,
+          method: request.method,
+        },
       },
     );
-
-    if (rpcError) {
-      if (rpcError.message && rpcError.message.includes("not found")) {
-        return NextResponse.json(
-          {
-            success: false,
-            error: "Student not found",
-          },
-          { status: 404 },
-        );
-      }
-      throw rpcError;
-    }
 
     const { extra_fields: updatedExtraFields, ...updatedCoreFields } = updatedStudent;
     const mergedStudent = {
@@ -156,27 +168,6 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
       ...(updatedExtraFields || {}),
     };
 
-    return NextResponse.json({
-      success: true,
-      student: mergedStudent,
-    });
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: `Validation error: ${error.errors.map((e) => `${e.path.join(".")}: ${e.message}`).join(", ")}`,
-        },
-        { status: 400 },
-      );
-    }
-    console.error("Error updating student:", error);
-    return NextResponse.json(
-      {
-        success: false,
-        error: error instanceof Error ? error.message : "Unknown error occurred",
-      },
-      { status: 500 },
-    );
-  }
-}
+    return createSuccessResponse({ student: mergedStudent });
+  },
+);

@@ -128,9 +128,9 @@
   - [x] 4.5 Implement CSV parser with dynamic column mapping
   - [x] 4.6 Create data transformation service with field mapping registry
   - [x] 4.7 Build export API with dynamic column selection and formatting
-  - [ ] 4.8 Implement batch import API with progress tracking and rollback
+  - [x] 4.8 Implement batch import API with progress tracking and rollback
   - [ ] 4.9 Create authentication middleware with JWT validation
-  - [ ] 4.10 Build comprehensive error handling with error classification
+  - [x] 4.10 Build comprehensive error handling with error classification
   - [ ] 4.12 Create health check endpoint with dependency status
   - [ ] 4.13 Build OpenAPI documentation with dynamic schema generation
   - [ ] 4.14 Implement JSONB query builder for dynamic field searches
