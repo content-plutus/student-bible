@@ -1,4 +1,9 @@
-import { JsonbQueryBuilder, createJsonbQueryBuilder, jsonbContains, jsonbKeyExists } from "./jsonbQueryBuilder";
+import {
+  JsonbQueryBuilder,
+  createJsonbQueryBuilder,
+  jsonbContains,
+  jsonbKeyExists,
+} from "./jsonbQueryBuilder";
 import type { PostgrestQueryBuilder } from "@supabase/supabase-js";
 
 // Mock Supabase query builder
@@ -271,6 +276,50 @@ describe("JsonbQueryBuilder", () => {
 
       expect(mockQuery.mockFilterMethods.or).toHaveBeenCalled();
     });
+
+    it("should preserve nested AND groups inside OR queries", () => {
+      const builder = new JsonbQueryBuilder(queryBuilder);
+      builder.whereGroup("OR", [
+        { path: "lead_source", operator: "eq", value: "event" },
+        {
+          operator: "AND",
+          conditions: [
+            { path: "certification_type", operator: "eq", value: "ACCA" },
+            { path: "mentor_assigned", operator: "eq", value: true },
+          ],
+        },
+      ]);
+
+      // Should call or() with a filter string that includes the AND group
+      expect(mockQuery.mockFilterMethods.or).toHaveBeenCalled();
+      const orCall = mockQuery.mockFilterMethods.or.mock.calls[0][0];
+      expect(orCall).toContain("lead_source");
+      expect(orCall).toContain("certification_type");
+      expect(orCall).toContain("mentor_assigned");
+      // The AND conditions should be wrapped in parentheses
+      expect(orCall).toMatch(/\(.*certification_type.*mentor_assigned.*\)/);
+    });
+
+    it("should handle deeply nested groups", () => {
+      const builder = new JsonbQueryBuilder(queryBuilder);
+      builder.whereGroup("OR", [
+        {
+          operator: "AND",
+          conditions: [
+            { path: "a", operator: "eq", value: "1" },
+            {
+              operator: "OR",
+              conditions: [
+                { path: "b", operator: "eq", value: "2" },
+                { path: "c", operator: "eq", value: "3" },
+              ],
+            },
+          ],
+        },
+      ]);
+
+      expect(mockQuery.mockFilterMethods.or).toHaveBeenCalled();
+    });
   });
 
   describe("getQuery", () => {
@@ -358,4 +407,3 @@ describe("jsonbKeyExists", () => {
     });
   });
 });
-

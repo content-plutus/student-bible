@@ -190,25 +190,33 @@ export class JsonbQueryBuilder<T> {
       const orFilters: string[] = [];
       for (const condition of conditions) {
         if ("conditions" in condition) {
-          // Nested group - handle recursively
+          // Nested group - build filter string for the entire group
           if (condition.operator === "OR") {
+            // Nested OR group - build OR filter string
             const nestedOrs: string[] = [];
             for (const nestedCondition of condition.conditions) {
               if ("conditions" in nestedCondition) {
-                // Too deeply nested - flatten
-                continue;
-              }
-              const filterStr = this.buildFilterString(nestedCondition);
-              if (filterStr) {
-                nestedOrs.push(filterStr);
+                // Recursively build nested group filter string
+                const nestedGroupStr = this.buildGroupFilterString(nestedCondition);
+                if (nestedGroupStr) {
+                  nestedOrs.push(nestedGroupStr);
+                }
+              } else {
+                const filterStr = this.buildFilterString(nestedCondition);
+                if (filterStr) {
+                  nestedOrs.push(filterStr);
+                }
               }
             }
             if (nestedOrs.length > 0) {
               orFilters.push(`(${nestedOrs.join(",")})`);
             }
           } else {
-            // AND group - apply directly
-            this.whereGroup("AND", condition.conditions);
+            // AND group - build AND filter string and include in OR
+            const andFilterStr = this.buildGroupFilterString(condition);
+            if (andFilterStr) {
+              orFilters.push(andFilterStr);
+            }
           }
         } else {
           const filterStr = this.buildFilterString(condition);
@@ -294,6 +302,41 @@ export class JsonbQueryBuilder<T> {
           this.query = this.query.not(columnPath, "in", `(${values.join(",")})`);
         }
         break;
+    }
+  }
+
+  /**
+   * Builds a filter string for a condition group (AND or OR)
+   * Used when nesting groups inside OR queries
+   */
+  private buildGroupFilterString(group: JsonbConditionGroup): string | null {
+    const filterStrings: string[] = [];
+
+    for (const condition of group.conditions) {
+      if ("conditions" in condition) {
+        // Recursively build nested group filter string
+        const nestedGroupStr = this.buildGroupFilterString(condition);
+        if (nestedGroupStr) {
+          filterStrings.push(nestedGroupStr);
+        }
+      } else {
+        const filterStr = this.buildFilterString(condition);
+        if (filterStr) {
+          filterStrings.push(filterStr);
+        }
+      }
+    }
+
+    if (filterStrings.length === 0) {
+      return null;
+    }
+
+    if (group.operator === "AND") {
+      // For AND groups, join with comma (Supabase uses comma for AND in OR expressions)
+      return `(${filterStrings.join(",")})`;
+    } else {
+      // For OR groups, wrap in parentheses
+      return `(${filterStrings.join(",")})`;
     }
   }
 
