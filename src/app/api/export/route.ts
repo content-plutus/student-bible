@@ -11,6 +11,7 @@ import {
   getFileExtension,
 } from "@/lib/utils/exportFormatters";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { format } from "date-fns";
 
 if (process.env.NODE_ENV === "production" && !process.env.INTERNAL_API_KEY) {
   throw new Error(
@@ -84,6 +85,7 @@ type ExportParams = z.infer<typeof exportParamsSchema>;
 /**
  * Calculates date of birth range for age filtering using precise dates
  * Returns the date range that corresponds to the age range
+ * Uses date-fns format to avoid timezone conversion issues
  */
 function getDateOfBirthRange(
   minAge?: number,
@@ -100,8 +102,8 @@ function getDateOfBirthRange(
     // This means date_of_birth must be <= (today - minAge years)
     const maxDate = new Date(today);
     maxDate.setFullYear(today.getFullYear() - minAge);
-    // Use today's month/day for precise cutoff
-    result.maxDate = maxDate.toISOString().split("T")[0];
+    // Use date-fns format to avoid timezone conversion (toISOString converts to UTC)
+    result.maxDate = format(maxDate, "yyyy-MM-dd");
   }
 
   if (maxAge !== undefined) {
@@ -111,7 +113,8 @@ function getDateOfBirthRange(
     minDate.setFullYear(today.getFullYear() - (maxAge + 1));
     // Add one day to make it inclusive of students who turned maxAge today
     minDate.setDate(minDate.getDate() + 1);
-    result.minDate = minDate.toISOString().split("T")[0];
+    // Use date-fns format to avoid timezone conversion
+    result.minDate = format(minDate, "yyyy-MM-dd");
   }
 
   return result;
@@ -278,14 +281,16 @@ const exportQuerySchema = z.object({
     .pipe(z.number().int().min(0)),
   fields: z
     .string()
+    .optional()
     .transform((val) =>
       val
-        .split(",")
-        .map((f) => f.trim())
-        .filter(Boolean),
+        ? val
+            .split(",")
+            .map((f) => f.trim())
+            .filter(Boolean)
+        : undefined,
     )
-    .pipe(z.array(z.string().min(1)).min(1))
-    .optional(),
+    .pipe(z.array(z.string().min(1)).min(1).optional()),
   include_extra_fields: z
     .string()
     .default("false")
