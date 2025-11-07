@@ -111,6 +111,19 @@ async function checkDatabase(): Promise<DependencyStatus> {
     // Create the query promise
     const queryPromise = supabase.from("students").select("id").limit(1);
 
+    // Always attach a catch handler to consume rejections and prevent unhandled promise rejections
+    // This is critical: if the timeout fires first, the query promise will still reject later
+    // and we need to consume that rejection to prevent it from becoming unhandled
+    queryPromise.catch(() => {
+      // Silently consume the rejection if timeout already fired
+      // This prevents unhandled promise rejections when timeout wins the race
+      if (controller.signal.aborted) {
+        // Timeout already occurred, ignore this rejection
+        return;
+      }
+      // If timeout hasn't fired yet, the error will be handled by Promise.race below
+    });
+
     // Race the database query against the timeout
     // Note: Supabase PostgREST client doesn't directly support abortSignal in the query chain,
     // but Promise.race ensures we don't hang, and the timeout is properly cleaned up
@@ -149,6 +162,7 @@ async function checkDatabase(): Promise<DependencyStatus> {
       clearTimeout(timeoutId);
       timeoutId = null;
     }
+
     const latencyMs = Number((performance.now() - started).toFixed(2));
 
     // Check if error is due to timeout/abort

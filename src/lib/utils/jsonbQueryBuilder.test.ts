@@ -225,14 +225,11 @@ describe("JsonbQueryBuilder", () => {
   });
 
   describe("not_exists", () => {
-    it("should check if a key does not exist", () => {
+    it("should throw an error when not_exists operator is used", () => {
       const builder = new JsonbQueryBuilder(queryBuilder);
-      builder.where("mentor_assigned", "not_exists");
-
-      expect(mockQuery.mockFilterMethods.is).toHaveBeenCalledWith(
-        "extra_fields->>'mentor_assigned'",
-        null,
-      );
+      expect(() => {
+        builder.where("mentor_assigned", "not_exists");
+      }).toThrow('The "not_exists" operator is not supported for JSONB queries.');
     });
   });
 

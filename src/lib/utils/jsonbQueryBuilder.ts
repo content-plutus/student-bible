@@ -298,12 +298,15 @@ export class JsonbQueryBuilder<T> {
         }
         break;
       case "not_exists":
-        // Negate key existence - check that the key doesn't exist
-        // We use a filter that checks the key is null or doesn't exist
-        // Note: This is a limitation - Supabase doesn't directly support ? operator negation
-        // We'll use a workaround by checking if the field is null
-        this.query = this.query.is(columnPath, null);
-        break;
+        // PostgREST/Supabase cannot reliably distinguish key-absence from key-with-null
+        // The ? operator cannot be negated in PostgREST filter syntax
+        // Throw an explicit error to prevent incorrect query results
+        throw new Error(
+          `The "not_exists" operator is not supported for JSONB queries. ` +
+            `PostgREST cannot reliably distinguish between a missing key and a key with a null value. ` +
+            `Please handle this case in application logic (e.g., filter results after fetching, ` +
+            `or use a combination of "exists" and value checks).`,
+        );
       case "like":
         this.query = this.query.like(columnPath, `%${value}%`);
         break;
