@@ -3,6 +3,8 @@
  */
 import { NextRequest } from "next/server";
 import { POST, GET } from "@/app/api/export/route";
+import { supabaseAdmin } from "@/lib/supabase/server";
+import { flattenStudentRecord } from "@/lib/utils/exportFormatters";
 
 // Mock dependencies
 jest.mock("@/lib/supabase/server", () => ({
@@ -19,8 +21,8 @@ jest.mock("@/lib/utils/exportFormatters", () => ({
     ].join("\n");
   }),
   exportToJSON: jest.fn((rows) => JSON.stringify(rows, null, 2)),
-  exportToXLSX: jest.fn((rows) => Buffer.from("xlsx-data")),
-  flattenStudentRecord: jest.fn((student, fields, includeExtra) => {
+  exportToXLSX: jest.fn(() => Buffer.from("xlsx-data")),
+  flattenStudentRecord: jest.fn((student, fields) => {
     const row: Record<string, unknown> = {};
     for (const field of fields) {
       if (field in student) {
@@ -77,8 +79,7 @@ describe("Export API", () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    const { supabaseAdmin } = require("@/lib/supabase/server");
-    (supabaseAdmin as jest.Mock).mockReturnValue(mockSupabase);
+    jest.mocked(supabaseAdmin).mockReturnValue(mockSupabase);
     process.env.INTERNAL_API_KEY = "test-api-key";
   });
 
@@ -307,9 +308,8 @@ describe("Export API", () => {
       const response = await POST(request);
       expect(response.status).toBe(200);
 
-      const { flattenStudentRecord } = require("@/lib/utils/exportFormatters");
       // Should only process students within age range
-      expect(flattenStudentRecord).toHaveBeenCalledTimes(1);
+      expect(jest.mocked(flattenStudentRecord)).toHaveBeenCalledTimes(1);
     });
   });
 
