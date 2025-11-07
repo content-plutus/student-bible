@@ -36,7 +36,7 @@ const ERROR_CODE_TO_STATUS: Record<string, number> = {
   INVALID_CROSS_FIELD_VALIDATION: 422,
   CUSTOM_VALIDATION_FAILED: 400,
   VALIDATION_ERROR: 400,
-  PGRST116: 404,
+  PGRST116: 406,
 };
 
 /**
@@ -127,6 +127,11 @@ function getErrorCode(error: unknown): string {
   }
 
   if (error instanceof Error) {
+    const dbError = error as DatabaseError;
+    if (dbError.code === "PGRST116") {
+      return "NOT_FOUND";
+    }
+
     const errorMessage = error.message.toLowerCase();
 
     if (errorMessage.includes("not found")) {
@@ -155,11 +160,6 @@ function getErrorCode(error: unknown): string {
 
     if (errorMessage.includes("check constraint")) {
       return "constraint_violation";
-    }
-
-    const dbError = error as DatabaseError;
-    if (dbError.code === "PGRST116") {
-      return "NOT_FOUND";
     }
   }
 
