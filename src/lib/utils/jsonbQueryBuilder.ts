@@ -248,16 +248,36 @@ export class JsonbQueryBuilder<T> {
         this.query = this.query.neq(columnPath, value as string | number | boolean);
         break;
       case "gt":
-        this.query = this.query.gt(columnPath, value as string | number);
+        if (typeof value === "number") {
+          const numericColumnPath = this.buildColumnPath(path, { castNumeric: true });
+          this.query = this.query.gt(numericColumnPath, value);
+        } else {
+          this.query = this.query.gt(columnPath, value as string | number);
+        }
         break;
       case "gte":
-        this.query = this.query.gte(columnPath, value as string | number);
+        if (typeof value === "number") {
+          const numericColumnPath = this.buildColumnPath(path, { castNumeric: true });
+          this.query = this.query.gte(numericColumnPath, value);
+        } else {
+          this.query = this.query.gte(columnPath, value as string | number);
+        }
         break;
       case "lt":
-        this.query = this.query.lt(columnPath, value as string | number);
+        if (typeof value === "number") {
+          const numericColumnPath = this.buildColumnPath(path, { castNumeric: true });
+          this.query = this.query.lt(numericColumnPath, value);
+        } else {
+          this.query = this.query.lt(columnPath, value as string | number);
+        }
         break;
       case "lte":
-        this.query = this.query.lte(columnPath, value as string | number);
+        if (typeof value === "number") {
+          const numericColumnPath = this.buildColumnPath(path, { castNumeric: true });
+          this.query = this.query.lte(numericColumnPath, value);
+        } else {
+          this.query = this.query.lte(columnPath, value as string | number);
+        }
         break;
       case "contains":
         // Use Supabase's contains method for JSONB containment
@@ -265,8 +285,8 @@ export class JsonbQueryBuilder<T> {
           this.query = this.query.contains(this.column, value as Record<string, JsonbValue>);
         } else {
           // Single key-value containment
-          // If path contains dots, build nested object structure
-          if (path.includes(".")) {
+          // If path contains dots and path operators are enabled, build nested object structure
+          if (this.usePathOperators && path.includes(".")) {
             const nestedObject = this.buildNestedObject(path, value);
             this.query = this.query.contains(this.column, nestedObject);
           } else {
@@ -280,8 +300,8 @@ export class JsonbQueryBuilder<T> {
           this.query = this.query.contained(this.column, value as Record<string, JsonbValue>);
         } else {
           // Single key-value containment
-          // If path contains dots, build nested object structure
-          if (path.includes(".")) {
+          // If path contains dots and path operators are enabled, build nested object structure
+          if (this.usePathOperators && path.includes(".")) {
             const nestedObject = this.buildNestedObject(path, value);
             this.query = this.query.contained(this.column, nestedObject);
           } else {
@@ -292,7 +312,7 @@ export class JsonbQueryBuilder<T> {
       case "exists":
         // Check if key exists using PostgREST's ? operator for key existence
         // This is value-agnostic and correctly checks for key presence regardless of value
-        if (path.includes(".")) {
+        if (this.usePathOperators && path.includes(".")) {
           // For nested paths, build the path to check: column->'nested'?key
           const parts = path.split(".");
           let nestedPath = this.column;
@@ -386,12 +406,28 @@ export class JsonbQueryBuilder<T> {
       case "neq":
         return `${columnPath}.neq.${this.serializeValue(value)}`;
       case "gt":
+        if (typeof value === "number") {
+          const numericColumnPath = this.buildColumnPath(path, { castNumeric: true });
+          return `${numericColumnPath}.gt.${this.serializeValue(value)}`;
+        }
         return `${columnPath}.gt.${this.serializeValue(value)}`;
       case "gte":
+        if (typeof value === "number") {
+          const numericColumnPath = this.buildColumnPath(path, { castNumeric: true });
+          return `${numericColumnPath}.gte.${this.serializeValue(value)}`;
+        }
         return `${columnPath}.gte.${this.serializeValue(value)}`;
       case "lt":
+        if (typeof value === "number") {
+          const numericColumnPath = this.buildColumnPath(path, { castNumeric: true });
+          return `${numericColumnPath}.lt.${this.serializeValue(value)}`;
+        }
         return `${columnPath}.lt.${this.serializeValue(value)}`;
       case "lte":
+        if (typeof value === "number") {
+          const numericColumnPath = this.buildColumnPath(path, { castNumeric: true });
+          return `${numericColumnPath}.lte.${this.serializeValue(value)}`;
+        }
         return `${columnPath}.lte.${this.serializeValue(value)}`;
       case "like":
         return `${columnPath}.like.%${value}%`;
@@ -405,7 +441,7 @@ export class JsonbQueryBuilder<T> {
         return null;
       case "contains":
         // Build nested object structure if path contains dots, matching applyCondition behavior
-        if (path.includes(".")) {
+        if (this.usePathOperators && path.includes(".")) {
           const nestedObject = this.buildNestedObject(path, value);
           return `${this.column}.cs.${JSON.stringify(nestedObject)}`;
         } else if (typeof value === "object" && value !== null && !Array.isArray(value)) {
@@ -417,7 +453,7 @@ export class JsonbQueryBuilder<T> {
         }
       case "contained":
         // Build nested object structure if path contains dots
-        if (path.includes(".")) {
+        if (this.usePathOperators && path.includes(".")) {
           const nestedObject = this.buildNestedObject(path, value);
           return `${this.column}.cd.${JSON.stringify(nestedObject)}`;
         } else if (typeof value === "object" && value !== null && !Array.isArray(value)) {
@@ -430,8 +466,7 @@ export class JsonbQueryBuilder<T> {
       case "exists":
         // For simple paths: column?key
         // For nested paths: column->'nested'?key
-        // PostgREST expects ? operator without spaces or quotes
-        if (path.includes(".")) {
+        if (this.usePathOperators && path.includes(".")) {
           const parts = path.split(".");
           let nestedPath = this.column;
           for (let i = 0; i < parts.length - 1; i++) {
@@ -485,19 +520,25 @@ export class JsonbQueryBuilder<T> {
    * Builds the column path for JSONB field access
    * Supports nested paths using dot notation
    */
-  private buildColumnPath(path: string): string {
+  private buildColumnPath(path: string, options?: { castNumeric?: boolean }): string {
+    let columnPath: string;
     if (!this.usePathOperators || !path.includes(".")) {
       // Simple path: extra_fields->>'batch_code'
-      return `${this.column}->>'${path}'`;
+      columnPath = `${this.column}->>'${path}'`;
+    } else {
+      // Nested path: extra_fields->'nested'->>'field'
+      const parts = path.split(".");
+      columnPath = this.column;
+      for (let i = 0; i < parts.length - 1; i++) {
+        columnPath += `->'${parts[i]}'`;
+      }
+      columnPath += `->>'${parts[parts.length - 1]}'`;
     }
 
-    // Nested path: extra_fields->'nested'->>'field'
-    const parts = path.split(".");
-    let columnPath = this.column;
-    for (let i = 0; i < parts.length - 1; i++) {
-      columnPath += `->'${parts[i]}'`;
+    if (options?.castNumeric) {
+      return `${columnPath}::numeric`;
     }
-    columnPath += `->>'${parts[parts.length - 1]}'`;
+
     return columnPath;
   }
 

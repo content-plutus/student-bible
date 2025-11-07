@@ -109,14 +109,20 @@ describe("JsonbQueryBuilder", () => {
       const builder = new JsonbQueryBuilder(queryBuilder);
       builder.where("score", "gt", 80);
 
-      expect(mockQuery.mockFilterMethods.gt).toHaveBeenCalledWith("extra_fields->>'score'", 80);
+      expect(mockQuery.mockFilterMethods.gt).toHaveBeenCalledWith(
+        "extra_fields->>'score'::numeric",
+        80,
+      );
     });
 
     it("should add a less-than condition", () => {
       const builder = new JsonbQueryBuilder(queryBuilder);
       builder.where("age", "lt", 30);
 
-      expect(mockQuery.mockFilterMethods.lt).toHaveBeenCalledWith("extra_fields->>'age'", 30);
+      expect(mockQuery.mockFilterMethods.lt).toHaveBeenCalledWith(
+        "extra_fields->>'age'::numeric",
+        30,
+      );
     });
 
     it("should add a boolean equality condition", () => {
@@ -198,6 +204,15 @@ describe("JsonbQueryBuilder", () => {
         metadata: { user: { preferences: { theme: "dark" } } },
       });
     });
+
+    it("should respect usePathOperators when disabled", () => {
+      const builder = new JsonbQueryBuilder(queryBuilder, { usePathOperators: false });
+      builder.where("profile.email", "contains", "foo");
+
+      expect(mockQuery.mockFilterMethods.contains).toHaveBeenCalledWith("extra_fields", {
+        "profile.email": "foo",
+      });
+    });
   });
 
   describe("contained", () => {
@@ -236,6 +251,15 @@ describe("JsonbQueryBuilder", () => {
         metadata: { user: { preferences: { theme: "dark" } } },
       });
     });
+
+    it("should respect usePathOperators when disabled", () => {
+      const builder = new JsonbQueryBuilder(queryBuilder, { usePathOperators: false });
+      builder.where("profile.email", "contained", "foo");
+
+      expect(mockQuery.mockFilterMethods.contained).toHaveBeenCalledWith("extra_fields", {
+        "profile.email": "foo",
+      });
+    });
   });
 
   describe("exists", () => {
@@ -258,6 +282,17 @@ describe("JsonbQueryBuilder", () => {
         "extra_fields->'address'",
         "?",
         "city",
+      );
+    });
+
+    it("should respect usePathOperators when disabled", () => {
+      const builder = new JsonbQueryBuilder(queryBuilder, { usePathOperators: false });
+      builder.where("profile.email", "exists");
+
+      expect(mockQuery.mockFilterMethods.filter).toHaveBeenCalledWith(
+        "extra_fields",
+        "?",
+        "profile.email",
       );
     });
   });
@@ -313,6 +348,28 @@ describe("JsonbQueryBuilder", () => {
         "extra_fields->>'lead_source'",
         "in",
         ["event", "referral"],
+      );
+    });
+  });
+
+  describe("numeric comparisons", () => {
+    it("should cast to numeric for gt when value is a number", () => {
+      const builder = new JsonbQueryBuilder(queryBuilder);
+      builder.where("score", "gt", 10);
+
+      expect(mockQuery.mockFilterMethods.gt).toHaveBeenCalledWith(
+        "extra_fields->>'score'::numeric",
+        10,
+      );
+    });
+
+    it("should cast to numeric for nested paths when value is a number", () => {
+      const builder = new JsonbQueryBuilder(queryBuilder);
+      builder.where("progress.score", "lte", 5);
+
+      expect(mockQuery.mockFilterMethods.lte).toHaveBeenCalledWith(
+        "extra_fields->'progress'->>'score'::numeric",
+        5,
       );
     });
   });
@@ -388,6 +445,19 @@ describe("JsonbQueryBuilder", () => {
       expect(orCall).toContain("extra_fields?mentor_assigned");
       // Should contain ? operator for nested path (no spaces, no quotes, no dot)
       expect(orCall).toContain("extra_fields->'address'?city");
+    });
+
+    it("should cast numeric comparisons inside OR groups", () => {
+      const builder = new JsonbQueryBuilder(queryBuilder);
+      builder.whereGroup("OR", [
+        { path: "score", operator: "gt", value: 10 },
+        { path: "progress.score", operator: "lt", value: 5 },
+      ]);
+
+      expect(mockQuery.mockFilterMethods.or).toHaveBeenCalled();
+      const orCall = mockQuery.mockFilterMethods.or.mock.calls[0][0];
+      expect(orCall).toContain("extra_fields->>'score'::numeric.gt.10");
+      expect(orCall).toContain("extra_fields->'progress'->>'score'::numeric.lt.5");
     });
 
     it("should preserve nested AND groups inside OR queries", () => {
