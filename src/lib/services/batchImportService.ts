@@ -316,7 +316,8 @@ export class BatchImportService {
   }
 
   /**
-   * Insert a batch of validated records within a transaction
+   * Insert a batch of validated records sequentially
+   * Note: Records are inserted one at a time without a database transaction
    */
   async insertBatch(validatedRecords: ValidatedStudentRecord[]): Promise<BatchImportResult> {
     const errors: ImportError[] = [];
@@ -346,7 +347,7 @@ export class BatchImportService {
   /**
    * Rollback an import by deleting inserted students
    */
-  async rollbackImport(jobId: string, studentIds: string[]): Promise<void> {
+  async rollbackImport(_jobId: string, studentIds: string[]): Promise<void> {
     if (studentIds.length === 0) {
       return;
     }
