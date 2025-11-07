@@ -4,6 +4,7 @@
 import { NextRequest } from "next/server";
 import { POST, GET } from "@/app/api/export/route";
 import { createServerClient } from "@/lib/supabase/server";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 // Mock dependencies
 jest.mock("@/lib/supabase/server", () => ({
@@ -85,7 +86,7 @@ describe("Export API", () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    jest.mocked(createServerClient).mockReturnValue(mockSupabase as any);
+    jest.mocked(createServerClient).mockReturnValue(mockSupabase as unknown as SupabaseClient);
   });
 
   describe("POST /api/export", () => {
