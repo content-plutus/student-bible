@@ -201,22 +201,25 @@ describe("POST /api/import", () => {
   describe("CSV Import", () => {
     it("should import CSV file successfully", async () => {
       const { DynamicCsvParser } = await import("@/lib/utils/csvParser");
-      jest.mocked(DynamicCsvParser).mockImplementation(() => ({
-        parseAndTransform: jest.fn().mockResolvedValue({
-          records: [
-            {
-              structuredFields: {
-                phone_number: "9876543210",
-                email: "test@example.com",
-                first_name: "John",
-              },
-              jsonbFields: {},
-            },
-          ],
-          errors: [],
-          unmappedColumns: [],
-        }),
-      }) as never);
+      jest.mocked(DynamicCsvParser).mockImplementation(
+        () =>
+          ({
+            parseAndTransform: jest.fn().mockResolvedValue({
+              records: [
+                {
+                  structuredFields: {
+                    phone_number: "9876543210",
+                    email: "test@example.com",
+                    first_name: "John",
+                  },
+                  jsonbFields: {},
+                },
+              ],
+              errors: [],
+              unmappedColumns: [],
+            }),
+          }) as never,
+      );
 
       const { BatchImportService } = await import("@/lib/services/batchImportService");
       const mockService = {
@@ -459,4 +462,3 @@ describe("GET /api/import", () => {
     expect(data.error).toContain("not found");
   });
 });
-

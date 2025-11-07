@@ -83,7 +83,11 @@ export class BatchImportService {
           error_summary: allErrors,
         });
 
-        if (this.options.rollbackOnError && batchResult.errorCount > 0 && batchResult.successCount === 0) {
+        if (
+          this.options.rollbackOnError &&
+          batchResult.errorCount > 0 &&
+          batchResult.successCount === 0
+        ) {
           await this.rollbackImport(jobId, allInsertedIds);
           await this.updateJobStatus(jobId, "rolled_back");
           return {
@@ -441,4 +445,3 @@ export function createBatchImportService(
 ): BatchImportService {
   return new BatchImportService(supabase, options);
 }
-

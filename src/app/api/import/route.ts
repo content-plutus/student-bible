@@ -56,7 +56,10 @@ function getSupabaseClient() {
 
 async function parseCsvFile(file: File): Promise<Array<Record<string, unknown>>> {
   const buffer = await file.arrayBuffer();
-  const tempPath = join(tmpdir(), `import-${Date.now()}-${Math.random().toString(36).substring(7)}.csv`);
+  const tempPath = join(
+    tmpdir(),
+    `import-${Date.now()}-${Math.random().toString(36).substring(7)}.csv`,
+  );
 
   try {
     writeFileSync(tempPath, Buffer.from(buffer));
@@ -171,7 +174,7 @@ export async function POST(request: NextRequest) {
           error: "No records to import",
         },
         { status: 400 },
-        );
+      );
     }
 
     const searchParams = request.nextUrl.searchParams;
@@ -326,4 +329,3 @@ export async function GET(request: NextRequest) {
     );
   }
 }
-
