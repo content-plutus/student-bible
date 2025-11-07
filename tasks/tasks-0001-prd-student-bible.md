@@ -118,12 +118,12 @@
   - [x] 3.16 Build backward compatibility layer for schema changes
   - [x] 3.17 Implement optional field validation with NULL handling
   - [x] 3.19 Write comprehensive unit tests for all validators
-  - [ ] 3.20 Document validation rules and error codes
+  - [x] 3.20 Document validation rules and error codes
 
 - [ ] 4.0 Develop Core Backend Services with Dynamic Field Handling
-  - [ ] 4.1 Create Supabase client singleton with connection pooling
-  - [ ] 4.2 Implement student search API with phone number and dynamic field search
-  - [ ] 4.3 Create student profile API with JSONB field merging
+  - [x] 4.1 Create Supabase client singleton with connection pooling
+  - [x] 4.2 Implement student search API with phone number and dynamic field search
+  - [x] 4.3 Create student profile API with JSONB field merging
   - [ ] 4.4 Build student creation API with validation and JSONB field extraction
   - [ ] 4.5 Implement CSV parser with dynamic column mapping
   - [ ] 4.6 Create data transformation service with field mapping registry
