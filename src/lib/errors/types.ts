@@ -134,4 +134,3 @@ export interface ErrorMetadata {
   originalError?: unknown;
   context?: Record<string, unknown>;
 }
-

@@ -13,22 +13,14 @@ import {
   ExternalServiceError,
   RateLimitError,
 } from "../AppError";
-import {
-  ErrorCategory,
-  ErrorCode,
-  ErrorSeverity,
-} from "../types";
+import { ErrorCategory, ErrorCode, ErrorSeverity } from "../types";
 import { createErrorResponse } from "../errorHandler";
 import { ZodError } from "zod";
 import { PostgrestError } from "@supabase/supabase-js";
 
 describe("AppError", () => {
   it("should create an error with default severity and status code", () => {
-    const error = new AppError(
-      "Test error",
-      ErrorCode.INTERNAL_ERROR,
-      ErrorCategory.INTERNAL,
-    );
+    const error = new AppError("Test error", ErrorCode.INTERNAL_ERROR, ErrorCategory.INTERNAL);
 
     expect(error.message).toBe("Test error");
     expect(error.code).toBe(ErrorCode.INTERNAL_ERROR);
@@ -38,15 +30,10 @@ describe("AppError", () => {
   });
 
   it("should create an error with custom severity and status code", () => {
-    const error = new AppError(
-      "Test error",
-      ErrorCode.INTERNAL_ERROR,
-      ErrorCategory.INTERNAL,
-      {
-        severity: ErrorSeverity.CRITICAL,
-        statusCode: 503,
-      },
-    );
+    const error = new AppError("Test error", ErrorCode.INTERNAL_ERROR, ErrorCategory.INTERNAL, {
+      severity: ErrorSeverity.CRITICAL,
+      statusCode: 503,
+    });
 
     expect(error.severity).toBe(ErrorSeverity.CRITICAL);
     expect(error.statusCode).toBe(503);
@@ -281,4 +268,3 @@ describe("createErrorResponse", () => {
     expect(json.error.requestId).toBe(requestId);
   });
 });
-

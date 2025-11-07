@@ -1,6 +1,6 @@
 /**
  * Comprehensive error handling system
- * 
+ *
  * This module provides:
  * - Error classification and types
  * - Custom error classes for different error categories
@@ -14,4 +14,3 @@ export * from "./AppError";
 export * from "./errorHandler";
 export * from "./middleware";
 export * from "./logger";
-

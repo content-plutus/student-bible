@@ -17,7 +17,7 @@ export interface ErrorLogger {
 class DefaultErrorLogger implements ErrorLogger {
   log(error: AppError | Error, metadata?: ErrorMetadata): void {
     const logData = this.formatLogData(error, metadata);
-    
+
     if (error instanceof AppError) {
       // Use severity to determine log level
       switch (error.severity) {
@@ -125,4 +125,3 @@ export function logInfo(message: string, metadata?: ErrorMetadata): void {
 export function log(error: AppError | Error, metadata?: ErrorMetadata): void {
   getErrorLogger().log(error, metadata);
 }
-

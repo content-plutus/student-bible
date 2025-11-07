@@ -27,7 +27,7 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
   if (!resource) {
     throw new NotFoundError("Resource not found");
   }
-  
+
   return createSuccessResponse({ data: resource });
 });
 ```
@@ -205,15 +205,9 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ success: true, data });
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { success: false, error: "Validation failed" },
-        { status: 400 }
-      );
+      return NextResponse.json({ success: false, error: "Validation failed" }, { status: 400 });
     }
-    return NextResponse.json(
-      { success: false, error: error.message },
-      { status: 500 }
-    );
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }
 ```
@@ -242,4 +236,3 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
 ## Examples
 
 See `src/app/api/students/[id]/route.ts` for a complete example of using the error handling system.
-

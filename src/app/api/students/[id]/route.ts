@@ -7,6 +7,7 @@ import {
   NotFoundError,
   AuthenticationError,
   handleDatabaseOperation,
+  ErrorCode,
 } from "@/lib/errors";
 import { logError } from "@/lib/errors/logger";
 
@@ -54,7 +55,7 @@ function validateApiKey(request: NextRequest): void {
   if (!requestApiKey || requestApiKey !== apiKey) {
     throw new AuthenticationError(
       "Unauthorized. Valid X-Internal-API-Key header required.",
-      undefined,
+      ErrorCode.UNAUTHORIZED,
       {
         metadata: {
           endpoint: request.nextUrl.pathname,

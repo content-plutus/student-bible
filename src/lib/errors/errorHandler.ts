@@ -91,9 +91,8 @@ export function createErrorResponse(
         success: false,
         error: {
           code: ErrorCode.INTERNAL_ERROR,
-          message: process.env.NODE_ENV === "production" 
-            ? "An internal error occurred" 
-            : error.message,
+          message:
+            process.env.NODE_ENV === "production" ? "An internal error occurred" : error.message,
           category: ErrorCategory.INTERNAL,
           severity: ErrorSeverity.HIGH,
           timestamp: new Date().toISOString(),
@@ -140,12 +139,7 @@ function classifyDatabaseError(error: PostgrestError): {
     errorMessage.includes("duplicate key") ||
     errorMessage.includes("unique constraint")
   ) {
-    const field = extractFieldFromError(errorMessage, [
-      "email",
-      "phone",
-      "aadhar",
-      "pan",
-    ]);
+    const field = extractFieldFromError(errorMessage, ["email", "phone", "aadhar", "pan"]);
 
     return {
       code: ErrorCode.UNIQUE_VIOLATION,
@@ -178,10 +172,7 @@ function classifyDatabaseError(error: PostgrestError): {
 
   // Not null violations
   if (errorCode === "23502" || errorMessage.includes("not null")) {
-    const field = extractFieldFromError(errorMessage, [
-      "column",
-      "field",
-    ]);
+    const field = extractFieldFromError(errorMessage, ["column", "field"]);
     return {
       code: ErrorCode.NOT_NULL_VIOLATION,
       message: field ? `${field} is required` : "Required field is missing",
@@ -213,9 +204,7 @@ function classifyDatabaseError(error: PostgrestError): {
 
     return {
       code: ErrorCode.CONSTRAINT_VIOLATION,
-      message: field
-        ? `Invalid ${field} format or value`
-        : "Data validation failed",
+      message: field ? `Invalid ${field} format or value` : "Data validation failed",
       severity: ErrorSeverity.LOW,
       statusCode: 400,
       details: field
@@ -256,10 +245,7 @@ function classifyDatabaseError(error: PostgrestError): {
 /**
  * Extract field name from error message
  */
-function extractFieldFromError(
-  errorMessage: string,
-  possibleFields: string[],
-): string | undefined {
+function extractFieldFromError(errorMessage: string, possibleFields: string[]): string | undefined {
   for (const field of possibleFields) {
     if (errorMessage.includes(field)) {
       return field;
@@ -292,4 +278,3 @@ export function createSuccessResponse<T>(
     { status },
   );
 }
-

@@ -65,17 +65,15 @@ export function withErrorHandling<T>(
 /**
  * Async error handler that wraps async functions
  */
-export function asyncHandler<T extends unknown[]>(
-  fn: (...args: T) => Promise<Response>,
-) {
+export function asyncHandler<T extends unknown[]>(fn: (...args: T) => Promise<Response>) {
   return async (...args: T): Promise<Response> => {
     try {
       return await fn(...args);
     } catch (error) {
       // Extract request from args if available
-      const request = args.find(
-        (arg): arg is NextRequest => arg instanceof NextRequest,
-      ) as NextRequest | undefined;
+      const request = args.find((arg): arg is NextRequest => arg instanceof NextRequest) as
+        | NextRequest
+        | undefined;
 
       const metadata = request ? extractRequestMetadata(request) : undefined;
       const requestId = metadata?.requestId;
@@ -103,14 +101,10 @@ export async function handleDatabaseOperation<T>(
     // Convert database errors to DatabaseError
     if (error && typeof error === "object" && "code" in error) {
       const dbError = error as { code?: string; message: string };
-      throw new DatabaseError(
-        dbError.message || "Database operation failed",
-        undefined,
-        {
-          severity: undefined,
-          metadata: context?.metadata,
-        },
-      );
+      throw new DatabaseError(dbError.message || "Database operation failed", undefined, {
+        severity: undefined,
+        metadata: context?.metadata,
+      });
     }
 
     // Re-throw unknown errors
@@ -135,4 +129,3 @@ export function validateOrThrow<T>(
 }
 
 export { createSuccessResponse, createErrorResponse };
-
