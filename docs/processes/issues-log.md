@@ -51,3 +51,10 @@
 - **Symptom**: `npm install` failed with `ENOTFOUND registry.npmjs.org`.
 - **Fix**: Avoided installing packages; replaced dependency (see Levenshtein fix above).
 - **Result**: Build pipeline continued without network install.
+
+### Task tracker desync after merged PRs
+
+- **Symptom**: Tasks 4.4–4.6 were marked incomplete locally even though commits `0192257`, `c0eccfd`, and `9662afe` already shipped those features.
+- **Fix**: Reviewed commit history (`git show <commit>`, `git log --grep`) to confirm each task’s status, then updated the checklist accordingly.
+- **Result**: `tasks/tasks-0001-prd-student-bible.md` now mirrors `main`.
+- **Instruction**: Before editing the task tracker, inspect recent git history to verify whether a task is pending or already merged.
