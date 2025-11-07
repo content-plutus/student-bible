@@ -120,8 +120,9 @@ function getErrorCode(error: unknown): string {
   return "unknown_error";
 }
 
-export function handleError(error: unknown): NextResponse<ErrorResponse> {
-  console.error("Error in API handler:", error);
+export function handleError(error: unknown, req?: NextRequest): NextResponse<ErrorResponse> {
+  const requestInfo = req ? { method: req.method, path: new URL(req.url).pathname } : undefined;
+  console.error("Error in API handler:", error, requestInfo);
 
   if (error instanceof ZodError) {
     const details: ValidationError[] = error.issues.map((issue) => ({
