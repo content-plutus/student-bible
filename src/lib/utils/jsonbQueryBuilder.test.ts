@@ -200,6 +200,44 @@ describe("JsonbQueryBuilder", () => {
     });
   });
 
+  describe("contained", () => {
+    it("should add a contained condition with object", () => {
+      const builder = new JsonbQueryBuilder(queryBuilder);
+      builder.where("", "contained", { batch_code: "ACCA_2024_Batch_5" });
+
+      expect(mockQuery.mockFilterMethods.contained).toHaveBeenCalledWith("extra_fields", {
+        batch_code: "ACCA_2024_Batch_5",
+      });
+    });
+
+    it("should add a contained condition with single key-value", () => {
+      const builder = new JsonbQueryBuilder(queryBuilder);
+      builder.where("batch_code", "contained", "ACCA_2024_Batch_5");
+
+      expect(mockQuery.mockFilterMethods.contained).toHaveBeenCalledWith("extra_fields", {
+        batch_code: "ACCA_2024_Batch_5",
+      });
+    });
+
+    it("should handle nested paths in contained by building nested objects", () => {
+      const builder = new JsonbQueryBuilder(queryBuilder);
+      builder.where("address.city", "contained", "Mumbai");
+
+      expect(mockQuery.mockFilterMethods.contained).toHaveBeenCalledWith("extra_fields", {
+        address: { city: "Mumbai" },
+      });
+    });
+
+    it("should handle deeply nested paths in contained", () => {
+      const builder = new JsonbQueryBuilder(queryBuilder);
+      builder.where("metadata.user.preferences.theme", "contained", "dark");
+
+      expect(mockQuery.mockFilterMethods.contained).toHaveBeenCalledWith("extra_fields", {
+        metadata: { user: { preferences: { theme: "dark" } } },
+      });
+    });
+  });
+
   describe("exists", () => {
     it("should check if a key exists using ? operator", () => {
       const builder = new JsonbQueryBuilder(queryBuilder);

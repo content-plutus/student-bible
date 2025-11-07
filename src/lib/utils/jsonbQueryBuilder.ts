@@ -275,9 +275,18 @@ export class JsonbQueryBuilder<T> {
         }
         break;
       case "contained":
-        // Use Supabase's contained method
+        // Use Supabase's contained method for JSONB containment
         if (typeof value === "object" && value !== null && !Array.isArray(value)) {
           this.query = this.query.contained(this.column, value as Record<string, JsonbValue>);
+        } else {
+          // Single key-value containment
+          // If path contains dots, build nested object structure
+          if (path.includes(".")) {
+            const nestedObject = this.buildNestedObject(path, value);
+            this.query = this.query.contained(this.column, nestedObject);
+          } else {
+            this.query = this.query.contained(this.column, { [path]: value });
+          }
         }
         break;
       case "exists":
