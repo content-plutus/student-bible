@@ -7,9 +7,9 @@ The `/docs` directory houses project-facing documentation. Start here to find th
 - `supabase-project-setup.md` – step-by-step guide for provisioning and linking the shared Supabase project.
 - `architecture/` – high-level solution design, diagrams, and component responsibilities (placeholder).
 - `schema/schema-design-decisions.md` – schema rationale, JSONB usage patterns, and evolution workflow.
-- `schema/` – database schema specifications, migration logs, and validation matrices (placeholder).
-- `processes/` – operational runbooks (sync schedules, incident response, QA checklists) (placeholder).
-- `playbooks/` – how-to guides for common tasks (data import, schema extensions, export workflows) (placeholder).
+- `schema/` – database schema specifications, migration logs, and validation matrices (living docs).
+- `processes/` – operational runbooks (sync schedules, incident response, QA checklists).
+- `playbooks/` – how-to guides for common tasks (data import, schema extensions, export workflows).
 
 ## Contribution Tips
 

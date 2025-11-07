@@ -124,10 +124,10 @@
   - [x] 4.1 Create Supabase client singleton with connection pooling
   - [x] 4.2 Implement student search API with phone number and dynamic field search
   - [x] 4.3 Create student profile API with JSONB field merging
-  - [ ] 4.4 Build student creation API with validation and JSONB field extraction
-  - [ ] 4.5 Implement CSV parser with dynamic column mapping
-  - [ ] 4.6 Create data transformation service with field mapping registry
-  - [ ] 4.7 Build export API with dynamic column selection and formatting
+  - [x] 4.4 Build student creation API with validation and JSONB field extraction
+  - [x] 4.5 Implement CSV parser with dynamic column mapping
+  - [x] 4.6 Create data transformation service with field mapping registry
+  - [x] 4.7 Build export API with dynamic column selection and formatting
   - [ ] 4.8 Implement batch import API with progress tracking and rollback
   - [ ] 4.9 Create authentication middleware with JWT validation
   - [ ] 4.10 Build comprehensive error handling with error classification
