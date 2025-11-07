@@ -4,6 +4,7 @@ import { z } from "zod";
 import { DynamicCsvParser } from "@/lib/utils/csvParser";
 import { BatchImportService } from "@/lib/services/batchImportService";
 import { importOptionsSchema, type ImportOptionsInput } from "@/lib/types/import";
+import type { ImportJobMetadata } from "@/lib/types/import";
 import { writeFileSync, unlinkSync, readFileSync } from "fs";
 import { join } from "path";
 import { tmpdir } from "os";
@@ -118,6 +119,7 @@ async function createImportJob(
     fileName?: string;
   },
   parserErrors: Array<{ row: number; column?: string; message: string; value?: unknown }> = [],
+  rawData?: Array<Record<string, unknown>>,
 ): Promise<string> {
   const { data, error } = await supabase
     .from("import_jobs")
@@ -130,6 +132,7 @@ async function createImportJob(
       error_summary: parserErrors,
       inserted_student_ids: [],
       metadata,
+      raw_data: rawData || null,
     })
     .select("id")
     .single();
@@ -139,6 +142,32 @@ async function createImportJob(
   }
 
   return data.id;
+}
+
+/**
+ * Process import job in background without blocking the HTTP response
+ * This function is called for async imports and runs independently
+ */
+async function processImportJobInBackground(
+  supabase: ReturnType<typeof getSupabaseClient>,
+  jobId: string,
+  records: Array<Record<string, unknown>>,
+  options: ImportOptionsInput,
+  metadata: ImportJobMetadata,
+): Promise<void> {
+  try {
+    const importService = new BatchImportService(supabase, options);
+    await importService.processBatchImport(records, jobId, metadata);
+  } catch (error) {
+    console.error(`Background import job ${jobId} failed:`, error);
+    await supabase
+      .from("import_jobs")
+      .update({
+        status: "failed",
+        completed_at: new Date().toISOString(),
+      })
+      .eq("id", jobId);
+  }
 }
 
 export async function POST(request: NextRequest) {
@@ -239,9 +268,24 @@ export async function POST(request: NextRequest) {
         fileName,
       },
       parserErrors,
+      validatedOptions.async ? records : undefined, // Store records for async processing
     );
 
     if (validatedOptions.async) {
+      // Process in background without blocking the response
+      processImportJobInBackground(supabase, jobId, records, validatedOptions, {
+        sourceType,
+        batchSize: validatedOptions.batchSize,
+        options: {
+          skipDuplicates: validatedOptions.skipDuplicates,
+          createIfNoDuplicates: validatedOptions.createIfNoDuplicates,
+          duplicateCheckPreset: validatedOptions.duplicateCheckPreset,
+        },
+        fileName,
+      }).catch((error) => {
+        console.error(`Background import job ${jobId} failed:`, error);
+      });
+
       return NextResponse.json({
         success: true,
         jobId,
