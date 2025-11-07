@@ -10,8 +10,7 @@ export interface DependencyStatus {
 }
 
 /**
- * Compute the overall system health based on dependency statuses.
- * Prioritises the most severe state so dashboards can act accordingly.
+ * Determine the overall system status from dependency statuses.
  */
 export function calculateOverallStatus(statuses: DependencyStatus[]): DependencyState {
   if (statuses.some((status) => status.status === "unhealthy")) {
@@ -25,6 +24,9 @@ export function calculateOverallStatus(statuses: DependencyStatus[]): Dependency
   return "healthy";
 }
 
+/**
+ * Convert a dependency status array into a keyed object for easier lookups.
+ */
 export function mapStatusesByName(statuses: DependencyStatus[]): Record<string, DependencyStatus> {
   return statuses.reduce<Record<string, DependencyStatus>>((acc, status) => {
     acc[status.name] = status;

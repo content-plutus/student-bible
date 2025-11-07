@@ -1,11 +1,10 @@
 import { NextResponse } from "next/server";
 import { performance } from "node:perf_hooks";
-import { supabaseAdmin } from "@/lib/supabase/server";
 import {
   calculateOverallStatus,
   mapStatusesByName,
-  type DependencyStatus,
   type DependencyState,
+  type DependencyStatus,
 } from "@/lib/health/status";
 
 const REQUIRED_ENV_VARS = [
@@ -26,7 +25,6 @@ export async function GET() {
   const dependencyStatuses = [environmentStatus, databaseStatus];
   const dependencies = mapStatusesByName(dependencyStatuses);
   const overallStatus = calculateOverallStatus(dependencyStatuses);
-  const statusCode = overallStatus === "unhealthy" ? 503 : 200;
 
   return NextResponse.json(
     {
@@ -43,7 +41,7 @@ export async function GET() {
         commit: process.env.VERCEL_GIT_COMMIT_SHA,
       },
     },
-    { status: statusCode },
+    { status: overallStatus === "unhealthy" ? 503 : 200 },
   );
 }
 
@@ -81,21 +79,48 @@ function checkEnvironment(): DependencyStatus {
 async function checkDatabase(): Promise<DependencyStatus> {
   const started = performance.now();
   const checkedAt = new Date().toISOString();
+  const missingSupabaseEnv = REQUIRED_ENV_VARS.filter((env) => !process.env[env]);
+  if (missingSupabaseEnv.length > 0) {
+    return {
+      name: "database",
+      status: "unhealthy",
+      checkedAt,
+      error: `Missing Supabase env vars: ${missingSupabaseEnv.join(", ")}`,
+      details: {
+        missingEnv: missingSupabaseEnv,
+      },
+    };
+  }
 
-  // Create a timeout promise that rejects after the timeout
+  const controller = new AbortController();
+  let timeoutId: NodeJS.Timeout | null = null;
+
+  // Create a timeout promise that aborts the controller and rejects with AbortError
   const timeoutPromise = new Promise<never>((_, reject) => {
-    setTimeout(() => {
-      reject(new Error("Database query timeout"));
+    timeoutId = setTimeout(() => {
+      controller.abort();
+      const abortError = new Error("Database query timeout");
+      abortError.name = "AbortError";
+      reject(abortError);
     }, DATABASE_QUERY_TIMEOUT_MS);
   });
 
   try {
+    const { supabaseAdmin } = await import("@/lib/supabase/server");
     const supabase = supabaseAdmin();
+    // Create the query promise
+    const queryPromise = supabase.from("students").select("id").limit(1);
+
     // Race the database query against the timeout
-    const { error } = await Promise.race([
-      supabase.from("students").select("id").limit(1),
-      timeoutPromise,
-    ]);
+    // Note: Supabase PostgREST client doesn't directly support abortSignal in the query chain,
+    // but Promise.race ensures we don't hang, and the timeout is properly cleaned up
+    const { error } = await Promise.race([queryPromise, timeoutPromise]);
+
+    // Clear timeout on success
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+      timeoutId = null;
+    }
 
     if (error) {
       throw error;
@@ -119,9 +144,15 @@ async function checkDatabase(): Promise<DependencyStatus> {
       },
     };
   } catch (error) {
+    // Clear timeout in error path to prevent leaks
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+      timeoutId = null;
+    }
     const latencyMs = Number((performance.now() - started).toFixed(2));
 
-    // Check if error is due to timeout
+    // Check if error is due to timeout/abort
+    // The timeout promise creates an Error with name "AbortError"
     const isTimeoutError =
       error instanceof Error &&
       (error.name === "AbortError" ||
