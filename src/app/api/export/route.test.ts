@@ -3,11 +3,11 @@
  */
 import { NextRequest } from "next/server";
 import { POST, GET } from "@/app/api/export/route";
-import { supabaseAdmin } from "@/lib/supabase/server";
+import { createServerClient } from "@/lib/supabase/server";
 
 // Mock dependencies
 jest.mock("@/lib/supabase/server", () => ({
-  supabaseAdmin: jest.fn(),
+  createServerClient: jest.fn(),
 }));
 
 jest.mock("@/lib/utils/exportFormatters", () => ({
@@ -75,16 +75,17 @@ describe("Export API", () => {
     from: jest.fn(() => ({
       select: jest.fn(() => mockSupabaseQuery),
     })),
+    auth: {
+      getUser: jest.fn().mockResolvedValue({
+        data: { user: { id: "test-user-id", email: "test@example.com" } },
+        error: null,
+      }),
+    },
   };
 
   beforeEach(() => {
     jest.clearAllMocks();
-    jest.mocked(supabaseAdmin).mockReturnValue(mockSupabase);
-    process.env.INTERNAL_API_KEY = "test-api-key";
-  });
-
-  afterEach(() => {
-    delete process.env.INTERNAL_API_KEY;
+    jest.mocked(createServerClient).mockReturnValue(mockSupabase as any);
   });
 
   describe("POST /api/export", () => {
@@ -102,7 +103,7 @@ describe("Export API", () => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "X-Internal-API-Key": "test-api-key",
+          
         },
         body: JSON.stringify(requestBody),
       });
@@ -127,7 +128,7 @@ describe("Export API", () => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "X-Internal-API-Key": "test-api-key",
+          
         },
         body: JSON.stringify(requestBody),
       });
@@ -151,7 +152,7 @@ describe("Export API", () => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "X-Internal-API-Key": "test-api-key",
+          
         },
         body: JSON.stringify(requestBody),
       });
@@ -179,7 +180,7 @@ describe("Export API", () => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "X-Internal-API-Key": "test-api-key",
+          
         },
         body: JSON.stringify(requestBody),
       });
@@ -205,7 +206,7 @@ describe("Export API", () => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "X-Internal-API-Key": "test-api-key",
+          
         },
         body: JSON.stringify(requestBody),
       });
@@ -218,7 +219,12 @@ describe("Export API", () => {
       );
     });
 
-    it("should return 401 if API key is missing", async () => {
+    it("should return 401 if user is not authenticated", async () => {
+      mockSupabase.auth.getUser.mockResolvedValueOnce({
+        data: { user: null },
+        error: null,
+      });
+
       const requestBody = {
         format: "csv",
         fields: ["id", "phone_number"],
@@ -261,7 +267,7 @@ describe("Export API", () => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "X-Internal-API-Key": "test-api-key",
+          
         },
         body: JSON.stringify(requestBody),
       });
@@ -289,7 +295,7 @@ describe("Export API", () => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "X-Internal-API-Key": "test-api-key",
+          
         },
         body: JSON.stringify(requestBody),
       });
@@ -312,7 +318,7 @@ describe("Export API", () => {
         {
           method: "GET",
           headers: {
-            "X-Internal-API-Key": "test-api-key",
+            
           },
         },
       );
@@ -326,7 +332,7 @@ describe("Export API", () => {
       const request = new NextRequest("http://localhost/api/export?format=json", {
         method: "GET",
         headers: {
-          "X-Internal-API-Key": "test-api-key",
+          
         },
       });
 
