@@ -32,9 +32,7 @@ export class TransformationService {
       ...rule,
       rename: rule.rename ? { ...rule.rename } : undefined,
       valueMap: rule.valueMap
-        ? Object.fromEntries(
-            Object.entries(rule.valueMap).map(([k, v]) => [k, { ...v }]),
-          )
+        ? Object.fromEntries(Object.entries(rule.valueMap).map(([k, v]) => [k, { ...v }]))
         : undefined,
       defaults: rule.defaults ? { ...rule.defaults } : undefined,
       drop: rule.drop ? [...rule.drop] : undefined,
