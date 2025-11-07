@@ -10,6 +10,7 @@ import {
 } from "@/lib/validators/schemaEvolution";
 import { CertificationType } from "@/lib/validators/rules";
 import { z } from "zod";
+import { handleError } from "@/lib/middleware/errorHandler";
 
 if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
   throw new Error(
@@ -163,23 +164,7 @@ export async function POST(request: NextRequest) {
       result,
     });
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: `Validation error: ${error.errors.map((e) => `${e.path.join(".")}: ${e.message}`).join(", ")}`,
-        },
-        { status: 400 },
-      );
-    }
-    console.error("Error detecting duplicates:", error);
-    return NextResponse.json(
-      {
-        success: false,
-        error: error instanceof Error ? error.message : "Unknown error occurred",
-      },
-      { status: 500 },
-    );
+    return handleError(error, request);
   }
 }
 
@@ -337,23 +322,7 @@ export async function PUT(request: NextRequest) {
         : "No duplicates found but createIfNoDuplicates was false.",
     });
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: `Validation error: ${error.errors.map((e) => `${e.path.join(".")}: ${e.message}`).join(", ")}`,
-        },
-        { status: 400 },
-      );
-    }
-    console.error("Error in student creation with duplicate check:", error);
-    return NextResponse.json(
-      {
-        success: false,
-        error: error instanceof Error ? error.message : "Unknown error occurred",
-      },
-      { status: 500 },
-    );
+    return handleError(error, request);
   }
 }
 
@@ -488,13 +457,6 @@ export async function GET(request: NextRequest) {
       result,
     });
   } catch (error) {
-    console.error("Error searching for duplicates:", error);
-    return NextResponse.json(
-      {
-        success: false,
-        error: error instanceof Error ? error.message : "Unknown error occurred",
-      },
-      { status: 500 },
-    );
+    return handleError(error, request);
   }
 }

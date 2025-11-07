@@ -12,6 +12,7 @@ import {
 } from "@/lib/utils/exportFormatters";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { format } from "date-fns";
+import { handleError } from "@/lib/middleware/errorHandler";
 
 if (process.env.NODE_ENV === "production" && !process.env.INTERNAL_API_KEY) {
   throw new Error(
@@ -251,14 +252,7 @@ async function handleExport(req: NextRequest, validatedData: ExportParams) {
       },
     });
   } catch (error) {
-    console.error("Error in export handler:", error);
-    return NextResponse.json(
-      {
-        success: false,
-        error: error instanceof Error ? error.message : "Unknown error occurred",
-      },
-      { status: 500 },
-    );
+    return handleError(error, req);
   }
 }
 
@@ -330,14 +324,7 @@ async function handleExportGet(req: NextRequest, validatedData: ExportQuery) {
 
     return handleExport(req, exportParams);
   } catch (error) {
-    console.error("Error in GET export handler:", error);
-    return NextResponse.json(
-      {
-        success: false,
-        error: error instanceof Error ? error.message : "Unknown error occurred",
-      },
-      { status: 500 },
-    );
+    return handleError(error, req);
   }
 }
 

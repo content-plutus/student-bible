@@ -4,6 +4,7 @@ import { transformationService } from "@/lib/services/transformationService";
 import type { CompatibilityRule } from "@/lib/jsonb/compatibility";
 import { VALID_TABLE_COLUMN_COMBINATIONS } from "@/lib/constants/tableColumns";
 import "@/lib/jsonb/schemaRegistry";
+import { handleError } from "@/lib/middleware/errorHandler";
 
 if (process.env.NODE_ENV === "production" && !process.env.INTERNAL_API_KEY) {
   throw new Error(
@@ -109,34 +110,7 @@ export async function POST(request: NextRequest) {
       });
     }
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Validation failed",
-          details: error.errors,
-        },
-        { status: 400 },
-      );
-    }
-
-    if (error instanceof Error) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: error.message,
-        },
-        { status: 400 },
-      );
-    }
-
-    return NextResponse.json(
-      {
-        success: false,
-        error: "An unexpected error occurred",
-      },
-      { status: 500 },
-    );
+    return handleError(error, request);
   }
 }
 
@@ -180,33 +154,6 @@ export async function GET(request: NextRequest) {
       count: mappings.length,
     });
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Validation failed",
-          details: error.errors,
-        },
-        { status: 400 },
-      );
-    }
-
-    if (error instanceof Error) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: error.message,
-        },
-        { status: 400 },
-      );
-    }
-
-    return NextResponse.json(
-      {
-        success: false,
-        error: "An unexpected error occurred",
-      },
-      { status: 500 },
-    );
+    return handleError(error, request);
   }
 }

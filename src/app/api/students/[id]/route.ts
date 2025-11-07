@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { studentUpdateSchema } from "@/lib/types/student";
-import { z } from "zod";
+import { handleError } from "@/lib/middleware/errorHandler";
 
 if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
   throw new Error(
@@ -100,14 +100,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
       student: mergedStudent,
     });
   } catch (error) {
-    console.error("Error retrieving student:", error);
-    return NextResponse.json(
-      {
-        success: false,
-        error: error instanceof Error ? error.message : "Unknown error occurred",
-      },
-      { status: 500 },
-    );
+    return handleError(error, request);
   }
 }
 
@@ -161,22 +154,6 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
       student: mergedStudent,
     });
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: `Validation error: ${error.errors.map((e) => `${e.path.join(".")}: ${e.message}`).join(", ")}`,
-        },
-        { status: 400 },
-      );
-    }
-    console.error("Error updating student:", error);
-    return NextResponse.json(
-      {
-        success: false,
-        error: error instanceof Error ? error.message : "Unknown error occurred",
-      },
-      { status: 500 },
-    );
+    return handleError(error, request);
   }
 }

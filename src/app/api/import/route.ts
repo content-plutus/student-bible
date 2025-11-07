@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { z } from "zod";
 import { DynamicCsvParser } from "@/lib/utils/csvParser";
 import { BatchImportService } from "@/lib/services/batchImportService";
 import { importOptionsSchema, type ImportOptionsInput } from "@/lib/types/import";
@@ -9,6 +8,7 @@ import { writeFileSync, unlinkSync, readFileSync } from "fs";
 import { join } from "path";
 import { tmpdir } from "os";
 import { parse } from "csv-parse/sync";
+import { handleError } from "@/lib/middleware/errorHandler";
 
 if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
   throw new Error(
@@ -324,25 +324,7 @@ export async function POST(request: NextRequest) {
       completedAt: job?.completed_at || null,
     });
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Validation error",
-          details: error.errors,
-        },
-        { status: 400 },
-      );
-    }
-
-    console.error("Error processing import:", error);
-    return NextResponse.json(
-      {
-        success: false,
-        error: error instanceof Error ? error.message : "Unknown error occurred",
-      },
-      { status: 500 },
-    );
+    return handleError(error, request);
   }
 }
 
@@ -399,13 +381,6 @@ export async function GET(request: NextRequest) {
       metadata: job.metadata,
     });
   } catch (error) {
-    console.error("Error fetching import job:", error);
-    return NextResponse.json(
-      {
-        success: false,
-        error: error instanceof Error ? error.message : "Unknown error occurred",
-      },
-      { status: 500 },
-    );
+    return handleError(error, request);
   }
 }
