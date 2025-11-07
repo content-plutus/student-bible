@@ -312,7 +312,7 @@ describe("JsonbQueryBuilder", () => {
       expect(mockQuery.mockFilterMethods.not).toHaveBeenCalledWith(
         "extra_fields->>'lead_source'",
         "in",
-        "(event,referral)",
+        ["event", "referral"],
       );
     });
   });
@@ -384,10 +384,10 @@ describe("JsonbQueryBuilder", () => {
 
       expect(mockQuery.mockFilterMethods.or).toHaveBeenCalled();
       const orCall = mockQuery.mockFilterMethods.or.mock.calls[0][0];
-      // Should contain ? operator for simple path
-      expect(orCall).toContain("extra_fields?.mentor_assigned");
-      // Should contain ? operator for nested path
-      expect(orCall).toContain("extra_fields->'address'?.city");
+      // Should contain ? operator for simple path (no spaces, no quotes, no dot)
+      expect(orCall).toContain("extra_fields?mentor_assigned");
+      // Should contain ? operator for nested path (no spaces, no quotes, no dot)
+      expect(orCall).toContain("extra_fields->'address'?city");
     });
 
     it("should preserve nested AND groups inside OR queries", () => {

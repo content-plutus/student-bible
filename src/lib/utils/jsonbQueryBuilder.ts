@@ -324,14 +324,14 @@ export class JsonbQueryBuilder<T> {
         break;
       case "in":
         if (Array.isArray(value)) {
-          this.query = this.query.in(columnPath, value.map(String));
+          // Pass array directly with original types preserved
+          this.query = this.query.in(columnPath, value);
         }
         break;
       case "not_in":
         if (Array.isArray(value)) {
-          // Use not.in filter
-          const values = value.map(String);
-          this.query = this.query.not(columnPath, "in", `(${values.join(",")})`);
+          // Pass array directly to not.in filter with original types preserved
+          this.query = this.query.not(columnPath, "in", value);
         }
         break;
     }
@@ -399,7 +399,8 @@ export class JsonbQueryBuilder<T> {
         return `${columnPath}.ilike.%${value}%`;
       case "in":
         if (Array.isArray(value)) {
-          return `${columnPath}.in.(${value.map(String).join(",")})`;
+          // Serialize array values preserving types
+          return `${columnPath}.in.(${value.map((v) => this.serializeValue(v)).join(",")})`;
         }
         return null;
       case "contains":
@@ -429,15 +430,16 @@ export class JsonbQueryBuilder<T> {
       case "exists":
         // For simple paths: column?key
         // For nested paths: column->'nested'?key
+        // PostgREST expects ? operator without spaces or quotes
         if (path.includes(".")) {
           const parts = path.split(".");
           let nestedPath = this.column;
           for (let i = 0; i < parts.length - 1; i++) {
             nestedPath += `->'${parts[i]}'`;
           }
-          return `${nestedPath}?.${parts[parts.length - 1]}`;
+          return `${nestedPath}?${parts[parts.length - 1]}`;
         }
-        return `${this.column}?.${path}`;
+        return `${this.column}?${path}`;
       case "not_exists":
         throw new Error(
           `The "not_exists" operator cannot be used in OR groups. ` +
@@ -446,7 +448,8 @@ export class JsonbQueryBuilder<T> {
         );
       case "not_in":
         if (Array.isArray(value)) {
-          return `${columnPath}.not.in.(${value.map(String).join(",")})`;
+          // Serialize array values preserving types
+          return `${columnPath}.not.in.(${value.map((v) => this.serializeValue(v)).join(",")})`;
         }
         return null;
       default:
