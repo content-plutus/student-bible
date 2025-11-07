@@ -46,6 +46,21 @@ export default function MappingsAdmin() {
     try {
       setLoading(true);
       const response = await fetch("/api/mappings");
+      
+      if (!response.ok) {
+        if (response.status === 401 || response.status === 403) {
+          setError(
+            "Authentication required. This admin page only works in development. " +
+            "Production requires server-side proxy with admin authentication. " +
+            "See TODO comment in code for details."
+          );
+          return;
+        }
+        const data = await response.json();
+        setError(data.error || `Failed to fetch mappings (${response.status})`);
+        return;
+      }
+
       const data = await response.json();
 
       if (data.success) {
@@ -86,6 +101,16 @@ export default function MappingsAdmin() {
         }),
       });
 
+      if (!response.ok) {
+        if (response.status === 401 || response.status === 403) {
+          alert(
+            "Authentication required. This admin page only works in development. " +
+            "Production requires server-side proxy with admin authentication."
+          );
+          return;
+        }
+      }
+
       const data = await response.json();
 
       if (data.success) {
@@ -122,6 +147,16 @@ export default function MappingsAdmin() {
           data,
         }),
       });
+
+      if (!response.ok) {
+        if (response.status === 401 || response.status === 403) {
+          alert(
+            "Authentication required. This admin page only works in development. " +
+            "Production requires server-side proxy with admin authentication."
+          );
+          return;
+        }
+      }
 
       const result = await response.json();
 
