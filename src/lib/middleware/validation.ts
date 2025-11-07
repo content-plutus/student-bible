@@ -38,15 +38,6 @@ function formatZodError(error: ZodError): ValidationError[] {
 
     if (issue.code === "invalid_type") {
       code = "INVALID_TYPE";
-    } else if (issue.code === "invalid_string") {
-      const validation = (issue as { validation?: string }).validation;
-      if (validation === "email") {
-        code = "INVALID_EMAIL_FORMAT";
-      } else if (validation === "regex") {
-        code = FIELD_ERROR_CODE_MAP[fieldName] || "INVALID_FORMAT";
-      } else {
-        code = "INVALID_STRING";
-      }
     } else if (issue.code === "invalid_format") {
       const format = (issue as { format?: string }).format;
       if (format === "email") {

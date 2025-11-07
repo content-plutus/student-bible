@@ -52,10 +52,8 @@ const schemaExtensionSchema = z.object({
       "academic_info",
     ],
     {
-      errorMap: () => ({
-        message:
-          "Table name must be one of: students, student_addresses, student_certifications, exam_attempts, form_submissions, attendance_records, test_scores, academic_info",
-      }),
+      message:
+        "Table name must be one of: students, student_addresses, student_certifications, exam_attempts, form_submissions, attendance_records, test_scores, academic_info",
     },
   ),
   jsonb_column: z.enum(
@@ -69,10 +67,8 @@ const schemaExtensionSchema = z.object({
       "analysis_data",
     ],
     {
-      errorMap: () => ({
-        message:
-          "JSONB column must be one of: extra_fields, additional_data, custom_fields, metadata, raw_data, extra_metrics, analysis_data",
-      }),
+      message:
+        "JSONB column must be one of: extra_fields, additional_data, custom_fields, metadata, raw_data, extra_metrics, analysis_data",
     },
   ),
   fields: z

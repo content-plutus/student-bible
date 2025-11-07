@@ -15,7 +15,7 @@ import {
   certificationTypeSchema,
   dateOfBirthSchema,
 } from "@/lib/types/validations";
-import { isKnownEnumValue } from "@/lib/validators/rules";
+import { isKnownEnumValue } from "@/lib/validators/studentValidator";
 import { studentExtraFieldsSchema } from "@/lib/jsonb/schemaRegistry";
 
 const syncDataSchema = z

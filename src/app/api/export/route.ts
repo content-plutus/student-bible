@@ -56,7 +56,7 @@ function validateApiKey(request: NextRequest): NextResponse | null {
 
 const exportParamsSchema = z.object({
   format: z.enum(["csv", "json", "xlsx"], {
-    errorMap: () => ({ message: "Format must be one of: csv, json, xlsx" }),
+    message: "Format must be one of: csv, json, xlsx",
   }),
   filters: z
     .object({
@@ -243,7 +243,7 @@ async function handleExport(req: NextRequest, validatedData: ExportParams) {
     const filename = `students-export-${timestamp}.${getFileExtension(format)}`;
 
     // Return file response
-    return new NextResponse(exportData, {
+    return new NextResponse(exportData as BodyInit, {
       status: 200,
       headers: {
         "Content-Type": contentType,

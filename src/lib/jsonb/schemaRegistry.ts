@@ -130,11 +130,6 @@ class JsonbSchemaRegistry {
         workingSchema = workingSchema.partial() as unknown as TSchema;
       }
 
-      if (options.stripUnknownKeys) {
-        workingSchema = workingSchema.strip() as unknown as TSchema;
-      } else if (!allowUnknownKeys) {
-        workingSchema = workingSchema.strict() as unknown as TSchema;
-      }
     }
 
     return workingSchema;

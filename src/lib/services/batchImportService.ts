@@ -29,7 +29,7 @@ export interface ValidationResult {
 
 export class BatchImportService {
   private supabase: SupabaseClient;
-  private options: Required<ImportOptions>;
+  private options: Required<Omit<ImportOptions, 'duplicateCheckPreset'>> & Pick<ImportOptions, 'duplicateCheckPreset'>;
 
   constructor(supabase: SupabaseClient, options: ImportOptions = {}) {
     this.supabase = supabase;
@@ -141,7 +141,6 @@ export class BatchImportService {
               path: err.path,
               message: err.message,
               code: err.code,
-              value: err.value,
             })) ?? [
               {
                 row: rowNumber,
@@ -187,12 +186,12 @@ export class BatchImportService {
       } catch (error) {
         if (error instanceof z.ZodError) {
           errors.push(
-            ...error.errors.map((e) => ({
+            ...error.issues.map((e) => ({
               row: rowNumber,
               path: e.path.join("."),
               message: e.message,
               code: e.code,
-              value: e.path.reduce((obj, key) => obj?.[key], record as Record<string, unknown>),
+              value: e.path.reduce((obj: unknown, key) => (obj as Record<string, unknown>)?.[key], record as Record<string, unknown>),
             })),
           );
         } else {
@@ -241,7 +240,7 @@ export class BatchImportService {
         if (!this.options.skipDuplicates) {
           const duplicateResult = await detectDuplicates(
             this.supabase,
-            validatedRecord.data,
+            validatedRecord.data as Record<string, unknown>,
             criteria,
           );
 

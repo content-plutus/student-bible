@@ -19,7 +19,7 @@ if (!supabaseUrl || !supabaseAnonKey) {
  *
  * @returns SupabaseClient instance with user authentication context
  */
-export function createServerClient(): SupabaseClient {
+export function createServerClient() {
   return createServerComponentClient({
     cookies,
   });
@@ -34,7 +34,7 @@ export function createServerClient(): SupabaseClient {
  *
  * @returns SupabaseClient instance with service role privileges
  */
-export function createServiceRoleClient(): SupabaseClient {
+export function createServiceRoleClient() {
   if (!supabaseServiceRoleKey) {
     throw new Error(
       "Missing SUPABASE_SERVICE_ROLE_KEY environment variable. This is required for service role operations.",
@@ -64,9 +64,9 @@ export const supabase = createServerClient;
  *
  * Note: This creates a singleton instance since it doesn't depend on request context.
  */
-let serviceRoleClientInstance: SupabaseClient | null = null;
+let serviceRoleClientInstance: ReturnType<typeof createServiceRoleClient> | null = null;
 
-export const supabaseAdmin = (): SupabaseClient => {
+export const supabaseAdmin = () => {
   if (!serviceRoleClientInstance) {
     serviceRoleClientInstance = createServiceRoleClient();
   }

@@ -63,11 +63,7 @@ export class TransformationService {
   }
 
   getAvailableMappings(table: string, column: string): CompatibilityRule[] {
-    const key = `${table}.${column}` as const;
-    const registry = jsonbCompatibilityRegistry as {
-      rules: Map<string, CompatibilityRule[]>;
-    };
-    return registry.rules.get(key) || [];
+    return jsonbCompatibilityRegistry.getRules(table, column);
   }
 
   previewTransformation(
@@ -102,15 +98,11 @@ export class TransformationService {
 
   resetMappingsFor(table: string, column: string): void {
     const key = `${table}.${column}`;
-    const registry = jsonbCompatibilityRegistry as {
-      rules: Map<string, CompatibilityRule[]>;
-    };
-
     const seededDefaults = this.seededDefaults.get(key);
     if (seededDefaults && seededDefaults.length > 0) {
-      registry.rules.set(key, this.cloneRules(seededDefaults));
+      jsonbCompatibilityRegistry.setRules(table, column, this.cloneRules(seededDefaults));
     } else {
-      registry.rules.delete(key);
+      jsonbCompatibilityRegistry.deleteRules(table, column);
     }
   }
 }
