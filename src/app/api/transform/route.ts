@@ -2,12 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { transformationService } from "@/lib/services/transformationService";
 import type { CompatibilityRule } from "@/lib/jsonb/compatibility";
-
-if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
-  throw new Error(
-    "Missing required Supabase environment variables: NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set",
-  );
-}
+import { VALID_TABLE_COLUMN_COMBINATIONS } from "@/lib/constants/tableColumns";
+import "@/lib/jsonb/schemaRegistry";
 
 if (process.env.NODE_ENV === "production" && !process.env.INTERNAL_API_KEY) {
   throw new Error(
@@ -39,6 +35,14 @@ function validateApiKey(request: NextRequest): NextResponse | null {
     );
   }
 
+  return null;
+}
+
+function validateTableColumnCombination(table: string, column: string): string | null {
+  const validColumns = VALID_TABLE_COLUMN_COMBINATIONS[table];
+  if (!validColumns || !validColumns.includes(column)) {
+    return `Invalid JSONB column '${column}' for table '${table}'. Valid columns: ${validColumns?.join(", ") || "none"}`;
+  }
   return null;
 }
 
@@ -74,6 +78,17 @@ export async function POST(request: NextRequest) {
     const validatedData = transformRequestSchema.parse(body);
 
     const { table, column, data, rules } = validatedData;
+
+    const validationError = validateTableColumnCombination(table, column);
+    if (validationError) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: validationError,
+        },
+        { status: 400 },
+      );
+    }
 
     if (Array.isArray(data)) {
       const results = transformationService.transformImportData(table, column, data);
@@ -138,6 +153,17 @@ export async function GET(request: NextRequest) {
     const column = searchParams.get("column");
 
     const validatedParams = getTransformRequestSchema.parse({ table, column });
+
+    const validationError = validateTableColumnCombination(validatedParams.table, validatedParams.column);
+    if (validationError) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: validationError,
+        },
+        { status: 400 },
+      );
+    }
 
     const mappings = transformationService.getAvailableMappings(
       validatedParams.table,

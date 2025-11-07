@@ -1,6 +1,21 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import {
+  VALID_TABLE_COLUMN_COMBINATIONS,
+  VALID_TABLES,
+} from "@/lib/constants/tableColumns";
+
+/**
+ * Field Mapping Configuration Admin UI
+ * 
+ * NOTE: This client-side component calls /api/mappings and /api/transform endpoints
+ * without the X-Internal-API-Key header. In production, these endpoints require the key.
+ * 
+ * TODO (follow-up): Move admin operations to server-side (Server Actions or proxy endpoints)
+ * and implement proper admin authentication. The internal API key should never reach the client.
+ * See CodeRabbit review feedback for details.
+ */
 
 interface CompatibilityRule {
   description?: string;
@@ -9,28 +24,6 @@ interface CompatibilityRule {
   defaults?: Record<string, unknown>;
   drop?: string[];
 }
-
-const VALID_TABLES = [
-  "students",
-  "student_addresses",
-  "student_certifications",
-  "exam_attempts",
-  "form_submissions",
-  "attendance_records",
-  "test_scores",
-  "academic_info",
-];
-
-const TABLE_COLUMN_MAP: Record<string, string[]> = {
-  students: ["extra_fields"],
-  student_addresses: ["additional_data"],
-  student_certifications: ["custom_fields"],
-  exam_attempts: ["metadata"],
-  form_submissions: ["raw_data"],
-  attendance_records: ["extra_metrics"],
-  test_scores: ["analysis_data"],
-  academic_info: ["extra_fields"],
-};
 
 export default function MappingsAdmin() {
   const [mappings, setMappings] = useState<Record<string, Record<string, CompatibilityRule[]>>>({});
@@ -174,7 +167,7 @@ export default function MappingsAdmin() {
                   value={selectedTable}
                   onChange={(e) => {
                     setSelectedTable(e.target.value);
-                    setSelectedColumn(TABLE_COLUMN_MAP[e.target.value][0]);
+                    setSelectedColumn(VALID_TABLE_COLUMN_COMBINATIONS[e.target.value][0]);
                   }}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
@@ -193,7 +186,7 @@ export default function MappingsAdmin() {
                   onChange={(e) => setSelectedColumn(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                  {TABLE_COLUMN_MAP[selectedTable].map((col) => (
+                  {VALID_TABLE_COLUMN_COMBINATIONS[selectedTable].map((col) => (
                     <option key={col} value={col}>
                       {col}
                     </option>

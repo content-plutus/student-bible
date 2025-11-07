@@ -3,6 +3,7 @@ import {
   type CompatibilityRule,
   type CompatibilityResult,
 } from "@/lib/jsonb/compatibility";
+import "@/lib/jsonb/schemaRegistry";
 
 export interface TransformationPreview {
   original: Record<string, unknown>;
@@ -69,6 +70,14 @@ export class TransformationService {
 
   clearMappings(): void {
     jsonbCompatibilityRegistry.clear();
+  }
+
+  clearMappingsFor(table: string, column: string): void {
+    const key = `${table}.${column}` as const;
+    const registry = jsonbCompatibilityRegistry as {
+      rules: Map<string, CompatibilityRule[]>;
+    };
+    registry.rules.delete(key);
   }
 }
 

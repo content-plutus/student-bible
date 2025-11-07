@@ -2,12 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { transformationService } from "@/lib/services/transformationService";
 import type { CompatibilityRule } from "@/lib/jsonb/compatibility";
-
-if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
-  throw new Error(
-    "Missing required Supabase environment variables: NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set",
-  );
-}
+import { VALID_TABLE_COLUMN_COMBINATIONS } from "@/lib/constants/tableColumns";
+import "@/lib/jsonb/schemaRegistry";
 
 if (process.env.NODE_ENV === "production" && !process.env.INTERNAL_API_KEY) {
   throw new Error(
@@ -41,17 +37,6 @@ function validateApiKey(request: NextRequest): NextResponse | null {
 
   return null;
 }
-
-const VALID_TABLE_COLUMN_COMBINATIONS: Record<string, string[]> = {
-  students: ["extra_fields"],
-  student_addresses: ["additional_data"],
-  student_certifications: ["custom_fields"],
-  exam_attempts: ["metadata"],
-  form_submissions: ["raw_data"],
-  attendance_records: ["extra_metrics"],
-  test_scores: ["analysis_data"],
-  academic_info: ["extra_fields"],
-};
 
 const compatibilityRuleSchema: z.ZodType<Omit<CompatibilityRule, "transform">> = z.object({
   description: z.string().optional(),
@@ -251,7 +236,7 @@ export async function PUT(request: NextRequest) {
     }
 
     if (replace) {
-      transformationService.clearMappings();
+      transformationService.clearMappingsFor(table, column);
     }
 
     transformationService.registerFieldMapping(table, column, rules);
@@ -261,7 +246,7 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({
       success: true,
       message: replace
-        ? "Field mapping rules replaced successfully"
+        ? `Field mapping rules replaced successfully for ${table}.${column}`
         : "Field mapping rules updated successfully",
       table,
       column,
@@ -324,12 +309,14 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    transformationService.clearMappings();
+    transformationService.clearMappingsFor(table, column);
 
     return NextResponse.json({
       success: true,
-      message: "All field mapping rules cleared successfully",
-      note: "This clears all mappings in the registry. In-memory only - not persisted to database.",
+      message: `Field mapping rules cleared successfully for ${table}.${column}`,
+      table,
+      column,
+      note: "In-memory only - not persisted to database.",
     });
   } catch (error) {
     if (error instanceof z.ZodError) {
