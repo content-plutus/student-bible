@@ -70,11 +70,11 @@ function getSupabaseClient() {
 }
 
 export const GET = withErrorHandling(
-  async (request: NextRequest, context?: { params: Promise<{ id: string }> }) => {
+  async (request: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
     validateApiKey(request);
 
     const supabase = getSupabaseClient();
-    const { id } = await context!.params;
+    const { id } = await params;
 
     const result = await supabase.from("students").select("*").eq("id", id).single();
 
@@ -112,14 +112,14 @@ export const GET = withErrorHandling(
 );
 
 export const PATCH = withErrorHandling(
-  async (request: NextRequest, context?: { params: Promise<{ id: string }> }) => {
+  async (request: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
     validateApiKey(request);
 
     const body = await request.json();
     const validatedData = studentUpdateSchema.parse(body);
 
     const supabase = getSupabaseClient();
-    const { id } = await context!.params;
+    const { id } = await params;
 
     const { full_name, extra_fields, ...coreFields } = validatedData;
     void full_name;
