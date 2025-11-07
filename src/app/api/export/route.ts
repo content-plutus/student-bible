@@ -288,10 +288,9 @@ const exportQuerySchema = z.object({
     .optional(),
   include_extra_fields: z
     .string()
+    .default("false")
     .transform((val) => val === "true")
-    .pipe(z.boolean())
-    .optional()
-    .default("false"),
+    .pipe(z.boolean()),
 });
 
 type ExportQuery = z.infer<typeof exportQuerySchema>;
