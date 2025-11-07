@@ -1,11 +1,21 @@
+/**
+ * @jest-environment node
+ */
+
+// Set environment variables before importing route module
+process.env.NEXT_PUBLIC_SUPABASE_URL = "https://test.supabase.co";
+process.env.SUPABASE_SERVICE_ROLE_KEY = "test-service-key";
+process.env.INTERNAL_API_KEY = "test-key";
+
 import { describe, expect, it, jest, beforeEach, afterEach } from "@jest/globals";
-import { POST, GET } from "../route";
 import { NextRequest } from "next/server";
 
-// Mock dependencies
+// Mock dependencies before importing route
 jest.mock("@/lib/utils/csvParser");
 jest.mock("@/lib/services/batchImportService");
-jest.mock("@supabase/supabase-js");
+jest.mock("@supabase/supabase-js", () => ({
+  createClient: jest.fn(),
+}));
 
 const mockImportJob = {
   id: "job-123",
@@ -107,6 +117,7 @@ describe("POST /api/import", () => {
 
   describe("Authentication", () => {
     it("should reject requests without API key", async () => {
+      const { POST } = await import("./route");
       const request = createMockRequest({ data: [] }, { "content-type": "application/json" });
       const response = await POST(request);
       const data = await response.json();
@@ -119,6 +130,11 @@ describe("POST /api/import", () => {
 
   describe("JSON Import", () => {
     it("should import JSON array successfully", async () => {
+      const { createClient } = await import("@supabase/supabase-js");
+      const mockSupabase = createMockSupabaseClient();
+      jest.mocked(createClient).mockReturnValue(mockSupabase as never);
+
+      const { POST } = await import("./route");
       const { BatchImportService } = await import("@/lib/services/batchImportService");
       const mockService = {
         processBatchImport: jest.fn().mockResolvedValue({
@@ -127,11 +143,6 @@ describe("POST /api/import", () => {
         }),
       };
       jest.mocked(BatchImportService).mockImplementation(() => mockService as never);
-
-      const mockSupabase = createMockSupabaseClient();
-      jest.doMock("@supabase/supabase-js", () => ({
-        createClient: jest.fn().mockReturnValue(mockSupabase),
-      }));
 
       const request = createMockRequest({
         data: [
@@ -153,6 +164,11 @@ describe("POST /api/import", () => {
     });
 
     it("should accept array directly in request body", async () => {
+      const { createClient } = await import("@supabase/supabase-js");
+      const mockSupabase = createMockSupabaseClient();
+      jest.mocked(createClient).mockReturnValue(mockSupabase as never);
+
+      const { POST } = await import("./route");
       const { BatchImportService } = await import("@/lib/services/batchImportService");
       const mockService = {
         processBatchImport: jest.fn().mockResolvedValue({
@@ -178,6 +194,7 @@ describe("POST /api/import", () => {
     });
 
     it("should reject non-array data", async () => {
+      const { POST } = await import("./route");
       const request = createMockRequest({ invalid: "data" });
       const response = await POST(request);
       const data = await response.json();
@@ -188,6 +205,7 @@ describe("POST /api/import", () => {
     });
 
     it("should reject empty array", async () => {
+      const { POST } = await import("./route");
       const request = createMockRequest({ data: [] });
       const response = await POST(request);
       const data = await response.json();
@@ -200,6 +218,7 @@ describe("POST /api/import", () => {
 
   describe("CSV Import", () => {
     it("should import CSV file successfully", async () => {
+      const { POST } = await import("./route");
       const { DynamicCsvParser } = await import("@/lib/utils/csvParser");
       jest.mocked(DynamicCsvParser).mockImplementation(
         () =>
@@ -252,6 +271,7 @@ describe("POST /api/import", () => {
     });
 
     it("should reject request without file", async () => {
+      const { POST } = await import("./route");
       const formData = new FormData();
 
       const request = new NextRequest("http://localhost/api/import", {
@@ -273,6 +293,7 @@ describe("POST /api/import", () => {
 
   describe("Async Mode", () => {
     it("should return job ID immediately in async mode", async () => {
+      const { POST } = await import("./route");
       const mockSupabase = createMockSupabaseClient();
       jest.doMock("@supabase/supabase-js", () => ({
         createClient: jest.fn().mockReturnValue(mockSupabase),
@@ -305,6 +326,7 @@ describe("POST /api/import", () => {
 
   describe("Options", () => {
     it("should accept import options via query parameter", async () => {
+      const { POST } = await import("./route");
       const { BatchImportService } = await import("@/lib/services/batchImportService");
       const mockService = {
         processBatchImport: jest.fn().mockResolvedValue({
@@ -339,6 +361,7 @@ describe("POST /api/import", () => {
 
   describe("Error Handling", () => {
     it("should handle validation errors", async () => {
+      const { POST } = await import("./route");
       const request = createMockRequest({
         data: [
           {
@@ -356,6 +379,7 @@ describe("POST /api/import", () => {
     });
 
     it("should handle service errors gracefully", async () => {
+      const { POST } = await import("./route");
       const { BatchImportService } = await import("@/lib/services/batchImportService");
       jest.mocked(BatchImportService).mockImplementation(() => {
         return {
@@ -395,6 +419,7 @@ describe("GET /api/import", () => {
   });
 
   it("should return import job status", async () => {
+    const { GET } = await import("./route");
     const mockSupabase = createMockSupabaseClient();
     jest.doMock("@supabase/supabase-js", () => ({
       createClient: jest.fn().mockReturnValue(mockSupabase),
@@ -417,6 +442,7 @@ describe("GET /api/import", () => {
   });
 
   it("should reject request without jobId", async () => {
+    const { GET } = await import("./route");
     const request = new NextRequest("http://localhost/api/import", {
       method: "GET",
       headers: {
@@ -433,6 +459,7 @@ describe("GET /api/import", () => {
   });
 
   it("should return 404 for non-existent job", async () => {
+    const { GET } = await import("./route");
     const mockSupabase = createMockSupabaseClient();
     mockSupabase.from("import_jobs").select = jest.fn().mockReturnValue({
       eq: jest.fn().mockReturnValue({
