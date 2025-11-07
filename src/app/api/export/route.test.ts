@@ -104,7 +104,6 @@ describe("Export API", () => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          
         },
         body: JSON.stringify(requestBody),
       });
@@ -129,7 +128,6 @@ describe("Export API", () => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          
         },
         body: JSON.stringify(requestBody),
       });
@@ -153,7 +151,6 @@ describe("Export API", () => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          
         },
         body: JSON.stringify(requestBody),
       });
@@ -181,7 +178,6 @@ describe("Export API", () => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          
         },
         body: JSON.stringify(requestBody),
       });
@@ -207,7 +203,6 @@ describe("Export API", () => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          
         },
         body: JSON.stringify(requestBody),
       });
@@ -268,7 +263,6 @@ describe("Export API", () => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          
         },
         body: JSON.stringify(requestBody),
       });
@@ -296,7 +290,6 @@ describe("Export API", () => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          
         },
         body: JSON.stringify(requestBody),
       });
@@ -318,9 +311,7 @@ describe("Export API", () => {
         "http://localhost/api/export?format=csv&enrollment_status=Active&limit=100&fields=id,phone_number&include_extra_fields=false",
         {
           method: "GET",
-          headers: {
-            
-          },
+          headers: {},
         },
       );
 
@@ -332,9 +323,7 @@ describe("Export API", () => {
     it("should use default values for missing query parameters", async () => {
       const request = new NextRequest("http://localhost/api/export?format=json", {
         method: "GET",
-        headers: {
-          
-        },
+        headers: {},
       });
 
       const response = await GET(request);
