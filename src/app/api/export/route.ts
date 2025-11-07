@@ -82,7 +82,45 @@ const exportParamsSchema = z.object({
 type ExportParams = z.infer<typeof exportParamsSchema>;
 
 /**
+ * Calculates date of birth range for age filtering
+ * Returns the date range that corresponds to the age range
+ */
+function getDateOfBirthRange(
+  minAge?: number,
+  maxAge?: number,
+): {
+  maxDate?: string;
+  minDate?: string;
+} {
+  const today = new Date();
+  const result: { maxDate?: string; minDate?: string } = {};
+
+  if (minAge !== undefined) {
+    // For min age, we want students who are at least minAge years old
+    // This means date_of_birth must be <= (today - minAge years)
+    const maxDate = new Date(today);
+    maxDate.setFullYear(today.getFullYear() - minAge);
+    maxDate.setMonth(0);
+    maxDate.setDate(1); // Start of year to include all students who turned minAge this year
+    result.maxDate = maxDate.toISOString().split("T")[0];
+  }
+
+  if (maxAge !== undefined) {
+    // For max age, we want students who are at most maxAge years old
+    // This means date_of_birth must be >= (today - maxAge - 1 years)
+    const minDate = new Date(today);
+    minDate.setFullYear(today.getFullYear() - maxAge - 1);
+    minDate.setMonth(11);
+    minDate.setDate(31); // End of year to include all students who turned maxAge this year
+    result.minDate = minDate.toISOString().split("T")[0];
+  }
+
+  return result;
+}
+
+/**
  * Builds a Supabase query with filters applied
+ * Age filters are applied in SQL before pagination to ensure accurate results
  */
 function buildQuery(
   supabase: SupabaseClient,
@@ -115,62 +153,28 @@ function buildQuery(
     query = query.eq("extra_fields->>certification_type", filters.certification_type);
   }
 
-  // Apply pagination
+  // Apply age filters using date_of_birth (before pagination)
+  if (filters?.min_age !== undefined || filters?.max_age !== undefined) {
+    const { minDate, maxDate } = getDateOfBirthRange(filters.min_age, filters.max_age);
+    if (maxDate) {
+      // Students must be born on or before this date (at least minAge years old)
+      query = query.lte("date_of_birth", maxDate);
+    }
+    if (minDate) {
+      // Students must be born on or after this date (at most maxAge years old)
+      query = query.gte("date_of_birth", minDate);
+    }
+    // Exclude students without date_of_birth when age filtering is applied
+    query = query.not("date_of_birth", "is", null);
+  }
+
+  // Apply pagination AFTER all filters
   query = query.range(offset, offset + limit - 1);
 
   // Order by created_at descending for consistent results
   query = query.order("created_at", { ascending: false });
 
   return query;
-}
-
-/**
- * Calculates age from date of birth
- */
-function calculateAge(dateOfBirth: string | null): number | null {
-  if (!dateOfBirth) {
-    return null;
-  }
-
-  const dob = new Date(dateOfBirth);
-  const today = new Date();
-  let age = today.getFullYear() - dob.getFullYear();
-  const monthDiff = today.getMonth() - dob.getMonth();
-
-  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dob.getDate())) {
-    age--;
-  }
-
-  return age;
-}
-
-/**
- * Applies age filters to student records
- */
-function filterByAge(
-  students: Array<Record<string, unknown>>,
-  minAge?: number,
-  maxAge?: number,
-): Array<Record<string, unknown>> {
-  if (!minAge && !maxAge) {
-    return students;
-  }
-
-  return students.filter((student) => {
-    const age = calculateAge((student.date_of_birth as string) || null);
-    if (age === null) {
-      return false; // Exclude records without date of birth when age filtering is applied
-    }
-
-    if (minAge && age < minAge) {
-      return false;
-    }
-    if (maxAge && age > maxAge) {
-      return false;
-    }
-
-    return true;
-  });
 }
 
 async function handleExport(req: NextRequest, validatedData: ExportParams) {
@@ -208,11 +212,8 @@ async function handleExport(req: NextRequest, validatedData: ExportParams) {
       );
     }
 
-    // Apply age filters if specified (must be done in memory since age is computed)
-    const filteredStudents = filterByAge(students, filters?.min_age, filters?.max_age);
-
     // Flatten student records with field selection
-    const exportRows = filteredStudents.map((student) =>
+    const exportRows = students.map((student) =>
       flattenStudentRecord(student, fields, include_extra_fields),
     );
 

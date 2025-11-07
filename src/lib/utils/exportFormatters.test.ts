@@ -80,6 +80,25 @@ describe("Export Formatters", () => {
       expect(csv).toContain("User");
     });
 
+    it("should include all keys from all rows in headers", () => {
+      const rows = [
+        { id: "1", name: "Test", age: 25 },
+        { id: "2", name: "User", city: "Mumbai" }, // city only in second row
+        { id: "3", name: "Admin", country: "India" }, // country only in third row
+      ];
+
+      const csv = exportToCSV(rows);
+      // All columns should be present
+      expect(csv).toContain("id");
+      expect(csv).toContain("name");
+      expect(csv).toContain("age");
+      expect(csv).toContain("city");
+      expect(csv).toContain("country");
+      // Missing values should be empty/null
+      const lines = csv.split("\n");
+      expect(lines.length).toBeGreaterThan(3); // Header + 3 data rows
+    });
+
     it("should handle empty array", () => {
       const csv = exportToCSV([]);
       expect(csv).toBe("");
@@ -133,6 +152,18 @@ describe("Export Formatters", () => {
       const buffer = exportToXLSX(rows);
       expect(buffer).toBeInstanceOf(Buffer);
       expect(buffer.length).toBeGreaterThan(0);
+    });
+
+    it("should include all keys from all rows in headers", () => {
+      const rows = [
+        { id: "1", name: "Test", extra_fields: { field1: "value1" } },
+        { id: "2", name: "User", extra_fields: { field2: "value2" } },
+      ];
+
+      const buffer = exportToXLSX(rows);
+      expect(buffer).toBeInstanceOf(Buffer);
+      expect(buffer.length).toBeGreaterThan(0);
+      // The XLSX should contain all columns even if they differ between rows
     });
 
     it("should handle empty array", () => {

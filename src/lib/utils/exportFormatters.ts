@@ -75,6 +75,41 @@ export function flattenStudentRecord(
 }
 
 /**
+ * Collects all unique keys from all rows to ensure consistent headers
+ */
+function collectAllKeys(rows: ExportRow[]): string[] {
+  const keySet = new Set<string>();
+  for (const row of rows) {
+    for (const key of Object.keys(row)) {
+      keySet.add(key);
+    }
+  }
+  // Return sorted keys for consistent ordering (core fields first, then extra_fields.*)
+  return Array.from(keySet).sort((a, b) => {
+    // Sort extra_fields.* keys after regular fields
+    const aIsExtra = a.startsWith("extra_fields.");
+    const bIsExtra = b.startsWith("extra_fields.");
+    if (aIsExtra !== bIsExtra) {
+      return aIsExtra ? 1 : -1;
+    }
+    return a.localeCompare(b);
+  });
+}
+
+/**
+ * Normalizes rows to include all keys, filling missing values with null
+ */
+function normalizeRows(rows: ExportRow[], headers: string[]): ExportRow[] {
+  return rows.map((row) => {
+    const normalized: ExportRow = {};
+    for (const header of headers) {
+      normalized[header] = header in row ? row[header] : null;
+    }
+    return normalized;
+  });
+}
+
+/**
  * Exports data to CSV format
  */
 export function exportToCSV(rows: ExportRow[]): string {
@@ -82,8 +117,9 @@ export function exportToCSV(rows: ExportRow[]): string {
     return "";
   }
 
-  const headers = Object.keys(rows[0]);
-  const data = rows.map((row) => headers.map((header) => formatValue(row[header])));
+  const headers = collectAllKeys(rows);
+  const normalizedRows = normalizeRows(rows, headers);
+  const data = normalizedRows.map((row) => headers.map((header) => formatValue(row[header])));
 
   return stringify([headers, ...data], {
     header: false,
@@ -110,8 +146,9 @@ export function exportToXLSX(rows: ExportRow[]): Buffer {
     return Buffer.from(XLSX.write(workbook, { type: "buffer", bookType: "xlsx" }));
   }
 
-  const headers = Object.keys(rows[0]);
-  const data = rows.map((row) => headers.map((header) => formatValue(row[header])));
+  const headers = collectAllKeys(rows);
+  const normalizedRows = normalizeRows(rows, headers);
+  const data = normalizedRows.map((row) => headers.map((header) => formatValue(row[header])));
 
   const worksheet = XLSX.utils.aoa_to_sheet([headers, ...data]);
   const workbook = XLSX.utils.book_new();

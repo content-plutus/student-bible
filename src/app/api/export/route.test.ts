@@ -4,7 +4,6 @@
 import { NextRequest } from "next/server";
 import { POST, GET } from "@/app/api/export/route";
 import { supabaseAdmin } from "@/lib/supabase/server";
-import { flattenStudentRecord } from "@/lib/utils/exportFormatters";
 
 // Mock dependencies
 jest.mock("@/lib/supabase/server", () => ({
@@ -64,6 +63,7 @@ describe("Export API", () => {
     eq: jest.fn().mockReturnThis(),
     gte: jest.fn().mockReturnThis(),
     lte: jest.fn().mockReturnThis(),
+    not: jest.fn().mockReturnThis(),
     range: jest.fn().mockReturnThis(),
     order: jest.fn().mockResolvedValue({
       data: mockStudents,
@@ -272,18 +272,7 @@ describe("Export API", () => {
       expect(body.error).toContain("No students found");
     });
 
-    it("should apply age filters correctly", async () => {
-      const studentsWithAges = [
-        { ...mockStudents[0], date_of_birth: "2000-01-01" }, // ~24 years old
-        { ...mockStudents[0], id: "456", date_of_birth: "1990-01-01" }, // ~34 years old
-        { ...mockStudents[0], id: "789", date_of_birth: "2010-01-01" }, // ~14 years old (should be filtered)
-      ];
-
-      mockSupabaseQuery.order.mockResolvedValueOnce({
-        data: studentsWithAges,
-        error: null,
-      });
-
+    it("should apply age filters correctly using SQL date_of_birth filters", async () => {
       const requestBody = {
         format: "csv",
         fields: ["id", "phone_number"],
@@ -305,11 +294,14 @@ describe("Export API", () => {
         body: JSON.stringify(requestBody),
       });
 
-      const response = await POST(request);
-      expect(response.status).toBe(200);
+      await POST(request);
 
-      // Should only process students within age range
-      expect(jest.mocked(flattenStudentRecord)).toHaveBeenCalledTimes(1);
+      // Verify that date_of_birth filters are applied in SQL (before pagination)
+      expect(mockSupabaseQuery.lte).toHaveBeenCalled(); // For min_age (maxDate)
+      expect(mockSupabaseQuery.gte).toHaveBeenCalled(); // For max_age (minDate)
+      expect(mockSupabaseQuery.not).toHaveBeenCalledWith("date_of_birth", "is", null);
+      // Verify pagination is still applied
+      expect(mockSupabaseQuery.range).toHaveBeenCalled();
     });
   });
 
