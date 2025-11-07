@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { performance } from "node:perf_hooks";
-import { supabaseAdmin } from "@/lib/supabase/server";
 import {
   calculateOverallStatus,
   mapStatusesByName,
@@ -79,8 +78,20 @@ function checkEnvironment(): DependencyStatus {
 async function checkDatabase(): Promise<DependencyStatus> {
   const started = performance.now();
   const checkedAt = new Date().toISOString();
-
+  const missingSupabaseEnv = REQUIRED_ENV_VARS.filter((env) => !process.env[env]);
+  if (missingSupabaseEnv.length > 0) {
+    return {
+      name: "database",
+      status: "unhealthy",
+      checkedAt,
+      error: `Missing Supabase env vars: ${missingSupabaseEnv.join(", ")}`,
+      details: {
+        missingEnv: missingSupabaseEnv,
+      },
+    };
+  }
   try {
+    const { supabaseAdmin } = await import("@/lib/supabase/server");
     const supabase = supabaseAdmin();
     const { error } = await supabase.from("students").select("id").limit(1);
 
