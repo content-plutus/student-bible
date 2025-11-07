@@ -930,7 +930,16 @@ export async function GET() {
                       field_name: { type: "string" },
                       field_type: {
                         type: "string",
-                        enum: ["string", "number", "boolean", "date", "email", "phone", "url", "json"],
+                        enum: [
+                          "string",
+                          "number",
+                          "boolean",
+                          "date",
+                          "email",
+                          "phone",
+                          "url",
+                          "json",
+                        ],
                       },
                       required: { type: "boolean", default: false },
                       default_value: {},
@@ -1395,10 +1404,7 @@ export async function GET() {
                 table: { type: "string" },
                 column: { type: "string" },
                 data: {
-                  oneOf: [
-                    { type: "object" },
-                    { type: "array", items: { type: "object" } },
-                  ],
+                  oneOf: [{ type: "object" }, { type: "array", items: { type: "object" } }],
                 },
                 rules: {
                   type: "array",

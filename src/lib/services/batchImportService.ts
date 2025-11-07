@@ -29,7 +29,8 @@ export interface ValidationResult {
 
 export class BatchImportService {
   private supabase: SupabaseClient;
-  private options: Required<Omit<ImportOptions, 'duplicateCheckPreset'>> & Pick<ImportOptions, 'duplicateCheckPreset'>;
+  private options: Required<Omit<ImportOptions, "duplicateCheckPreset">> &
+    Pick<ImportOptions, "duplicateCheckPreset">;
 
   constructor(supabase: SupabaseClient, options: ImportOptions = {}) {
     this.supabase = supabase;
@@ -191,7 +192,10 @@ export class BatchImportService {
               path: e.path.join("."),
               message: e.message,
               code: e.code,
-              value: e.path.reduce((obj: unknown, key) => (obj as Record<string, unknown>)?.[key], record as Record<string, unknown>),
+              value: e.path.reduce(
+                (obj: unknown, key) => (obj as Record<string, unknown>)?.[key],
+                record as Record<string, unknown>,
+              ),
             })),
           );
         } else {

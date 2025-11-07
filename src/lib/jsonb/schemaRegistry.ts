@@ -129,7 +129,6 @@ class JsonbSchemaRegistry {
       if (options.allowPartial) {
         workingSchema = workingSchema.partial() as unknown as TSchema;
       }
-
     }
 
     return workingSchema;
