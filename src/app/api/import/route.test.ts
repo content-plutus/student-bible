@@ -355,8 +355,10 @@ describe("POST /api/import", () => {
     it("should handle service errors gracefully", async () => {
       const { BatchImportService } = await import("@/lib/services/batchImportService");
       jest.mocked(BatchImportService).mockImplementation(() => {
-        throw new Error("Service error");
-      } as never);
+        return {
+          processBatchImport: jest.fn().mockRejectedValue(new Error("Service error")),
+        } as never;
+      });
 
       const request = createMockRequest({
         data: [

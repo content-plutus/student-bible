@@ -10,7 +10,6 @@ import { detectDuplicates } from "@/lib/validators/duplicateDetector";
 import { DEFAULT_MATCHING_CRITERIA, getPreset } from "@/lib/validators/matchingRules";
 import { CertificationType } from "@/lib/validators/rules";
 import type {
-  ImportJob,
   ImportJobStatus,
   ImportError,
   ImportOptions,
@@ -50,7 +49,8 @@ export class BatchImportService {
   async processBatchImport(
     records: Array<Record<string, unknown>>,
     jobId: string,
-    metadata: ImportJobMetadata,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    _metadata: ImportJobMetadata,
   ): Promise<{ success: boolean; errors: ImportError[] }> {
     try {
       await this.updateJobStatus(jobId, "processing");
@@ -214,7 +214,8 @@ export class BatchImportService {
   private async processBatch(
     records: Array<Record<string, unknown>>,
     batchNumber: number,
-    jobId: string,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    _jobId: string,
   ): Promise<BatchImportResult> {
     const startRowNumber = (batchNumber - 1) * this.options.batchSize + 2;
     const validationResult = await this.validateBatch(records, startRowNumber);
