@@ -4,9 +4,10 @@ import { z } from "zod";
 import { DynamicCsvParser } from "@/lib/utils/csvParser";
 import { BatchImportService } from "@/lib/services/batchImportService";
 import { importOptionsSchema, type ImportOptionsInput } from "@/lib/types/import";
-import { writeFileSync, unlinkSync } from "fs";
+import { writeFileSync, unlinkSync, readFileSync } from "fs";
 import { join } from "path";
 import { tmpdir } from "os";
+import { parse } from "csv-parse/sync";
 
 if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
   throw new Error(
@@ -54,7 +55,11 @@ function getSupabaseClient() {
   return createClient(supabaseUrl!, supabaseServiceKey!);
 }
 
-async function parseCsvFile(file: File): Promise<Array<Record<string, unknown>>> {
+async function parseCsvFile(file: File): Promise<{
+  records: Array<Record<string, unknown>>;
+  errors: Array<{ row: number; column?: string; message: string; value?: unknown }>;
+  totalRows: number;
+}> {
   const buffer = await file.arrayBuffer();
   const tempPath = join(
     tmpdir(),
@@ -71,10 +76,25 @@ async function parseCsvFile(file: File): Promise<Array<Record<string, unknown>>>
 
     const result = await parser.parseAndTransform(tempPath);
 
-    return result.records.map((r) => ({
-      ...r.structuredFields,
-      extra_fields: r.jsonbFields,
-    }));
+    // Get total rows from the original CSV before filtering
+    const fileContent = readFileSync(tempPath, "utf-8");
+    const rawRecords = parse(fileContent, {
+      columns: true,
+      skip_empty_lines: true,
+      trim: true,
+      bom: true,
+      relax_column_count: true,
+    });
+    const totalRows = rawRecords.length;
+
+    return {
+      records: result.records.map((r) => ({
+        ...r.structuredFields,
+        extra_fields: r.jsonbFields,
+      })),
+      errors: result.errors,
+      totalRows,
+    };
   } finally {
     try {
       unlinkSync(tempPath);
@@ -97,6 +117,7 @@ async function createImportJob(
     };
     fileName?: string;
   },
+  parserErrors: Array<{ row: number; column?: string; message: string; value?: unknown }> = [],
 ): Promise<string> {
   const { data, error } = await supabase
     .from("import_jobs")
@@ -105,8 +126,8 @@ async function createImportJob(
       total_records: totalRecords,
       processed_records: 0,
       successful_records: 0,
-      failed_records: 0,
-      error_summary: [],
+      failed_records: parserErrors.length,
+      error_summary: parserErrors,
       inserted_student_ids: [],
       metadata,
     })
@@ -132,6 +153,9 @@ export async function POST(request: NextRequest) {
     let records: Array<Record<string, unknown>>;
     let sourceType: "csv" | "json" = "json";
     let fileName: string | undefined;
+    let parserErrors: Array<{ row: number; column?: string; message: string; value?: unknown }> =
+      [];
+    let totalRows = 0;
 
     if (contentType.includes("multipart/form-data")) {
       const formData = await request.formData();
@@ -149,7 +173,10 @@ export async function POST(request: NextRequest) {
 
       fileName = file.name;
       sourceType = "csv";
-      records = await parseCsvFile(file);
+      const parseResult = await parseCsvFile(file);
+      records = parseResult.records;
+      parserErrors = parseResult.errors;
+      totalRows = parseResult.totalRows;
     } else {
       const body = await request.json();
       const data = body.data || body;
@@ -165,9 +192,10 @@ export async function POST(request: NextRequest) {
       }
 
       records = data;
+      totalRows = data.length;
     }
 
-    if (records.length === 0) {
+    if (totalRows === 0) {
       return NextResponse.json(
         {
           success: false,
@@ -197,16 +225,21 @@ export async function POST(request: NextRequest) {
 
     const supabase = getSupabaseClient();
 
-    const jobId = await createImportJob(supabase, records.length, {
-      sourceType,
-      batchSize: validatedOptions.batchSize,
-      options: {
-        skipDuplicates: validatedOptions.skipDuplicates,
-        createIfNoDuplicates: validatedOptions.createIfNoDuplicates,
-        duplicateCheckPreset: validatedOptions.duplicateCheckPreset,
+    const jobId = await createImportJob(
+      supabase,
+      totalRows,
+      {
+        sourceType,
+        batchSize: validatedOptions.batchSize,
+        options: {
+          skipDuplicates: validatedOptions.skipDuplicates,
+          createIfNoDuplicates: validatedOptions.createIfNoDuplicates,
+          duplicateCheckPreset: validatedOptions.duplicateCheckPreset,
+        },
+        fileName,
       },
-      fileName,
-    });
+      parserErrors,
+    );
 
     if (validatedOptions.async) {
       return NextResponse.json({
@@ -231,15 +264,18 @@ export async function POST(request: NextRequest) {
 
     const { data: job } = await supabase.from("import_jobs").select("*").eq("id", jobId).single();
 
+    // Combine parser errors with processing errors
+    const allErrors = [...parserErrors, ...result.errors];
+
     return NextResponse.json({
       success: result.success,
       jobId,
       status: job?.status || "completed",
-      totalRecords: job?.total_records || records.length,
+      totalRecords: job?.total_records || totalRows,
       processedRecords: job?.processed_records || records.length,
       successfulRecords: job?.successful_records || 0,
       failedRecords: job?.failed_records || 0,
-      errors: result.errors,
+      errors: allErrors,
       insertedStudentIds: job?.inserted_student_ids || [],
       completedAt: job?.completed_at || null,
     });

@@ -63,9 +63,13 @@ const createMockRequest = (
 };
 
 const createMockSupabaseClient = () => {
-  const mockInsert = jest.fn().mockResolvedValue({
-    data: { id: mockImportJob.id },
-    error: null,
+  const mockInsert = jest.fn().mockReturnValue({
+    select: jest.fn().mockReturnValue({
+      single: jest.fn().mockResolvedValue({
+        data: { id: mockImportJob.id },
+        error: null,
+      }),
+    }),
   });
 
   const mockSelect = jest.fn().mockReturnValue({
@@ -249,6 +253,10 @@ describe("POST /api/import", () => {
       };
       jest.mocked(BatchImportService).mockImplementation(() => mockService as never);
 
+      const { createClient } = await import("@supabase/supabase-js");
+      const mockSupabase = createMockSupabaseClient();
+      jest.mocked(createClient).mockReturnValue(mockSupabase as never);
+
       const formData = new FormData();
       const blob = new Blob(["phone_number,email,first_name\n9876543210,test@example.com,John"], {
         type: "text/csv",
@@ -362,6 +370,25 @@ describe("POST /api/import", () => {
   describe("Error Handling", () => {
     it("should handle validation errors", async () => {
       const { POST } = await import("./route");
+      const { createClient } = await import("@supabase/supabase-js");
+      const mockSupabase = createMockSupabaseClient();
+      jest.mocked(createClient).mockReturnValue(mockSupabase as never);
+
+      const { BatchImportService } = await import("@/lib/services/batchImportService");
+      const mockService = {
+        processBatchImport: jest.fn().mockResolvedValue({
+          success: false,
+          errors: [
+            {
+              row: 2,
+              message: "Invalid phone number format",
+              code: "validation_error",
+            },
+          ],
+        }),
+      };
+      jest.mocked(BatchImportService).mockImplementation(() => mockService as never);
+
       const request = createMockRequest({
         data: [
           {
@@ -460,8 +487,10 @@ describe("GET /api/import", () => {
 
   it("should return 404 for non-existent job", async () => {
     const { GET } = await import("./route");
-    const mockSupabase = createMockSupabaseClient();
-    mockSupabase.from("import_jobs").select = jest.fn().mockReturnValue({
+    const { createClient } = await import("@supabase/supabase-js");
+
+    // Create a new mock client with error response
+    const errorMockSelect = jest.fn().mockReturnValue({
       eq: jest.fn().mockReturnValue({
         single: jest.fn().mockResolvedValue({
           data: null,
@@ -470,9 +499,18 @@ describe("GET /api/import", () => {
       }),
     });
 
-    jest.doMock("@supabase/supabase-js", () => ({
-      createClient: jest.fn().mockReturnValue(mockSupabase),
-    }));
+    const errorMockSupabase = {
+      from: jest.fn((table: string) => {
+        if (table === "import_jobs") {
+          return {
+            select: errorMockSelect,
+          };
+        }
+        return {};
+      }),
+    };
+
+    jest.mocked(createClient).mockReturnValue(errorMockSupabase as never);
 
     const request = new NextRequest("http://localhost/api/import?jobId=non-existent", {
       method: "GET",
