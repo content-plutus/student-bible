@@ -357,8 +357,6 @@ export class BatchImportService {
       if (error) {
         throw new Error(`Rollback failed: ${error.message}`);
       }
-
-      await this.updateJobStatus(jobId, "rolled_back");
     } catch (error) {
       console.error("Error during rollback:", error);
       throw error;
