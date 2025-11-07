@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { withValidation } from "@/lib/middleware/validation";
-import { supabaseAdmin } from "@/lib/supabase/server";
+import { withAuth } from "@/lib/middleware/auth";
 import {
   exportToCSV,
   exportToJSON,
@@ -10,49 +10,8 @@ import {
   getMimeType,
   getFileExtension,
 } from "@/lib/utils/exportFormatters";
-import type { SupabaseClient } from "@supabase/supabase-js";
+import type { SupabaseClient, User } from "@supabase/supabase-js";
 import { format } from "date-fns";
-
-if (process.env.NODE_ENV === "production" && !process.env.INTERNAL_API_KEY) {
-  throw new Error(
-    "INTERNAL_API_KEY is required in production. These endpoints use service-role key and bypass RLS. " +
-      "Set INTERNAL_API_KEY environment variable to secure the /api/export endpoints.",
-  );
-}
-
-/**
- * Validates the API key from the request header.
- *
- * SECURITY NOTE: These endpoints use the service-role key and bypass RLS.
- * INTERNAL_API_KEY is REQUIRED in production (enforced at module load).
- * In non-production environments, if INTERNAL_API_KEY is not set, a warning
- * is logged but requests are allowed (for development convenience).
- */
-function validateApiKey(request: NextRequest): NextResponse | null {
-  const apiKey = process.env.INTERNAL_API_KEY;
-
-  if (!apiKey) {
-    console.warn(
-      "WARNING: INTERNAL_API_KEY not set. API endpoints are unprotected. " +
-        "This is only allowed in non-production environments.",
-    );
-    return null;
-  }
-
-  const requestApiKey = request.headers.get("X-Internal-API-Key");
-
-  if (!requestApiKey || requestApiKey !== apiKey) {
-    return NextResponse.json(
-      {
-        success: false,
-        error: "Unauthorized. Valid X-Internal-API-Key header required.",
-      },
-      { status: 401 },
-    );
-  }
-
-  return null;
-}
 
 const exportParamsSchema = z.object({
   format: z.enum(["csv", "json", "xlsx"], {
@@ -179,16 +138,15 @@ function buildQuery(
   return query;
 }
 
-async function handleExport(req: NextRequest, validatedData: ExportParams) {
-  const authError = validateApiKey(req);
-  if (authError) {
-    return authError;
-  }
-
+async function handleExport(
+  req: NextRequest,
+  validatedData: ExportParams,
+  user: User,
+  supabase: SupabaseClient,
+) {
   try {
     const { format, filters, fields, include_extra_fields, limit, offset } = validatedData;
 
-    const supabase = supabaseAdmin();
     const query = buildQuery(supabase, filters, limit, offset);
 
     const { data: students, error } = await query;
@@ -262,7 +220,13 @@ async function handleExport(req: NextRequest, validatedData: ExportParams) {
   }
 }
 
-export const POST = withValidation(exportParamsSchema)(handleExport);
+export const POST = withAuth()(async (req: NextRequest, user: User, supabase: SupabaseClient) => {
+  return withValidation(exportParamsSchema)(
+    async (req: NextRequest, validatedData: ExportParams) => {
+      return handleExport(req, validatedData, user, supabase);
+    },
+  )(req);
+});
 
 const exportQuerySchema = z.object({
   format: z.enum(["csv", "json", "xlsx"]).default("json"),
@@ -300,12 +264,12 @@ const exportQuerySchema = z.object({
 
 type ExportQuery = z.infer<typeof exportQuerySchema>;
 
-async function handleExportGet(req: NextRequest, validatedData: ExportQuery) {
-  const authError = validateApiKey(req);
-  if (authError) {
-    return authError;
-  }
-
+async function handleExportGet(
+  req: NextRequest,
+  validatedData: ExportQuery,
+  user: User,
+  supabase: SupabaseClient,
+) {
   try {
     // Convert query params to POST format
     const exportParams: ExportParams = {
@@ -328,7 +292,7 @@ async function handleExportGet(req: NextRequest, validatedData: ExportQuery) {
       offset: validatedData.offset,
     };
 
-    return handleExport(req, exportParams);
+    return handleExport(req, exportParams, user, supabase);
   } catch (error) {
     console.error("Error in GET export handler:", error);
     return NextResponse.json(
@@ -341,4 +305,8 @@ async function handleExportGet(req: NextRequest, validatedData: ExportQuery) {
   }
 }
 
-export const GET = withValidation(exportQuerySchema)(handleExportGet);
+export const GET = withAuth()(async (req: NextRequest, user: User, supabase: SupabaseClient) => {
+  return withValidation(exportQuerySchema)(async (req: NextRequest, validatedData: ExportQuery) => {
+    return handleExportGet(req, validatedData, user, supabase);
+  })(req);
+});

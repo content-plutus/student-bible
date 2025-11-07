@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
 import { detectDuplicates } from "@/lib/validators/duplicateDetector";
 import { DEFAULT_MATCHING_CRITERIA, getPreset } from "@/lib/validators/matchingRules";
 import { studentInsertSchema } from "@/lib/types/student";
@@ -10,59 +9,13 @@ import {
 } from "@/lib/validators/schemaEvolution";
 import { CertificationType } from "@/lib/validators/rules";
 import { z } from "zod";
+import { withAuth } from "@/lib/middleware/auth";
+import type { SupabaseClient, User } from "@supabase/supabase-js";
 
-if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
   throw new Error(
-    "Missing required Supabase environment variables: NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set",
+    "Missing required Supabase environment variable: NEXT_PUBLIC_SUPABASE_URL must be set",
   );
-}
-
-if (process.env.NODE_ENV === "production" && !process.env.INTERNAL_API_KEY) {
-  throw new Error(
-    "INTERNAL_API_KEY is required in production. These endpoints use service-role key and bypass RLS. " +
-      "Set INTERNAL_API_KEY environment variable to secure the /api/students endpoints.",
-  );
-}
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-/**
- * Validates the API key from the request header.
- *
- * SECURITY NOTE: These endpoints use the service-role key and bypass RLS.
- * INTERNAL_API_KEY is REQUIRED in production (enforced at module load).
- * In non-production environments, if INTERNAL_API_KEY is not set, a warning
- * is logged but requests are allowed (for development convenience).
- *
- * Additional security layers recommended:
- * - Infrastructure-level auth (VPN, internal network)
- * - Session-based auth (NextAuth, etc.)
- */
-function validateApiKey(request: NextRequest): NextResponse | null {
-  const apiKey = process.env.INTERNAL_API_KEY;
-
-  if (!apiKey) {
-    console.warn(
-      "WARNING: INTERNAL_API_KEY not set. API endpoints are unprotected. " +
-        "This is only allowed in non-production environments.",
-    );
-    return null;
-  }
-
-  const requestApiKey = request.headers.get("X-Internal-API-Key");
-
-  if (!requestApiKey || requestApiKey !== apiKey) {
-    return NextResponse.json(
-      {
-        success: false,
-        error: "Unauthorized. Valid X-Internal-API-Key header required.",
-      },
-      { status: 401 },
-    );
-  }
-
-  return null;
 }
 
 const studentSearchSchema = z
@@ -87,10 +40,6 @@ const studentSearchSchema = z
   .refine((data) => Object.values(data).some((v) => v !== undefined && v !== null), {
     message: "At least one field must be provided for duplicate detection",
   });
-
-function getSupabaseClient() {
-  return createClient(supabaseUrl, supabaseServiceKey);
-}
 
 function validateExtraFieldKeys(extraFields: Record<string, unknown>): string[] {
   const invalidKeys: string[] = [];
@@ -126,12 +75,7 @@ function coerceExtraFieldTypes(extraFields: Record<string, unknown>): Record<str
   return coerced;
 }
 
-export async function POST(request: NextRequest) {
-  const authError = validateApiKey(request);
-  if (authError) {
-    return authError;
-  }
-
+async function handlePOST(request: NextRequest, user: User, supabase: SupabaseClient) {
   try {
     const body = await request.json();
     const { studentData, options = {} } = body;
@@ -147,8 +91,6 @@ export async function POST(request: NextRequest) {
     }
 
     const validatedData = studentSearchSchema.parse(studentData);
-
-    const supabase = getSupabaseClient();
 
     const criteria = options.preset
       ? getPreset(options.preset)?.criteria || DEFAULT_MATCHING_CRITERIA
@@ -183,12 +125,9 @@ export async function POST(request: NextRequest) {
   }
 }
 
-export async function PUT(request: NextRequest) {
-  const authError = validateApiKey(request);
-  if (authError) {
-    return authError;
-  }
+export const POST = withAuth()(handlePOST);
 
+async function handlePUT(request: NextRequest, user: User, supabase: SupabaseClient) {
   try {
     const body = await request.json();
     const { studentData, createIfNoDuplicates = false, options = {} } = body;
@@ -204,8 +143,6 @@ export async function PUT(request: NextRequest) {
     }
 
     const validatedSearchData = studentSearchSchema.parse(studentData);
-
-    const supabase = getSupabaseClient();
 
     const criteria = options.preset
       ? getPreset(options.preset)?.criteria || DEFAULT_MATCHING_CRITERIA
@@ -357,12 +294,9 @@ export async function PUT(request: NextRequest) {
   }
 }
 
-export async function GET(request: NextRequest) {
-  const authError = validateApiKey(request);
-  if (authError) {
-    return authError;
-  }
+export const PUT = withAuth()(handlePUT);
 
+async function handleGET(request: NextRequest, user: User, supabase: SupabaseClient) {
   try {
     const searchParams = request.nextUrl.searchParams;
     const phone = searchParams.get("phone");
@@ -406,8 +340,6 @@ export async function GET(request: NextRequest) {
         );
       }
     }
-
-    const supabase = getSupabaseClient();
 
     if (!hasStandardFields && hasExtraFields) {
       const { data: students, error: searchError } = await supabase
@@ -498,3 +430,5 @@ export async function GET(request: NextRequest) {
     );
   }
 }
+
+export const GET = withAuth()(handleGET);
