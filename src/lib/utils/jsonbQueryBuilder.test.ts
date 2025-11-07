@@ -6,9 +6,30 @@ import {
 } from "./jsonbQueryBuilder";
 import type { PostgrestQueryBuilder } from "@supabase/supabase-js";
 
+// Test-only type alias to avoid explicit any
+type MockDatabase = {
+  public: {
+    Tables: {
+      students: {
+        Row: Record<string, unknown>;
+        Relationships: Record<string, never>;
+      };
+    };
+  };
+};
+
+type MockQueryBuilder = PostgrestQueryBuilder<
+  MockDatabase["public"],
+  "students",
+  MockDatabase["public"]["Tables"]["students"]["Row"]
+>;
+
 // Mock Supabase query builder
 const createMockQueryBuilder = () => {
-  const mockFilterMethods = {
+  const defaultResult = { data: [], error: null };
+
+  // Create a thenable object that resolves to defaultResult
+  const mockFilterMethods = Object.assign(Promise.resolve(defaultResult), {
     select: jest.fn().mockReturnThis(),
     eq: jest.fn().mockReturnThis(),
     neq: jest.fn().mockReturnThis(),
@@ -25,28 +46,24 @@ const createMockQueryBuilder = () => {
     not: jest.fn().mockReturnThis(),
     or: jest.fn().mockReturnThis(),
     filter: jest.fn().mockReturnThis(),
-    then: jest.fn().mockResolvedValue({ data: [], error: null }),
-  };
+  });
 
   const mockFrom = jest.fn().mockReturnValue(mockFilterMethods);
 
   return {
     from: mockFrom,
     mockFilterMethods,
+    defaultResult,
   };
 };
 
 describe("JsonbQueryBuilder", () => {
   let mockQuery: ReturnType<typeof createMockQueryBuilder>;
-  let queryBuilder: PostgrestQueryBuilder<unknown, unknown, unknown>;
+  let queryBuilder: MockQueryBuilder;
 
   beforeEach(() => {
     mockQuery = createMockQueryBuilder();
-    queryBuilder = mockQuery.from("students") as unknown as PostgrestQueryBuilder<
-      unknown,
-      unknown,
-      unknown
-    >;
+    queryBuilder = mockQuery.from("students") as unknown as MockQueryBuilder;
     jest.clearAllMocks();
   });
 
@@ -163,6 +180,24 @@ describe("JsonbQueryBuilder", () => {
         batch_code: "ACCA_2024_Batch_5",
       });
     });
+
+    it("should handle nested paths in contains by building nested objects", () => {
+      const builder = new JsonbQueryBuilder(queryBuilder);
+      builder.where("address.city", "contains", "Mumbai");
+
+      expect(mockQuery.mockFilterMethods.contains).toHaveBeenCalledWith("extra_fields", {
+        address: { city: "Mumbai" },
+      });
+    });
+
+    it("should handle deeply nested paths in contains", () => {
+      const builder = new JsonbQueryBuilder(queryBuilder);
+      builder.where("metadata.user.preferences.theme", "contains", "dark");
+
+      expect(mockQuery.mockFilterMethods.contains).toHaveBeenCalledWith("extra_fields", {
+        metadata: { user: { preferences: { theme: "dark" } } },
+      });
+    });
   });
 
   describe("exists", () => {
@@ -172,6 +207,15 @@ describe("JsonbQueryBuilder", () => {
 
       expect(mockQuery.mockFilterMethods.contains).toHaveBeenCalledWith("extra_fields", {
         mentor_assigned: null,
+      });
+    });
+
+    it("should handle nested paths in exists by building nested objects", () => {
+      const builder = new JsonbQueryBuilder(queryBuilder);
+      builder.where("address.city", "exists");
+
+      expect(mockQuery.mockFilterMethods.contains).toHaveBeenCalledWith("extra_fields", {
+        address: { city: null },
       });
     });
   });
@@ -290,14 +334,14 @@ describe("JsonbQueryBuilder", () => {
         },
       ]);
 
-      // Should call or() with a filter string that includes the AND group
+      // Should call or() with a filter string that includes the AND group wrapped in and(...)
       expect(mockQuery.mockFilterMethods.or).toHaveBeenCalled();
       const orCall = mockQuery.mockFilterMethods.or.mock.calls[0][0];
       expect(orCall).toContain("lead_source");
       expect(orCall).toContain("certification_type");
       expect(orCall).toContain("mentor_assigned");
-      // The AND conditions should be wrapped in parentheses
-      expect(orCall).toMatch(/\(.*certification_type.*mentor_assigned.*\)/);
+      // The AND conditions should be wrapped in and(...) syntax
+      expect(orCall).toMatch(/and\(.*certification_type.*mentor_assigned.*\)/);
     });
 
     it("should handle deeply nested groups", () => {
@@ -335,12 +379,34 @@ describe("JsonbQueryBuilder", () => {
     it("should execute the query", async () => {
       const mockData = [{ id: "1", name: "Test" }];
       const mockResult = { data: mockData, error: null };
-      mockQuery.mockFilterMethods.then = jest.fn((resolve) => {
-        resolve(mockResult);
-        return Promise.resolve(mockResult);
+
+      // Create a new promise that resolves to our mock result
+      const mockPromise = Promise.resolve(mockResult);
+      // Create a new thenable object with the mocked result
+      const thenableMock = Object.assign(mockPromise, {
+        select: mockQuery.mockFilterMethods.select,
+        eq: mockQuery.mockFilterMethods.eq,
+        neq: mockQuery.mockFilterMethods.neq,
+        gt: mockQuery.mockFilterMethods.gt,
+        gte: mockQuery.mockFilterMethods.gte,
+        lt: mockQuery.mockFilterMethods.lt,
+        lte: mockQuery.mockFilterMethods.lte,
+        contains: mockQuery.mockFilterMethods.contains,
+        contained: mockQuery.mockFilterMethods.contained,
+        is: mockQuery.mockFilterMethods.is,
+        like: mockQuery.mockFilterMethods.like,
+        ilike: mockQuery.mockFilterMethods.ilike,
+        in: mockQuery.mockFilterMethods.in,
+        not: mockQuery.mockFilterMethods.not,
+        or: mockQuery.mockFilterMethods.or,
+        filter: mockQuery.mockFilterMethods.filter,
       });
 
-      const builder = new JsonbQueryBuilder(queryBuilder);
+      // Replace the query builder's return value
+      mockQuery.from.mockReturnValue(thenableMock);
+      const testQueryBuilder = mockQuery.from("students") as unknown as MockQueryBuilder;
+
+      const builder = new JsonbQueryBuilder(testQueryBuilder);
       const result = await builder.execute();
 
       expect(result.data).toEqual(mockData);
@@ -352,11 +418,7 @@ describe("JsonbQueryBuilder", () => {
 describe("createJsonbQueryBuilder", () => {
   it("should create a JsonbQueryBuilder instance", () => {
     const mockQuery = createMockQueryBuilder();
-    const queryBuilder = mockQuery.from("students") as unknown as PostgrestQueryBuilder<
-      unknown,
-      unknown,
-      unknown
-    >;
+    const queryBuilder = mockQuery.from("students") as unknown as MockQueryBuilder;
     const builder = createJsonbQueryBuilder(queryBuilder);
 
     expect(builder).toBeInstanceOf(JsonbQueryBuilder);
@@ -364,11 +426,7 @@ describe("createJsonbQueryBuilder", () => {
 
   it("should create a JsonbQueryBuilder with options", () => {
     const mockQuery = createMockQueryBuilder();
-    const queryBuilder = mockQuery.from("students") as unknown as PostgrestQueryBuilder<
-      unknown,
-      unknown,
-      unknown
-    >;
+    const queryBuilder = mockQuery.from("students") as unknown as MockQueryBuilder;
     const builder = createJsonbQueryBuilder(queryBuilder, { column: "custom_fields" });
 
     expect(builder).toBeInstanceOf(JsonbQueryBuilder);
@@ -378,11 +436,7 @@ describe("createJsonbQueryBuilder", () => {
 describe("jsonbContains", () => {
   it("should add a contains filter", () => {
     const mockQuery = createMockQueryBuilder();
-    const queryBuilder = mockQuery.from("students") as unknown as PostgrestQueryBuilder<
-      unknown,
-      unknown,
-      unknown
-    >;
+    const queryBuilder = mockQuery.from("students") as unknown as MockQueryBuilder;
     const fields = { batch_code: "ACCA_2024_Batch_5" };
 
     jsonbContains(queryBuilder, "extra_fields", fields);
@@ -394,11 +448,7 @@ describe("jsonbContains", () => {
 describe("jsonbKeyExists", () => {
   it("should check if a key exists", () => {
     const mockQuery = createMockQueryBuilder();
-    const queryBuilder = mockQuery.from("students") as unknown as PostgrestQueryBuilder<
-      unknown,
-      unknown,
-      unknown
-    >;
+    const queryBuilder = mockQuery.from("students") as unknown as MockQueryBuilder;
 
     jsonbKeyExists(queryBuilder, "extra_fields", "batch_code");
 

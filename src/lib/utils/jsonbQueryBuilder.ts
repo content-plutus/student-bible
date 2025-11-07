@@ -212,7 +212,8 @@ export class JsonbQueryBuilder<T> {
               orFilters.push(`(${nestedOrs.join(",")})`);
             }
           } else {
-            // AND group - build AND filter string and include in OR
+            // AND group inside OR: build a composite filter so it stays inside the OR branch
+            // Use buildGroupFilterString which wraps AND groups in and(...) syntax
             const andFilterStr = this.buildGroupFilterString(condition);
             if (andFilterStr) {
               orFilters.push(andFilterStr);
@@ -264,7 +265,13 @@ export class JsonbQueryBuilder<T> {
           this.query = this.query.contains(this.column, value as Record<string, JsonbValue>);
         } else {
           // Single key-value containment
-          this.query = this.query.contains(this.column, { [path]: value });
+          // If path contains dots, build nested object structure
+          if (path.includes(".")) {
+            const nestedObject = this.buildNestedObject(path, value);
+            this.query = this.query.contains(this.column, nestedObject);
+          } else {
+            this.query = this.query.contains(this.column, { [path]: value });
+          }
         }
         break;
       case "contained":
@@ -275,7 +282,13 @@ export class JsonbQueryBuilder<T> {
         break;
       case "exists":
         // Check if key exists using contains with null value
-        this.query = this.query.contains(this.column, { [path]: null });
+        // If path contains dots, build nested object structure
+        if (path.includes(".")) {
+          const nestedObject = this.buildNestedObject(path, null);
+          this.query = this.query.contains(this.column, nestedObject);
+        } else {
+          this.query = this.query.contains(this.column, { [path]: null });
+        }
         break;
       case "not_exists":
         // Negate key existence - check that the key doesn't exist
@@ -332,8 +345,9 @@ export class JsonbQueryBuilder<T> {
     }
 
     if (group.operator === "AND") {
-      // For AND groups, join with comma (Supabase uses comma for AND in OR expressions)
-      return `(${filterStrings.join(",")})`;
+      // For AND groups inside OR, use explicit and(...) syntax
+      // PostgREST treats commas inside or= as OR operators, so we need and(...) to preserve AND semantics
+      return `and(${filterStrings.join(",")})`;
     } else {
       // For OR groups, wrap in parentheses
       return `(${filterStrings.join(",")})`;
@@ -374,6 +388,27 @@ export class JsonbQueryBuilder<T> {
       default:
         return null;
     }
+  }
+
+  /**
+   * Builds a nested object from a dot-separated path
+   * Example: "address.city" -> { address: { city: value } }
+   */
+  private buildNestedObject(path: string, value: JsonbValue): Record<string, JsonbValue> {
+    const parts = path.split(".");
+    const result: Record<string, JsonbValue> = {};
+    let current = result;
+
+    // Build nested structure up to the second-to-last part
+    for (let i = 0; i < parts.length - 1; i++) {
+      current[parts[i]] = {};
+      current = current[parts[i]] as Record<string, JsonbValue>;
+    }
+
+    // Set the final value
+    current[parts[parts.length - 1]] = value;
+
+    return result;
   }
 
   /**

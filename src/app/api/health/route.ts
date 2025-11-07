@@ -16,6 +16,7 @@ const REQUIRED_ENV_VARS = [
 
 const OPTIONAL_ENV_VARS = ["INTERNAL_API_KEY"];
 const DATABASE_DEGRADED_THRESHOLD_MS = 750;
+const DATABASE_QUERY_TIMEOUT_MS = 5000; // 5 second timeout for database queries
 const SERVER_STARTED_AT = Date.now();
 
 export async function GET() {
@@ -81,9 +82,20 @@ async function checkDatabase(): Promise<DependencyStatus> {
   const started = performance.now();
   const checkedAt = new Date().toISOString();
 
+  // Create a timeout promise that rejects after the timeout
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    setTimeout(() => {
+      reject(new Error("Database query timeout"));
+    }, DATABASE_QUERY_TIMEOUT_MS);
+  });
+
   try {
     const supabase = supabaseAdmin();
-    const { error } = await supabase.from("students").select("id").limit(1);
+    // Race the database query against the timeout
+    const { error } = await Promise.race([
+      supabase.from("students").select("id").limit(1),
+      timeoutPromise,
+    ]);
 
     if (error) {
       throw error;
@@ -109,17 +121,31 @@ async function checkDatabase(): Promise<DependencyStatus> {
   } catch (error) {
     const latencyMs = Number((performance.now() - started).toFixed(2));
 
+    // Check if error is due to timeout
+    const isTimeoutError =
+      error instanceof Error &&
+      (error.name === "AbortError" ||
+        error.message.includes("timeout") ||
+        error.message.includes("aborted"));
+
     return {
       name: "database",
       status: "unhealthy",
       checkedAt,
       latencyMs,
-      error: error instanceof Error ? error.message : "Unknown database error",
+      error: isTimeoutError
+        ? `Database query timeout after ${DATABASE_QUERY_TIMEOUT_MS}ms`
+        : error instanceof Error
+          ? error.message
+          : "Unknown database error",
       details: {
         code:
           typeof error === "object" && error && "code" in error
             ? (error as { code?: string }).code
             : undefined,
+        ...(isTimeoutError && {
+          timeoutMs: DATABASE_QUERY_TIMEOUT_MS,
+        }),
       },
     };
   }
