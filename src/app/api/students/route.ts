@@ -9,6 +9,7 @@ import {
   stripNullValuesFromExtraFields,
 } from "@/lib/validators/schemaEvolution";
 import { CertificationType } from "@/lib/validators/rules";
+import { applyAuditContext, buildAuditContext } from "@/lib/utils/auditContext";
 import { z } from "zod";
 
 if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
@@ -277,6 +278,8 @@ export async function PUT(request: NextRequest) {
           ...validatedData,
           extra_fields: sanitizedExtraFields,
         };
+
+        await applyAuditContext(supabase, buildAuditContext(request, "students:create"));
 
         const { data: newStudent, error: insertError } = await supabase
           .from("students")

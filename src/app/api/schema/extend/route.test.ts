@@ -77,6 +77,7 @@ describe("POST /api/schema/extend", () => {
     expect(response.status).toBe(200);
     expect(payload.success).toBe(true);
     expect(payload.extension.fields).toContain("preferred_language");
+    expect(mockSupabase.rpc).toHaveBeenCalledWith("set_audit_context", expect.any(Object));
     expect(mockSupabase.from).toHaveBeenCalledWith("jsonb_schema_extensions");
     const fromInvocation = mockSupabase.from.mock.results[0]?.value as {
       upsert: jest.Mock;
@@ -96,7 +97,11 @@ describe("POST /api/schema/extend", () => {
       }),
     ]);
     expect(optionsArg).toEqual({ onConflict: "table_name,jsonb_column,field_name" });
-    expect(mockSupabase.rpc).toHaveBeenCalledWith("apply_jsonb_schema_extension", {
+    const rpcCall = mockSupabase.rpc.mock.calls.find(
+      ([fnName]) => fnName === "apply_jsonb_schema_extension",
+    );
+    expect(rpcCall).toBeDefined();
+    expect(rpcCall?.[1]).toEqual({
       target_table: "students",
       jsonb_column: "extra_fields",
       extension_payload: { preferred_language: "en" },
@@ -130,7 +135,12 @@ describe("POST /api/schema/extend", () => {
 function createMockSupabase() {
   const mockSelect = jest.fn().mockResolvedValue({ data: [{ id: "ext-1" }], error: null });
   const mockUpsert = jest.fn().mockReturnValue({ select: mockSelect });
-  const mockRpc = jest.fn().mockResolvedValue({ data: 5, error: null });
+  const mockRpc = jest.fn().mockImplementation(async (fnName: string) => {
+    if (fnName === "set_audit_context") {
+      return { data: null, error: null };
+    }
+    return { data: 5, error: null };
+  });
 
   return {
     from: jest.fn().mockReturnValue({

@@ -7,6 +7,9 @@ import {
   type SchemaExtensionFieldDefinition,
 } from "@/lib/jsonb/schemaExtensionBuilder";
 import { getJsonbSchemaDefinition, registerJsonbSchema } from "@/lib/jsonb/schemaRegistry";
+import { applyAuditContext, buildAuditContext } from "@/lib/utils/auditContext";
+
+type SchemaExtensionPayload = z.infer<typeof schemaExtensionSchema>;
 
 if (process.env.NODE_ENV === "production" && !process.env.INTERNAL_API_KEY) {
   throw new Error(
@@ -125,9 +128,7 @@ const schemaExtensionSchema = z.object({
   apply_to_existing: z.boolean().optional().default(false),
 });
 
-type SchemaExtension = z.infer<typeof schemaExtensionSchema>;
-
-async function handleSchemaExtension(_: NextRequest, validatedData: SchemaExtension) {
+async function handleSchemaExtension(request: NextRequest, validatedData: SchemaExtensionPayload) {
   const { table_name, jsonb_column, fields, migration_strategy, apply_to_existing } = validatedData;
 
   const fieldNames = fields.map((f) => f.field_name);
@@ -198,6 +199,7 @@ async function handleSchemaExtension(_: NextRequest, validatedData: SchemaExtens
   try {
     schemaResult = applySchemaExtensions(table_name, jsonb_column, fields);
     const supabase = supabaseAdmin();
+    await applyAuditContext(supabase, buildAuditContext(request, "schema-extension"));
     const extensionRecords = fields.map((field) => ({
       table_name,
       jsonb_column,
