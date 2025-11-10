@@ -574,11 +574,15 @@ export class JsonbQueryBuilder<T> {
     }
 
     if (options?.castNumeric) {
-      return `${columnPath}::numeric`;
+      // Wrap path in parentheses before casting to ensure correct parsing
+      // Without parentheses, PostgreSQL parses extra_fields->>'score'::numeric as
+      // extra_fields->>('score'::numeric), which fails
+      return `(${columnPath})::numeric`;
     }
 
     if (options?.castBoolean) {
-      return `${columnPath}::boolean`;
+      // Wrap path in parentheses before casting to ensure correct parsing
+      return `(${columnPath})::boolean`;
     }
 
     return columnPath;

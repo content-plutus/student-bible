@@ -110,7 +110,7 @@ describe("JsonbQueryBuilder", () => {
       builder.where("score", "gt", 80);
 
       expect(mockQuery.mockFilterMethods.gt).toHaveBeenCalledWith(
-        "extra_fields->>'score'::numeric",
+        "(extra_fields->>'score')::numeric",
         80,
       );
     });
@@ -120,7 +120,7 @@ describe("JsonbQueryBuilder", () => {
       builder.where("age", "lt", 30);
 
       expect(mockQuery.mockFilterMethods.lt).toHaveBeenCalledWith(
-        "extra_fields->>'age'::numeric",
+        "(extra_fields->>'age')::numeric",
         30,
       );
     });
@@ -130,7 +130,7 @@ describe("JsonbQueryBuilder", () => {
       builder.where("mentor_assigned", "eq", true);
 
       expect(mockQuery.mockFilterMethods.eq).toHaveBeenCalledWith(
-        "extra_fields->>'mentor_assigned'::boolean",
+        "(extra_fields->>'mentor_assigned')::boolean",
         true,
       );
     });
@@ -140,7 +140,7 @@ describe("JsonbQueryBuilder", () => {
       builder.where("score", "eq", 85);
 
       expect(mockQuery.mockFilterMethods.eq).toHaveBeenCalledWith(
-        "extra_fields->>'score'::numeric",
+        "(extra_fields->>'score')::numeric",
         85,
       );
     });
@@ -150,7 +150,7 @@ describe("JsonbQueryBuilder", () => {
       builder.where("mentor_assigned", "neq", false);
 
       expect(mockQuery.mockFilterMethods.neq).toHaveBeenCalledWith(
-        "extra_fields->>'mentor_assigned'::boolean",
+        "(extra_fields->>'mentor_assigned')::boolean",
         false,
       );
     });
@@ -160,7 +160,7 @@ describe("JsonbQueryBuilder", () => {
       builder.where("score", "neq", 0);
 
       expect(mockQuery.mockFilterMethods.neq).toHaveBeenCalledWith(
-        "extra_fields->>'score'::numeric",
+        "(extra_fields->>'score')::numeric",
         0,
       );
     });
@@ -388,7 +388,7 @@ describe("JsonbQueryBuilder", () => {
       builder.where("score", "gt", 10);
 
       expect(mockQuery.mockFilterMethods.gt).toHaveBeenCalledWith(
-        "extra_fields->>'score'::numeric",
+        "(extra_fields->>'score')::numeric",
         10,
       );
     });
@@ -398,7 +398,7 @@ describe("JsonbQueryBuilder", () => {
       builder.where("progress.score", "lte", 5);
 
       expect(mockQuery.mockFilterMethods.lte).toHaveBeenCalledWith(
-        "extra_fields->'progress'->>'score'::numeric",
+        "(extra_fields->'progress'->>'score')::numeric",
         5,
       );
     });
@@ -408,7 +408,7 @@ describe("JsonbQueryBuilder", () => {
       builder.where("score", "eq", 100);
 
       expect(mockQuery.mockFilterMethods.eq).toHaveBeenCalledWith(
-        "extra_fields->>'score'::numeric",
+        "(extra_fields->>'score')::numeric",
         100,
       );
     });
@@ -418,7 +418,7 @@ describe("JsonbQueryBuilder", () => {
       builder.where("is_active", "eq", true);
 
       expect(mockQuery.mockFilterMethods.eq).toHaveBeenCalledWith(
-        "extra_fields->>'is_active'::boolean",
+        "(extra_fields->>'is_active')::boolean",
         true,
       );
     });
@@ -428,7 +428,7 @@ describe("JsonbQueryBuilder", () => {
       builder.where("progress.score", "eq", 75);
 
       expect(mockQuery.mockFilterMethods.eq).toHaveBeenCalledWith(
-        "extra_fields->'progress'->>'score'::numeric",
+        "(extra_fields->'progress'->>'score')::numeric",
         75,
       );
     });
@@ -450,7 +450,7 @@ describe("JsonbQueryBuilder", () => {
       );
       expect(mockQuery.mockFilterMethods.eq).toHaveBeenNthCalledWith(
         2,
-        "extra_fields->>'mentor_assigned'::boolean",
+        "(extra_fields->>'mentor_assigned')::boolean",
         true,
       );
     });
@@ -516,8 +516,8 @@ describe("JsonbQueryBuilder", () => {
 
       expect(mockQuery.mockFilterMethods.or).toHaveBeenCalled();
       const orCall = mockQuery.mockFilterMethods.or.mock.calls[0][0];
-      expect(orCall).toContain("extra_fields->>'score'::numeric.gt.10");
-      expect(orCall).toContain("extra_fields->'progress'->>'score'::numeric.lt.5");
+      expect(orCall).toContain("(extra_fields->>'score')::numeric.gt.10");
+      expect(orCall).toContain("(extra_fields->'progress'->>'score')::numeric.lt.5");
     });
 
     it("should cast numeric equality inside OR groups", () => {
@@ -529,8 +529,8 @@ describe("JsonbQueryBuilder", () => {
 
       expect(mockQuery.mockFilterMethods.or).toHaveBeenCalled();
       const orCall = mockQuery.mockFilterMethods.or.mock.calls[0][0];
-      expect(orCall).toContain("extra_fields->>'score'::numeric.eq.100");
-      expect(orCall).toContain("extra_fields->'progress'->>'score'::numeric.eq.75");
+      expect(orCall).toContain("(extra_fields->>'score')::numeric.eq.100");
+      expect(orCall).toContain("(extra_fields->'progress'->>'score')::numeric.eq.75");
     });
 
     it("should cast boolean equality inside OR groups", () => {
@@ -542,8 +542,8 @@ describe("JsonbQueryBuilder", () => {
 
       expect(mockQuery.mockFilterMethods.or).toHaveBeenCalled();
       const orCall = mockQuery.mockFilterMethods.or.mock.calls[0][0];
-      expect(orCall).toContain("extra_fields->>'mentor_assigned'::boolean.eq.true");
-      expect(orCall).toContain("extra_fields->>'is_active'::boolean.eq.false");
+      expect(orCall).toContain("(extra_fields->>'mentor_assigned')::boolean.eq.true");
+      expect(orCall).toContain("(extra_fields->>'is_active')::boolean.eq.false");
     });
 
     it("should cast numeric not-equals inside OR groups", () => {
@@ -555,8 +555,8 @@ describe("JsonbQueryBuilder", () => {
 
       expect(mockQuery.mockFilterMethods.or).toHaveBeenCalled();
       const orCall = mockQuery.mockFilterMethods.or.mock.calls[0][0];
-      expect(orCall).toContain("extra_fields->>'score'::numeric.neq.0");
-      expect(orCall).toContain("extra_fields->'progress'->>'score'::numeric.neq.-1");
+      expect(orCall).toContain("(extra_fields->>'score')::numeric.neq.0");
+      expect(orCall).toContain("(extra_fields->'progress'->>'score')::numeric.neq.-1");
     });
 
     it("should preserve nested AND groups inside OR queries", () => {
