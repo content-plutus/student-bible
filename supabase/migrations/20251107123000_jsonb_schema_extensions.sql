@@ -112,7 +112,7 @@ begin
         );
     elsif strategy = 'append' then
         update_sql := format(
-            'update %1$I set %2$s = jsonb_deep_merge(coalesce(%2$s, ''{}''::jsonb), $1::jsonb)',
+            'update %1$I set %2$s = jsonb_append_arrays(coalesce(%2$s, ''{}''::jsonb), $1::jsonb)',
             target_table,
             target_column
         );

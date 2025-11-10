@@ -139,6 +139,7 @@
   - [ ] 4.17 Implement audit logging for all data modifications
   - [ ] 4.18 Create caching layer with invalidation strategies
   - [ ] 4.19 Write integration tests for all API endpoints
+  - [ ] 4.20 Reload persisted JSONB schema extensions on startup (rehydrate registry from `jsonb_schema_extensions`)
 
 - [ ] 5.0 Create Adaptive User Interface Components
   - [ ] 5.1 Build responsive layout with mobile-first approach
