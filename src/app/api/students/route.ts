@@ -243,9 +243,16 @@ export async function PUT(request: NextRequest) {
       ? getPreset(options.preset)?.criteria || DEFAULT_MATCHING_CRITERIA
       : options.criteria || DEFAULT_MATCHING_CRITERIA;
 
-    const { result } = await getDuplicateResultWithCache(supabase, validatedSearchData, criteria, {
-      excludeStudentId: options.excludeStudentId,
-    });
+    let result: DuplicateResult;
+    if (createIfNoDuplicates) {
+      result = await detectDuplicates(supabase, validatedSearchData, criteria, {
+        excludeStudentId: options.excludeStudentId,
+      });
+    } else {
+      ({ result } = await getDuplicateResultWithCache(supabase, validatedSearchData, criteria, {
+        excludeStudentId: options.excludeStudentId,
+      }));
+    }
 
     if (!result.hasPotentialDuplicates && createIfNoDuplicates) {
       try {
