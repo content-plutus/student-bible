@@ -15,6 +15,7 @@ const REQUIRED_ENV_VARS = [
 
 const OPTIONAL_ENV_VARS = ["INTERNAL_API_KEY"];
 const DATABASE_DEGRADED_THRESHOLD_MS = 750;
+const DATABASE_QUERY_TIMEOUT_MS = 5000; // 5 second timeout for database queries
 const SERVER_STARTED_AT = Date.now();
 
 export async function GET() {
@@ -90,10 +91,49 @@ async function checkDatabase(): Promise<DependencyStatus> {
       },
     };
   }
+
+  const controller = new AbortController();
+  let timeoutId: NodeJS.Timeout | null = null;
+
+  // Create a timeout promise that aborts the controller and rejects with AbortError
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    timeoutId = setTimeout(() => {
+      controller.abort();
+      const abortError = new Error("Database query timeout");
+      abortError.name = "AbortError";
+      reject(abortError);
+    }, DATABASE_QUERY_TIMEOUT_MS);
+  });
+
   try {
     const { supabaseAdmin } = await import("@/lib/supabase/server");
     const supabase = supabaseAdmin();
-    const { error } = await supabase.from("students").select("id").limit(1);
+    // Create the query promise
+    const queryPromise = supabase.from("students").select("id").limit(1);
+
+    // Always attach a catch handler to consume rejections and prevent unhandled promise rejections
+    // This is critical: if the timeout fires first, the query promise will still reject later
+    // and we need to consume that rejection to prevent it from becoming unhandled
+    queryPromise.catch(() => {
+      // Silently consume the rejection if timeout already fired
+      // This prevents unhandled promise rejections when timeout wins the race
+      if (controller.signal.aborted) {
+        // Timeout already occurred, ignore this rejection
+        return;
+      }
+      // If timeout hasn't fired yet, the error will be handled by Promise.race below
+    });
+
+    // Race the database query against the timeout
+    // Note: Supabase PostgREST client doesn't directly support abortSignal in the query chain,
+    // but Promise.race ensures we don't hang, and the timeout is properly cleaned up
+    const { error } = await Promise.race([queryPromise, timeoutPromise]);
+
+    // Clear timeout on success
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+      timeoutId = null;
+    }
 
     if (error) {
       throw error;
@@ -117,19 +157,40 @@ async function checkDatabase(): Promise<DependencyStatus> {
       },
     };
   } catch (error) {
+    // Clear timeout in error path to prevent leaks
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+      timeoutId = null;
+    }
+
     const latencyMs = Number((performance.now() - started).toFixed(2));
+
+    // Check if error is due to timeout/abort
+    // The timeout promise creates an Error with name "AbortError"
+    const isTimeoutError =
+      error instanceof Error &&
+      (error.name === "AbortError" ||
+        error.message.includes("timeout") ||
+        error.message.includes("aborted"));
 
     return {
       name: "database",
       status: "unhealthy",
       checkedAt,
       latencyMs,
-      error: error instanceof Error ? error.message : "Unknown database error",
+      error: isTimeoutError
+        ? `Database query timeout after ${DATABASE_QUERY_TIMEOUT_MS}ms`
+        : error instanceof Error
+          ? error.message
+          : "Unknown database error",
       details: {
         code:
           typeof error === "object" && error && "code" in error
             ? (error as { code?: string }).code
             : undefined,
+        ...(isTimeoutError && {
+          timeoutMs: DATABASE_QUERY_TIMEOUT_MS,
+        }),
       },
     };
   }
