@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { OpenAPIRegistry, OpenApiGeneratorV3 } from "@asteasolutions/zod-to-openapi";
 import { z } from "zod";
-import { listRegisteredJsonbSchemas } from "@/lib/jsonb/schemaRegistry";
 import {
   studentExtraFieldsSchema,
   addressAdditionalDataSchema,
@@ -326,16 +325,6 @@ export async function GET(req: NextRequest) {
       },
     },
     required: ["error"],
-  });
-
-  const jsonbSchemas = listRegisteredJsonbSchemas();
-  jsonbSchemas.forEach((schema) => {
-    const schemaName = `${schema.table}_${schema.column}`;
-    registry.registerComponent("schemas", schemaName, {
-      type: "object",
-      description: schema.description || `JSONB schema for ${schema.table}.${schema.column}`,
-      additionalProperties: true,
-    });
   });
 
   registry.registerComponent("schemas", "StudentExtraFields", {
