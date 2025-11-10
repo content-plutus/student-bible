@@ -62,9 +62,24 @@ export interface FieldMetadataResult {
   };
 }
 
+type ZodDefLike = {
+  typeName?: string;
+  type?: string;
+  innerType?: ZodTypeAny;
+  out?: ZodTypeAny;
+  in?: ZodTypeAny;
+  schema?: ZodTypeAny;
+  getter?: () => ZodTypeAny;
+  values?: unknown;
+  value?: unknown;
+};
+
 const CORE_TABLE_FIELDS: Record<string, FieldMetadata[]> = {
   students: [
-    makeCoreField("students", "id", "Student ID", "uuid", { tags: ["identifier"], description: "Primary identifier." }),
+    makeCoreField("students", "id", "Student ID", "uuid", {
+      tags: ["identifier"],
+      description: "Primary identifier.",
+    }),
     makeCoreField("students", "phone_number", "Phone Number", "string", {
       description: "Primary contact number (10 digits).",
       tags: ["contact", "required"],
@@ -205,7 +220,7 @@ export function getFieldMetadata(query: FieldMetadataQuery = {}): FieldMetadataR
       continue;
     }
 
-    const coreFields = query.includeCore === false ? [] : CORE_TABLE_FIELDS[tableName] ?? [];
+    const coreFields = query.includeCore === false ? [] : (CORE_TABLE_FIELDS[tableName] ?? []);
 
     const jsonbColumns = registryEntries
       .filter((definition) => definition.table === tableName)
@@ -229,7 +244,8 @@ export function getFieldMetadata(query: FieldMetadataQuery = {}): FieldMetadataR
       continue;
     }
 
-    const fieldCount = coreFields.length + jsonbColumns.reduce((acc, column) => acc + column.fields.length, 0);
+    const fieldCount =
+      coreFields.length + jsonbColumns.reduce((acc, column) => acc + column.fields.length, 0);
 
     tableMetadata.push({
       name: tableName,
@@ -262,7 +278,11 @@ function collectTableNames(definitions: ReturnType<typeof jsonbSchemaRegistry.li
   return Array.from(tableSet).sort();
 }
 
-function extractFieldsFromSchema(table: string, column: string, schema: ZodTypeAny): FieldMetadata[] {
+function extractFieldsFromSchema(
+  table: string,
+  column: string,
+  schema: ZodTypeAny,
+): FieldMetadata[] {
   if (!(schema instanceof ZodObject)) {
     return [];
   }
@@ -416,7 +436,10 @@ function describeZodType(type: ZodTypeAny): DescribedType {
   }
 }
 
-function basicDescription(type: string, metadata: { optional: boolean; nullable: boolean }): DescribedType {
+function basicDescription(
+  type: string,
+  metadata: { optional: boolean; nullable: boolean },
+): DescribedType {
   return {
     dataType: type,
     optional: metadata.optional,
@@ -500,15 +523,26 @@ function unwrapType(zodType: ZodTypeAny) {
   return { type: current, optional, nullable };
 }
 
-function getZodDef(type: unknown): Record<string, any> | undefined {
-  if (!type || typeof type !== "object") {
+function getZodDef(type: unknown): ZodDefLike | undefined {
+  if (!hasDefCarrier(type)) {
     return undefined;
   }
-  if ("_def" in (type as Record<string, unknown>) && (type as Record<string, any>)._def) {
-    return (type as Record<string, any>)._def;
+
+  if (isZodDef(type._def)) {
+    return type._def;
   }
-  if ("def" in (type as Record<string, unknown>) && (type as Record<string, any>).def) {
-    return (type as Record<string, any>).def;
+
+  if (isZodDef(type.def)) {
+    return type.def;
   }
+
   return undefined;
+}
+
+function hasDefCarrier(value: unknown): value is { _def?: ZodDefLike; def?: ZodDefLike } {
+  return !!value && typeof value === "object" && ("_def" in value || "def" in value);
+}
+
+function isZodDef(value: unknown): value is ZodDefLike {
+  return !!value && typeof value === "object";
 }

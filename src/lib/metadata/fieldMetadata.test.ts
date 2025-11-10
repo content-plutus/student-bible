@@ -8,8 +8,12 @@ describe("field metadata helper", () => {
     const studentsTable = result.tables.find((table) => table.name === "students");
 
     expect(studentsTable).toBeDefined();
-    expect(studentsTable?.jsonbColumns.some((column) => column.column === "extra_fields")).toBe(true);
-    const extraFields = studentsTable?.jsonbColumns.find((column) => column.column === "extra_fields");
+    expect(studentsTable?.jsonbColumns.some((column) => column.column === "extra_fields")).toBe(
+      true,
+    );
+    const extraFields = studentsTable?.jsonbColumns.find(
+      (column) => column.column === "extra_fields",
+    );
     expect(extraFields?.fields.some((field) => field.name === "guardian_email")).toBe(true);
   });
 
@@ -22,5 +26,4 @@ describe("field metadata helper", () => {
     expect(studentsTable.jsonbColumns).toHaveLength(1);
     expect(studentsTable.jsonbColumns[0].column).toBe("extra_fields");
   });
-
 });
