@@ -246,7 +246,7 @@ export class DynamicCsvParser {
         });
 
         if (testRecords.length > 0) {
-          const columnCount = Object.keys(testRecords[0]).length;
+          const columnCount = Object.keys(testRecords[0] as Record<string, unknown>).length;
           if (columnCount > maxColumns) {
             maxColumns = columnCount;
             bestDelimiter = delimiter;
@@ -264,7 +264,7 @@ export class DynamicCsvParser {
       bom: true,
       delimiter: bestDelimiter,
       relax_column_count: true,
-    });
+    }) as Record<string, string>[];
 
     return { records, delimiter: bestDelimiter };
   }

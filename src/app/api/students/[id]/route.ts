@@ -70,17 +70,18 @@ function getSupabaseClient() {
 }
 
 export const GET = withErrorHandling(
-  async (request: NextRequest, { params }: { params: { id: string } }) => {
+  async (request: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
     validateApiKey(request);
 
     const supabase = getSupabaseClient();
+    const { id } = await params;
 
-    const result = await supabase.from("students").select("*").eq("id", params.id).single();
+    const result = await supabase.from("students").select("*").eq("id", id).single();
 
     if (result.error) {
       // Handle "not found" case (PGRST116 is Supabase's "no rows returned" code)
       if (result.error.code === "PGRST116") {
-        throw new NotFoundError(`Student with ID ${params.id} not found`, {
+        throw new NotFoundError(`Student with ID ${id} not found`, {
           metadata: {
             endpoint: request.nextUrl.pathname,
             method: request.method,
@@ -92,7 +93,7 @@ export const GET = withErrorHandling(
     }
 
     if (!result.data) {
-      throw new NotFoundError(`Student with ID ${params.id} not found`, {
+      throw new NotFoundError(`Student with ID ${id} not found`, {
         metadata: {
           endpoint: request.nextUrl.pathname,
           method: request.method,
@@ -111,13 +112,14 @@ export const GET = withErrorHandling(
 );
 
 export const PATCH = withErrorHandling(
-  async (request: NextRequest, { params }: { params: { id: string } }) => {
+  async (request: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
     validateApiKey(request);
 
     const body = await request.json();
     const validatedData = studentUpdateSchema.parse(body);
 
     const supabase = getSupabaseClient();
+    const { id } = await params;
 
     const { full_name, extra_fields, ...coreFields } = validatedData;
     void full_name;
@@ -125,7 +127,7 @@ export const PATCH = withErrorHandling(
     const updatedStudent = await handleDatabaseOperation(
       async () => {
         const { data, error: rpcError } = await supabase.rpc("students_update_profile", {
-          student_id: params.id,
+          student_id: id,
           core_patch: coreFields,
           extra_patch: extra_fields || {},
           strip_nulls: true,
@@ -133,7 +135,7 @@ export const PATCH = withErrorHandling(
 
         if (rpcError) {
           if (rpcError.message && rpcError.message.includes("not found")) {
-            throw new NotFoundError(`Student with ID ${params.id} not found`, {
+            throw new NotFoundError(`Student with ID ${id} not found`, {
               metadata: {
                 endpoint: request.nextUrl.pathname,
                 method: request.method,
@@ -144,7 +146,7 @@ export const PATCH = withErrorHandling(
         }
 
         if (!data) {
-          throw new NotFoundError(`Student with ID ${params.id} not found`, {
+          throw new NotFoundError(`Student with ID ${id} not found`, {
             metadata: {
               endpoint: request.nextUrl.pathname,
               method: request.method,

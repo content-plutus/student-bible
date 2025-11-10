@@ -237,7 +237,7 @@ export async function POST(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams;
     const asyncMode = searchParams.get("async") === "true";
 
-    let options: ImportOptionsInput = {};
+    let options: Partial<ImportOptionsInput> = {};
     try {
       const optionsParam = searchParams.get("options");
       if (optionsParam) {
@@ -329,7 +329,7 @@ export async function POST(request: NextRequest) {
         {
           success: false,
           error: "Validation error",
-          details: error.errors,
+          details: error.issues,
         },
         { status: 400 },
       );

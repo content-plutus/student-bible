@@ -10,7 +10,7 @@ if (!supabaseUrl || !supabaseAnonKey) {
   );
 }
 
-export const supabase: SupabaseClient = createClientComponentClient({
+export const supabase = createClientComponentClient({
   supabaseUrl,
   supabaseKey: supabaseAnonKey,
   isSingleton: true,

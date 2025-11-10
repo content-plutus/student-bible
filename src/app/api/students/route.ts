@@ -167,7 +167,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           success: false,
-          error: `Validation error: ${error.errors.map((e) => `${e.path.join(".")}: ${e.message}`).join(", ")}`,
+          error: `Validation error: ${error.issues.map((e) => `${e.path.join(".")}: ${e.message}`).join(", ")}`,
         },
         { status: 400 },
       );
@@ -307,7 +307,7 @@ export async function PUT(request: NextRequest) {
             {
               success: false,
               error: "Validation error",
-              fieldErrors: validationError.errors.map((e) => ({
+              fieldErrors: validationError.issues.map((e) => ({
                 path: e.path.join("."),
                 message: e.message,
                 code: e.code,
@@ -341,7 +341,7 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json(
         {
           success: false,
-          error: `Validation error: ${error.errors.map((e) => `${e.path.join(".")}: ${e.message}`).join(", ")}`,
+          error: `Validation error: ${error.issues.map((e) => `${e.path.join(".")}: ${e.message}`).join(", ")}`,
         },
         { status: 400 },
       );

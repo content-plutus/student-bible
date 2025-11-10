@@ -47,7 +47,7 @@ class JsonbCompatibilityRegistry {
     }
 
     const appliedRules: string[] = [];
-    const workingPayload = this.clonePayload(payload);
+    const workingPayload = this.clonePayload(payload) as Record<string, unknown>;
 
     for (const rule of rules) {
       let changed = false;
@@ -188,6 +188,21 @@ class JsonbCompatibilityRegistry {
 
   public clear(): void {
     this.rules.clear();
+  }
+
+  public getRules(table: string, column: string): CompatibilityRule[] {
+    const key = this.getKey(table, column);
+    return this.rules.get(key) ?? [];
+  }
+
+  public setRules(table: string, column: string, rules: CompatibilityRule[]): void {
+    const key = this.getKey(table, column);
+    this.rules.set(key, rules);
+  }
+
+  public deleteRules(table: string, column: string): void {
+    const key = this.getKey(table, column);
+    this.rules.delete(key);
   }
 }
 

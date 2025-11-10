@@ -132,7 +132,9 @@ class JsonbSchemaRegistry {
 
       if (options.stripUnknownKeys) {
         workingSchema = workingSchema.strip() as unknown as TSchema;
-      } else if (!allowUnknownKeys) {
+      } else if (allowUnknownKeys === true) {
+        workingSchema = workingSchema.passthrough() as unknown as TSchema;
+      } else {
         workingSchema = workingSchema.strict() as unknown as TSchema;
       }
     }
