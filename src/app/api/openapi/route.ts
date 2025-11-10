@@ -1,18 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { OpenAPIRegistry, OpenApiGeneratorV3 } from "@asteasolutions/zod-to-openapi";
 import { z } from "zod";
-import {
-  studentExtraFieldsSchema,
-  addressAdditionalDataSchema,
-  studentCertificationCustomFieldsSchema,
-  certificationMetadataSchema,
-  academicInfoExtraFieldsSchema,
-  examAttemptMetadataSchema,
-  attendanceExtraMetricsSchema,
-  testScoreAnalysisSchema,
-  formSubmissionRawDataSchema,
-} from "@/lib/jsonb/schemaRegistry";
-import { studentInsertSchema, studentUpdateSchema } from "@/lib/types/student";
+import { studentExtraFieldsSchema } from "@/lib/jsonb/schemaRegistry";
+import { studentInsertSchema } from "@/lib/types/student";
 import {
   phoneNumberSchema,
   emailSchema,
@@ -27,7 +17,6 @@ import {
   certificationTypeSchema,
   dateOfBirthSchema,
 } from "@/lib/types/validations";
-import { importOptionsSchema } from "@/lib/types/import";
 
 if (process.env.NODE_ENV === "production" && !process.env.INTERNAL_API_KEY) {
   throw new Error(
