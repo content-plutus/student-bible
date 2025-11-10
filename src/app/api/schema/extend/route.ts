@@ -217,7 +217,7 @@ async function handleSchemaExtension(request: NextRequest, validatedData: Schema
     }));
 
     const defaultsPayload = buildDefaultsPayload(fields);
-    const fieldNames = defaultsPayload ? Object.keys(defaultsPayload) : null;
+    const defaultFieldNames = defaultsPayload ? Object.keys(defaultsPayload) : null;
 
     const { data: persistenceResult, error: persistError } = await supabase.rpc(
       "schema_extension_persist",
@@ -226,7 +226,7 @@ async function handleSchemaExtension(request: NextRequest, validatedData: Schema
         p_jsonb_column: jsonb_column,
         p_records: extensionRecords,
         p_defaults: defaultsPayload,
-        p_field_names: fieldNames,
+        p_field_names: defaultFieldNames,
         p_strategy: migration_strategy,
         p_apply_existing: apply_to_existing,
         p_actor: auditContext.actor,
