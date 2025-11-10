@@ -9,6 +9,7 @@ import {
   stripNullValuesFromExtraFields,
 } from "@/lib/validators/schemaEvolution";
 import { CertificationType } from "@/lib/validators/rules";
+import { buildAuditContext } from "@/lib/utils/auditContext";
 import { z } from "zod";
 
 if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
@@ -278,11 +279,16 @@ export async function PUT(request: NextRequest) {
           extra_fields: sanitizedExtraFields,
         };
 
-        const { data: newStudent, error: insertError } = await supabase
-          .from("students")
-          .insert(dataToInsert)
-          .select()
-          .single();
+        const auditContext = buildAuditContext(request, "students:create");
+
+        const { data: newStudent, error: insertError } = await supabase.rpc(
+          "students_insert_with_audit",
+          {
+            payload: dataToInsert,
+            p_actor: auditContext.actor,
+            p_request_id: auditContext.requestId,
+          },
+        );
 
         if (insertError) {
           return NextResponse.json(

@@ -9,6 +9,7 @@ import {
   handleDatabaseOperation,
   ErrorCode,
 } from "@/lib/errors";
+import { buildAuditContext } from "@/lib/utils/auditContext";
 
 if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
   throw new Error(
@@ -124,6 +125,8 @@ export const PATCH = withErrorHandling(
     const { full_name, extra_fields, ...coreFields } = validatedData;
     void full_name;
 
+    const auditContext = buildAuditContext(request, "students:update");
+
     const updatedStudent = await handleDatabaseOperation(
       async () => {
         const { data, error: rpcError } = await supabase.rpc("students_update_profile", {
@@ -131,6 +134,8 @@ export const PATCH = withErrorHandling(
           core_patch: coreFields,
           extra_patch: extra_fields || {},
           strip_nulls: true,
+          p_actor: auditContext.actor,
+          p_request_id: auditContext.requestId,
         });
 
         if (rpcError) {
