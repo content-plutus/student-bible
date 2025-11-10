@@ -242,10 +242,29 @@ export class JsonbQueryBuilder<T> {
 
     switch (operator) {
       case "eq":
-        this.query = this.query.eq(columnPath, value as string | number | boolean);
+        // Cast column path to match value type to avoid type mismatch errors
+        // The ->> operator always returns text, so we need explicit casting
+        if (typeof value === "number") {
+          const numericColumnPath = this.buildColumnPath(path, { castNumeric: true });
+          this.query = this.query.eq(numericColumnPath, value);
+        } else if (typeof value === "boolean") {
+          const booleanColumnPath = this.buildColumnPath(path, { castBoolean: true });
+          this.query = this.query.eq(booleanColumnPath, value);
+        } else {
+          this.query = this.query.eq(columnPath, value as string | number | boolean);
+        }
         break;
       case "neq":
-        this.query = this.query.neq(columnPath, value as string | number | boolean);
+        // Cast column path to match value type to avoid type mismatch errors
+        if (typeof value === "number") {
+          const numericColumnPath = this.buildColumnPath(path, { castNumeric: true });
+          this.query = this.query.neq(numericColumnPath, value);
+        } else if (typeof value === "boolean") {
+          const booleanColumnPath = this.buildColumnPath(path, { castBoolean: true });
+          this.query = this.query.neq(booleanColumnPath, value);
+        } else {
+          this.query = this.query.neq(columnPath, value as string | number | boolean);
+        }
         break;
       case "gt":
         if (typeof value === "number") {
@@ -402,8 +421,24 @@ export class JsonbQueryBuilder<T> {
 
     switch (operator) {
       case "eq":
+        // Cast column path to match value type for OR group filters
+        if (typeof value === "number") {
+          const numericColumnPath = this.buildColumnPath(path, { castNumeric: true });
+          return `${numericColumnPath}.eq.${this.serializeValue(value)}`;
+        } else if (typeof value === "boolean") {
+          const booleanColumnPath = this.buildColumnPath(path, { castBoolean: true });
+          return `${booleanColumnPath}.eq.${this.serializeValue(value)}`;
+        }
         return `${columnPath}.eq.${this.serializeValue(value)}`;
       case "neq":
+        // Cast column path to match value type for OR group filters
+        if (typeof value === "number") {
+          const numericColumnPath = this.buildColumnPath(path, { castNumeric: true });
+          return `${numericColumnPath}.neq.${this.serializeValue(value)}`;
+        } else if (typeof value === "boolean") {
+          const booleanColumnPath = this.buildColumnPath(path, { castBoolean: true });
+          return `${booleanColumnPath}.neq.${this.serializeValue(value)}`;
+        }
         return `${columnPath}.neq.${this.serializeValue(value)}`;
       case "gt":
         if (typeof value === "number") {
@@ -520,7 +555,10 @@ export class JsonbQueryBuilder<T> {
    * Builds the column path for JSONB field access
    * Supports nested paths using dot notation
    */
-  private buildColumnPath(path: string, options?: { castNumeric?: boolean }): string {
+  private buildColumnPath(
+    path: string,
+    options?: { castNumeric?: boolean; castBoolean?: boolean },
+  ): string {
     let columnPath: string;
     if (!this.usePathOperators || !path.includes(".")) {
       // Simple path: extra_fields->>'batch_code'
@@ -537,6 +575,10 @@ export class JsonbQueryBuilder<T> {
 
     if (options?.castNumeric) {
       return `${columnPath}::numeric`;
+    }
+
+    if (options?.castBoolean) {
+      return `${columnPath}::boolean`;
     }
 
     return columnPath;
