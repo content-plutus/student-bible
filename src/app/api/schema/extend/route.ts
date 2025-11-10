@@ -7,7 +7,7 @@ import {
   type SchemaExtensionFieldDefinition,
 } from "@/lib/jsonb/schemaExtensionBuilder";
 import { getJsonbSchemaDefinition, registerJsonbSchema } from "@/lib/jsonb/schemaRegistry";
-import { applyAuditContext, buildAuditContext } from "@/lib/utils/auditContext";
+import { buildAuditContext } from "@/lib/utils/auditContext";
 
 type SchemaExtensionPayload = z.infer<typeof schemaExtensionSchema>;
 
@@ -199,7 +199,7 @@ async function handleSchemaExtension(request: NextRequest, validatedData: Schema
   try {
     schemaResult = applySchemaExtensions(table_name, jsonb_column, fields);
     const supabase = supabaseAdmin();
-    await applyAuditContext(supabase, buildAuditContext(request, "schema-extension"));
+    const auditContext = buildAuditContext(request, "schema-extension");
     const extensionRecords = fields.map((field) => ({
       table_name,
       jsonb_column,
@@ -216,32 +216,30 @@ async function handleSchemaExtension(request: NextRequest, validatedData: Schema
       last_applied_at: new Date().toISOString(),
     }));
 
-    const { data: persisted, error: persistError } = await supabase
-      .from("jsonb_schema_extensions")
-      .upsert(extensionRecords, {
-        onConflict: "table_name,jsonb_column,field_name",
-      })
-      .select("id");
+    const defaultsPayload = buildDefaultsPayload(fields);
+    const fieldNames = defaultsPayload ? Object.keys(defaultsPayload) : null;
+
+    const { data: persistenceResult, error: persistError } = await supabase.rpc(
+      "schema_extension_persist",
+      {
+        p_table_name: table_name,
+        p_jsonb_column: jsonb_column,
+        p_records: extensionRecords,
+        p_defaults: defaultsPayload,
+        p_field_names: fieldNames,
+        p_strategy: migration_strategy,
+        p_apply_existing: apply_to_existing,
+        p_actor: auditContext.actor,
+        p_request_id: auditContext.requestId,
+      },
+    );
 
     if (persistError) {
       throw persistError;
     }
 
-    let updatedRows = 0;
-    const defaultsPayload = buildDefaultsPayload(fields);
-    if (apply_to_existing && defaultsPayload) {
-      const { data, error: rpcError } = await supabase.rpc("apply_jsonb_schema_extension", {
-        target_table: table_name,
-        jsonb_column,
-        extension_payload: defaultsPayload,
-        field_names: Object.keys(defaultsPayload),
-        strategy: migration_strategy,
-      });
-      if (rpcError) {
-        throw rpcError;
-      }
-      updatedRows = data ?? 0;
-    }
+    const storedCount = persistenceResult?.stored_count ?? extensionRecords.length;
+    const updatedRows = persistenceResult?.records_updated ?? 0;
 
     return NextResponse.json({
       success: true,
@@ -253,7 +251,7 @@ async function handleSchemaExtension(request: NextRequest, validatedData: Schema
         schemaVersion: schemaResult.version,
       },
       persistence: {
-        storedDefinitions: persisted?.length ?? 0,
+        storedDefinitions: storedCount,
         recordsUpdated: updatedRows,
       },
     });

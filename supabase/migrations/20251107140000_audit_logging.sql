@@ -19,6 +19,16 @@ comment on column public.audit_logs.old_data is 'Previous row state for UPDATE/D
 create index if not exists audit_logs_table_record_idx on public.audit_logs (table_name, record_id);
 create index if not exists audit_logs_changed_at_idx on public.audit_logs (changed_at);
 
+alter table public.audit_logs enable row level security;
+revoke all on public.audit_logs from public;
+grant select on public.audit_logs to service_role;
+
+create policy audit_logs_read_service_role
+    on public.audit_logs
+    for select
+    to service_role
+    using (true);
+
 create or replace function public.set_audit_context(p_actor text default null, p_request_id text default null)
 returns void
 language plpgsql

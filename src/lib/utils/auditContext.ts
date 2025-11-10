@@ -1,5 +1,3 @@
-import type { SupabaseClient } from "@supabase/supabase-js";
-
 export interface AuditContext {
   actor?: string | null;
   requestId?: string | null;
@@ -22,25 +20,4 @@ export function buildAuditContext(request: Request, fallbackActor: string): Audi
     actor,
     requestId,
   };
-}
-
-export async function applyAuditContext(
-  supabase: SupabaseClient,
-  context: AuditContext,
-): Promise<void> {
-  const actor = context.actor?.trim() ?? null;
-  const requestId = context.requestId?.trim() ?? null;
-
-  if (!actor && !requestId) {
-    return;
-  }
-
-  const { error } = await supabase.rpc("set_audit_context", {
-    p_actor: actor,
-    p_request_id: requestId,
-  });
-
-  if (error) {
-    console.warn("Failed to set audit context", error.message ?? error);
-  }
 }

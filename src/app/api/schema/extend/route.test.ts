@@ -77,14 +77,17 @@ describe("POST /api/schema/extend", () => {
     expect(response.status).toBe(200);
     expect(payload.success).toBe(true);
     expect(payload.extension.fields).toContain("preferred_language");
-    expect(mockSupabase.rpc).toHaveBeenCalledWith("set_audit_context", expect.any(Object));
-    expect(mockSupabase.from).toHaveBeenCalledWith("jsonb_schema_extensions");
-    const fromInvocation = mockSupabase.from.mock.results[0]?.value as {
-      upsert: jest.Mock;
-    };
-    expect(fromInvocation?.upsert).toHaveBeenCalledTimes(1);
-    const [recordsArg, optionsArg] = fromInvocation!.upsert.mock.calls[0];
-    expect(recordsArg).toEqual([
+    expect(mockSupabase.rpc).toHaveBeenCalledWith(
+      "schema_extension_persist",
+      expect.objectContaining({
+        p_table_name: "students",
+        p_jsonb_column: "extra_fields",
+        p_strategy: "merge",
+        p_apply_existing: true,
+      }),
+    );
+    const persistArgs = mockSupabase.rpc.mock.calls[0]?.[1];
+    expect(persistArgs?.p_records).toEqual([
       expect.objectContaining({
         table_name: "students",
         jsonb_column: "extra_fields",
@@ -92,22 +95,10 @@ describe("POST /api/schema/extend", () => {
         field_type: "string",
         required: false,
         default_value: "en",
-        migration_strategy: "merge",
-        apply_to_existing: true,
       }),
     ]);
-    expect(optionsArg).toEqual({ onConflict: "table_name,jsonb_column,field_name" });
-    const rpcCall = mockSupabase.rpc.mock.calls.find(
-      ([fnName]) => fnName === "apply_jsonb_schema_extension",
-    );
-    expect(rpcCall).toBeDefined();
-    expect(rpcCall?.[1]).toEqual({
-      target_table: "students",
-      jsonb_column: "extra_fields",
-      extension_payload: { preferred_language: "en" },
-      field_names: ["preferred_language"],
-      strategy: "merge",
-    });
+    expect(persistArgs?.p_defaults).toEqual({ preferred_language: "en" });
+    expect(persistArgs?.p_field_names).toEqual(["preferred_language"]);
   });
 
   it("returns 409 when field already exists", async () => {
@@ -127,25 +118,23 @@ describe("POST /api/schema/extend", () => {
 
     expect(response.status).toBe(409);
     expect(payload.error).toBe("Schema conflict");
-    expect(mockSupabase.from).not.toHaveBeenCalled();
+    expect(mockSupabase.rpc).not.toHaveBeenCalled();
     expect(supabaseAdmin).not.toHaveBeenCalled();
   });
 });
 
 function createMockSupabase() {
-  const mockSelect = jest.fn().mockResolvedValue({ data: [{ id: "ext-1" }], error: null });
-  const mockUpsert = jest.fn().mockReturnValue({ select: mockSelect });
   const mockRpc = jest.fn().mockImplementation(async (fnName: string) => {
-    if (fnName === "set_audit_context") {
-      return { data: null, error: null };
+    if (fnName === "schema_extension_persist") {
+      return {
+        data: { stored_count: 1, records_updated: 5 },
+        error: null,
+      };
     }
-    return { data: 5, error: null };
+    return { data: null, error: null };
   });
 
   return {
-    from: jest.fn().mockReturnValue({
-      upsert: mockUpsert,
-    }),
     rpc: mockRpc,
   };
 }
