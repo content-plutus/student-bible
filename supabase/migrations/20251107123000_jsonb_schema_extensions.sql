@@ -30,6 +30,49 @@ comment on column public.jsonb_schema_extensions.validation_rules is 'JSON paylo
 create index if not exists jsonb_schema_extensions_table_idx
   on public.jsonb_schema_extensions(table_name, jsonb_column);
 
+create or replace function public.jsonb_append_arrays(target jsonb, source jsonb)
+returns jsonb
+language plpgsql
+immutable
+as $$
+declare
+    result jsonb := coalesce(target, '{}'::jsonb);
+    entry record;
+    existing jsonb;
+    existing_type text;
+    value_type text;
+begin
+    if source is null or source = '{}'::jsonb then
+        return result;
+    end if;
+
+    for entry in select key, value from jsonb_each(source)
+    loop
+        existing := result -> entry.key;
+        existing_type := coalesce(jsonb_typeof(existing), 'null');
+        value_type := coalesce(jsonb_typeof(entry.value), 'null');
+
+        if existing_type = 'array' and value_type = 'array' then
+            result := jsonb_set(
+                result,
+                ARRAY[entry.key],
+                coalesce(existing, '[]'::jsonb) || entry.value,
+                true
+            );
+        elsif existing_type = 'array' then
+            result := jsonb_set(result, ARRAY[entry.key], existing, true);
+        else
+            result := jsonb_set(result, ARRAY[entry.key], entry.value, true);
+        end if;
+    end loop;
+
+    return result;
+end;
+$$;
+
+comment on function public.jsonb_append_arrays(jsonb, jsonb) is
+    'Appends array values when new schema defaults target existing JSONB arrays.';
+
 create or replace function public.apply_jsonb_schema_extension(
     target_table text,
     jsonb_column text,
