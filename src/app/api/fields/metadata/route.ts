@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getFieldMetadata } from "@/lib/metadata/fieldMetadata";
 
-export async function GET(request: NextRequest) {
+export function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const table = searchParams.get("table") ?? undefined;
   const column = searchParams.get("column") ?? undefined;

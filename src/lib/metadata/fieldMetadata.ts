@@ -341,7 +341,7 @@ function describeZodType(type: ZodTypeAny): DescribedType {
       nullable: unwrapped.nullable,
     });
   }
-  const baseTypeDef = getZodDef(baseType);
+  const baseTypeDef = getZodDef(baseType) as ZodDefLike | undefined;
   const baseTypeName = baseTypeDef?.typeName ?? baseTypeDef?.type;
 
   if (baseType instanceof ZodArray) {
@@ -356,7 +356,7 @@ function describeZodType(type: ZodTypeAny): DescribedType {
   }
 
   if (baseType instanceof ZodEnum) {
-    const def = getZodDef(baseType);
+    const def = getZodDef(baseType) as ZodDefLike | undefined;
     return {
       dataType: "enum",
       enumValues: Array.isArray(def?.values) ? [...def.values] : undefined,
@@ -366,7 +366,7 @@ function describeZodType(type: ZodTypeAny): DescribedType {
   }
 
   if (baseType instanceof ZodNativeEnum) {
-    const def = getZodDef(baseType);
+    const def = getZodDef(baseType) as ZodDefLike | undefined;
     return {
       dataType: "enum",
       enumValues: def?.values ? Object.values(def.values).map((value) => String(value)) : undefined,
@@ -376,7 +376,7 @@ function describeZodType(type: ZodTypeAny): DescribedType {
   }
 
   if (baseType instanceof ZodLiteral) {
-    const def = getZodDef(baseType);
+    const def = getZodDef(baseType) as ZodDefLike | undefined;
     return {
       dataType: typeof def?.value,
       enumValues: def?.value !== undefined ? [String(def.value)] : undefined,
@@ -463,7 +463,7 @@ function unwrapType(zodType: ZodTypeAny) {
     if (!current || typeof current !== "object") {
       break;
     }
-    const def = getZodDef(current);
+    const def = getZodDef(current) as ZodDefLike | undefined;
     if (!def) {
       break;
     }
@@ -523,26 +523,20 @@ function unwrapType(zodType: ZodTypeAny) {
   return { type: current, optional, nullable };
 }
 
-function getZodDef(type: unknown): ZodDefLike | undefined {
-  if (!hasDefCarrier(type)) {
+function getZodDef(type: unknown): Record<string, unknown> | undefined {
+  if (!type || typeof type !== "object") {
     return undefined;
   }
 
-  if (isZodDef(type._def)) {
-    return type._def;
+  const carrier = type as Record<string, unknown>;
+
+  if ("_def" in carrier && carrier._def && typeof carrier._def === "object") {
+    return carrier._def as Record<string, unknown>;
   }
 
-  if (isZodDef(type.def)) {
-    return type.def;
+  if ("def" in carrier && carrier.def && typeof carrier.def === "object") {
+    return carrier.def as Record<string, unknown>;
   }
 
   return undefined;
-}
-
-function hasDefCarrier(value: unknown): value is { _def?: ZodDefLike; def?: ZodDefLike } {
-  return !!value && typeof value === "object" && ("_def" in value || "def" in value);
-}
-
-function isZodDef(value: unknown): value is ZodDefLike {
-  return !!value && typeof value === "object";
 }
