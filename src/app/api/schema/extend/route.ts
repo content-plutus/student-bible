@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { withValidation } from "@/lib/middleware/validation";
+import { supabaseAdmin } from "@/lib/supabase/server";
+import {
+  applySchemaExtensions,
+  type SchemaExtensionFieldDefinition,
+} from "@/lib/jsonb/schemaExtensionBuilder";
+import { getJsonbSchemaDefinition, registerJsonbSchema } from "@/lib/jsonb/schemaRegistry";
 
 if (process.env.NODE_ENV === "production" && !process.env.INTERNAL_API_KEY) {
   throw new Error(
@@ -121,7 +127,7 @@ const schemaExtensionSchema = z.object({
 
 type SchemaExtension = z.infer<typeof schemaExtensionSchema>;
 
-async function handleSchemaExtension(req: NextRequest, validatedData: SchemaExtension) {
+async function handleSchemaExtension(_: NextRequest, validatedData: SchemaExtension) {
   const { table_name, jsonb_column, fields, migration_strategy, apply_to_existing } = validatedData;
 
   const fieldNames = fields.map((f) => f.field_name);
@@ -171,19 +177,110 @@ async function handleSchemaExtension(req: NextRequest, validatedData: SchemaExte
     );
   }
 
-  return NextResponse.json({
-    success: true,
-    message: "Schema extension validated successfully",
-    extension_config: {
+  const originalDefinition = getJsonbSchemaDefinition(table_name, jsonb_column);
+  if (originalDefinition?.schema instanceof z.ZodObject) {
+    const conflicts = fields
+      .filter((field) => field.field_name in originalDefinition.schema.shape)
+      .map((field) => field.field_name);
+
+    if (conflicts.length > 0) {
+      return NextResponse.json(
+        {
+          error: "Schema conflict",
+          details: `Field(s) already exist on ${table_name}.${jsonb_column}: ${conflicts.join(", ")}`,
+        },
+        { status: 409 },
+      );
+    }
+  }
+
+  let schemaResult: ReturnType<typeof applySchemaExtensions>;
+  try {
+    schemaResult = applySchemaExtensions(table_name, jsonb_column, fields);
+    const supabase = supabaseAdmin();
+    const extensionRecords = fields.map((field) => ({
       table_name,
       jsonb_column,
-      fields_to_add: fields.length,
-      field_names: fieldNames,
+      field_name: field.field_name,
+      field_type: field.field_type,
+      description: field.description,
+      required: field.required ?? false,
+      allow_null: !(field.required ?? false),
+      default_value: field.default_value ?? null,
+      validation_rules: field.validation_rules ?? null,
       migration_strategy,
       apply_to_existing,
-    },
-    note: "This is a placeholder implementation. In production, this would apply the schema extension to the specified JSONB column.",
-  });
+      schema_version: schemaResult.version,
+      last_applied_at: new Date().toISOString(),
+    }));
+
+    const { data: persisted, error: persistError } = await supabase
+      .from("jsonb_schema_extensions")
+      .upsert(extensionRecords, {
+        onConflict: "table_name,jsonb_column,field_name",
+      })
+      .select("id");
+
+    if (persistError) {
+      throw persistError;
+    }
+
+    let updatedRows = 0;
+    const defaultsPayload = buildDefaultsPayload(fields);
+    if (apply_to_existing && defaultsPayload) {
+      const { data, error: rpcError } = await supabase.rpc("apply_jsonb_schema_extension", {
+        target_table: table_name,
+        jsonb_column,
+        extension_payload: defaultsPayload,
+        field_names: Object.keys(defaultsPayload),
+        strategy: migration_strategy,
+      });
+      if (rpcError) {
+        throw rpcError;
+      }
+      updatedRows = data ?? 0;
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: "Schema extension applied successfully",
+      extension: {
+        table: table_name,
+        column: jsonb_column,
+        fields: fieldNames,
+        schemaVersion: schemaResult.version,
+      },
+      persistence: {
+        storedDefinitions: persisted?.length ?? 0,
+        recordsUpdated: updatedRows,
+      },
+    });
+  } catch (error) {
+    if (originalDefinition) {
+      registerJsonbSchema(originalDefinition);
+    }
+    if (error instanceof Error) {
+      const status = error.message.includes("Unsafe regex pattern")
+        ? 400
+        : error.message.includes("already exists")
+          ? 409
+          : 500;
+      return NextResponse.json(
+        {
+          error: "Schema extension failed",
+          details: error.message,
+        },
+        { status },
+      );
+    }
+    return NextResponse.json(
+      {
+        error: "Schema extension failed",
+        details: "Unknown error",
+      },
+      { status: 500 },
+    );
+  }
 }
 
 const validatedHandler = withValidation(schemaExtensionSchema)(handleSchemaExtension);
@@ -194,4 +291,14 @@ export async function POST(req: NextRequest) {
     return authError;
   }
   return validatedHandler(req);
+}
+
+function buildDefaultsPayload(fields: SchemaExtensionFieldDefinition[]) {
+  const payload: Record<string, unknown> = {};
+  for (const field of fields) {
+    if (field.default_value !== undefined && field.default_value !== null) {
+      payload[field.field_name] = field.default_value;
+    }
+  }
+  return Object.keys(payload).length > 0 ? payload : null;
 }

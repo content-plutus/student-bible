@@ -31,3 +31,7 @@ Write imperative, present-tense commit subjects under 72 characters (e.g., `Add 
 ## Issue Resolution Playbook
 
 Before applying fixes for recurring problems, review `docs/processes/issues-log.md` for previously successful approaches, and append any new lessons after resolving an issue.
+
+## CI Discipline
+
+Always run `npm run lint`, `npm run format:check`, and the relevant `npm test` suites locally before pushing changes or opening a PR. Treat passing lint, formatting, and tests as mandatory gates to keep CI green.
