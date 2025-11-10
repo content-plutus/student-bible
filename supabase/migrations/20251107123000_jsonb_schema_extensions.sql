@@ -61,11 +61,25 @@ begin
         return 0;
     end if;
 
-    update_sql := format(
-        'update %1$I set %2$s = jsonb_deep_merge(coalesce(%2$s, ''{}''::jsonb), $1::jsonb) where not (%2$s ?| $2)',
-        target_table,
-        target_column
-    );
+    if strategy = 'replace' then
+        update_sql := format(
+            'update %1$I set %2$s = jsonb_deep_merge((coalesce(%2$s, ''{}''::jsonb) - $2), $1::jsonb)',
+            target_table,
+            target_column
+        );
+    elsif strategy = 'append' then
+        update_sql := format(
+            'update %1$I set %2$s = jsonb_deep_merge(coalesce(%2$s, ''{}''::jsonb), $1::jsonb)',
+            target_table,
+            target_column
+        );
+    else
+        update_sql := format(
+            'update %1$I set %2$s = jsonb_deep_merge(coalesce(%2$s, ''{}''::jsonb), $1::jsonb) where not (%2$s ?| $2)',
+            target_table,
+            target_column
+        );
+    end if;
 
     execute update_sql using extension_payload, field_names;
     get diagnostics updated_rows = row_count;

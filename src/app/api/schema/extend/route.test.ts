@@ -104,6 +104,27 @@ describe("POST /api/schema/extend", () => {
       strategy: "merge",
     });
   });
+
+  it("returns 409 when field already exists", async () => {
+    const request = createRequest({
+      table_name: "students",
+      jsonb_column: "extra_fields",
+      fields: [
+        {
+          field_name: "lead_source",
+          field_type: "string",
+        },
+      ],
+    });
+
+    const response = await postHandler(request);
+    const payload = await response.json();
+
+    expect(response.status).toBe(409);
+    expect(payload.error).toBe("Schema conflict");
+    expect(mockSupabase.from).not.toHaveBeenCalled();
+    expect(supabaseAdmin).not.toHaveBeenCalled();
+  });
 });
 
 function createMockSupabase() {

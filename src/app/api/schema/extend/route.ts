@@ -178,6 +178,22 @@ async function handleSchemaExtension(_: NextRequest, validatedData: SchemaExtens
   }
 
   const originalDefinition = getJsonbSchemaDefinition(table_name, jsonb_column);
+  if (originalDefinition?.schema instanceof z.ZodObject) {
+    const conflicts = fields
+      .filter((field) => field.field_name in originalDefinition.schema.shape)
+      .map((field) => field.field_name);
+
+    if (conflicts.length > 0) {
+      return NextResponse.json(
+        {
+          error: "Schema conflict",
+          details: `Field(s) already exist on ${table_name}.${jsonb_column}: ${conflicts.join(", ")}`,
+        },
+        { status: 409 },
+      );
+    }
+  }
+
   let schemaResult: ReturnType<typeof applySchemaExtensions>;
   try {
     schemaResult = applySchemaExtensions(table_name, jsonb_column, fields);
@@ -244,12 +260,17 @@ async function handleSchemaExtension(_: NextRequest, validatedData: SchemaExtens
       registerJsonbSchema(originalDefinition);
     }
     if (error instanceof Error) {
+      const status = error.message.includes("Unsafe regex pattern")
+        ? 400
+        : error.message.includes("already exists")
+          ? 409
+          : 500;
       return NextResponse.json(
         {
           error: "Schema extension failed",
           details: error.message,
         },
-        { status: 500 },
+        { status },
       );
     }
     return NextResponse.json(

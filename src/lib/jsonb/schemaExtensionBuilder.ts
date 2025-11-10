@@ -1,3 +1,4 @@
+import safeRegex from "safe-regex";
 import {
   z,
   ZodCatch,
@@ -145,11 +146,10 @@ function applyStringRules(
   }
 
   if (rules.pattern) {
-    try {
-      workingSchema = workingSchema.regex(new RegExp(rules.pattern));
-    } catch {
-      // ignore invalid regex patterns
+    if (!safeRegex(rules.pattern)) {
+      throw new Error("Unsafe regex pattern supplied in schema extension");
     }
+    workingSchema = workingSchema.regex(new RegExp(rules.pattern));
   }
 
   if (rules.enum_values && rules.enum_values.length > 0) {

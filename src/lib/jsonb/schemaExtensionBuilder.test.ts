@@ -52,4 +52,16 @@ describe("schema extension builder", () => {
     const schema = updatedDefinition?.schema as z.ZodObject<ZodRawShape>;
     expect(schema.shape.mentorship_tier).toBeDefined();
   });
+
+  it("rejects unsafe regex patterns", () => {
+    expect(() =>
+      buildZodSchemaForField({
+        field_name: "bad_pattern",
+        field_type: "string",
+        validation_rules: {
+          pattern: "(a+)+$",
+        },
+      }),
+    ).toThrow("Unsafe regex pattern");
+  });
 });
