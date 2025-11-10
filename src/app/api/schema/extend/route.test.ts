@@ -44,8 +44,8 @@ describe("POST /api/schema/extend", () => {
     mockSupabase = createMockSupabase();
     (supabaseAdmin as jest.Mock).mockReturnValue(mockSupabase);
     originalDefinition = getJsonbSchemaDefinition("students", "extra_fields");
-    const module = await import("@/app/api/schema/extend/route");
-    postHandler = module.POST;
+    const routeModule = await import("@/app/api/schema/extend/route");
+    postHandler = routeModule.POST;
   });
 
   afterEach(() => {
