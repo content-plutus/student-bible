@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { OpenAPIRegistry, OpenApiGeneratorV3 } from "@asteasolutions/zod-to-openapi";
 import { z } from "zod";
 import { listRegisteredJsonbSchemas } from "@/lib/jsonb/schemaRegistry";
@@ -29,6 +29,46 @@ import {
   dateOfBirthSchema,
 } from "@/lib/types/validations";
 import { importOptionsSchema } from "@/lib/types/import";
+
+if (process.env.NODE_ENV === "production" && !process.env.INTERNAL_API_KEY) {
+  throw new Error(
+    "INTERNAL_API_KEY is required in production. These endpoints use service-role key and bypass RLS. " +
+      "Set INTERNAL_API_KEY environment variable to secure the /api/openapi endpoint.",
+  );
+}
+
+/**
+ * Validates the API key from the request header.
+ *
+ * SECURITY NOTE: This endpoint exposes the full internal API schema.
+ * INTERNAL_API_KEY is REQUIRED in production (enforced at module load).
+ * In non-production environments, if INTERNAL_API_KEY is not set, a warning
+ * is logged but requests are allowed (for development convenience).
+ */
+function validateApiKey(request: NextRequest): NextResponse | null {
+  const apiKey = process.env.INTERNAL_API_KEY;
+
+  if (!apiKey) {
+    console.warn(
+      "WARNING: INTERNAL_API_KEY not set. API endpoints are unprotected. " +
+        "This is only allowed in non-production environments.",
+    );
+    return null;
+  }
+
+  const requestApiKey = request.headers.get("X-Internal-API-Key");
+
+  if (!requestApiKey || requestApiKey !== apiKey) {
+    return NextResponse.json(
+      {
+        error: "Unauthorized. Valid X-Internal-API-Key header required.",
+      },
+      { status: 401 },
+    );
+  }
+
+  return null;
+}
 
 const validationErrorSchema = z.object({
   field: z.string().describe("The field that failed validation"),
@@ -249,7 +289,12 @@ const transformRequestSchema = z.object({
   rules: z.array(compatibilityRuleSchema).optional(),
 });
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const authError = validateApiKey(req);
+  if (authError) {
+    return authError;
+  }
+
   const registry = new OpenAPIRegistry();
 
   registry.registerComponent("securitySchemes", "ApiKeyAuth", {
