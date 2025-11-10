@@ -684,6 +684,7 @@ export async function GET(req: NextRequest) {
     description: "Synchronize student data with unknown enum detection",
     summary: "Sync student data",
     tags: ["Sync"],
+    security: [{ ApiKeyAuth: [] }],
     request: {
       body: {
         content: {
@@ -748,6 +749,14 @@ export async function GET(req: NextRequest) {
       },
       400: {
         description: "Validation error",
+        content: {
+          "application/json": {
+            schema: { $ref: "#/components/schemas/ErrorResponse" },
+          },
+        },
+      },
+      401: {
+        description: "Unauthorized - Invalid or missing API key",
         content: {
           "application/json": {
             schema: { $ref: "#/components/schemas/ErrorResponse" },
@@ -913,6 +922,7 @@ export async function GET(req: NextRequest) {
     description: "Dynamically add fields to JSONB columns with validation rules",
     summary: "Extend JSONB schema",
     tags: ["Schema"],
+    security: [{ ApiKeyAuth: [] }],
     request: {
       body: {
         content: {
@@ -1005,6 +1015,14 @@ export async function GET(req: NextRequest) {
       },
       400: {
         description: "Validation error",
+        content: {
+          "application/json": {
+            schema: { $ref: "#/components/schemas/ErrorResponse" },
+          },
+        },
+      },
+      401: {
+        description: "Unauthorized - Invalid or missing API key",
         content: {
           "application/json": {
             schema: { $ref: "#/components/schemas/ErrorResponse" },
