@@ -137,7 +137,7 @@
   - [x] 4.15 Create field metadata API for UI field discovery
   - [x] 4.16 Build schema extension API for adding new fields dynamically
   - [x] 4.17 Implement audit logging for all data modifications
-  - [ ] 4.18 Create caching layer with invalidation strategies
+  - [x] 4.18 Create caching layer with invalidation strategies
   - [ ] 4.19 Write integration tests for all API endpoints
   - [ ] 4.20 Reload persisted JSONB schema extensions on startup (rehydrate registry from `jsonb_schema_extensions`)
 

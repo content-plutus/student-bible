@@ -10,6 +10,13 @@ import {
 } from "@/lib/validators/schemaEvolution";
 import { CertificationType } from "@/lib/validators/rules";
 import { buildAuditContext } from "@/lib/utils/auditContext";
+import {
+  cache,
+  buildCacheKey,
+  CACHE_TTLS,
+  CACHE_NAMESPACES,
+  CACHE_PREFIXES,
+} from "@/lib/cache/memoryCache";
 import { z } from "zod";
 
 if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
@@ -27,6 +34,30 @@ if (process.env.NODE_ENV === "production" && !process.env.INTERNAL_API_KEY) {
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const DUPLICATE_CACHE_NAMESPACE = CACHE_NAMESPACES.duplicateDetection;
+const DUPLICATE_CACHE_PREFIX = CACHE_PREFIXES.duplicateDetection;
+type DuplicateResult = Awaited<ReturnType<typeof detectDuplicates>>;
+
+async function getDuplicateResultWithCache(
+  supabaseClient: ReturnType<typeof getSupabaseClient>,
+  payload: Record<string, unknown>,
+  criteria: typeof DEFAULT_MATCHING_CRITERIA,
+  options?: { excludeStudentId?: string | null },
+): Promise<{ result: DuplicateResult; cacheKey: string }> {
+  const cacheKey = buildCacheKey(DUPLICATE_CACHE_NAMESPACE, payload, criteria, options ?? {});
+  let result = cache.get<DuplicateResult>(cacheKey);
+
+  if (!result) {
+    result = await detectDuplicates(supabaseClient, payload, criteria, options);
+    cache.set(cacheKey, result, CACHE_TTLS.duplicateDetection);
+  }
+
+  return { result, cacheKey };
+}
+
+function invalidateDuplicateCache() {
+  cache.invalidateByPrefix(DUPLICATE_CACHE_PREFIX);
+}
 
 /**
  * Validates the API key from the request header.
@@ -155,7 +186,7 @@ export async function POST(request: NextRequest) {
       ? getPreset(options.preset)?.criteria || DEFAULT_MATCHING_CRITERIA
       : options.criteria || DEFAULT_MATCHING_CRITERIA;
 
-    const result = await detectDuplicates(supabase, validatedData, criteria, {
+    const { result } = await getDuplicateResultWithCache(supabase, validatedData, criteria, {
       excludeStudentId: options.excludeStudentId,
     });
 
@@ -212,7 +243,7 @@ export async function PUT(request: NextRequest) {
       ? getPreset(options.preset)?.criteria || DEFAULT_MATCHING_CRITERIA
       : options.criteria || DEFAULT_MATCHING_CRITERIA;
 
-    const result = await detectDuplicates(supabase, validatedSearchData, criteria, {
+    const { result } = await getDuplicateResultWithCache(supabase, validatedSearchData, criteria, {
       excludeStudentId: options.excludeStudentId,
     });
 
@@ -280,7 +311,6 @@ export async function PUT(request: NextRequest) {
         };
 
         const auditContext = buildAuditContext(request, "students:create");
-
         const { data: newStudent, error: insertError } = await supabase.rpc(
           "students_insert_with_audit",
           {
@@ -300,6 +330,8 @@ export async function PUT(request: NextRequest) {
             { status: 500 },
           );
         }
+
+        invalidateDuplicateCache();
 
         return NextResponse.json({
           success: true,
@@ -452,7 +484,7 @@ export async function GET(request: NextRequest) {
       ? getPreset(preset)?.criteria || DEFAULT_MATCHING_CRITERIA
       : DEFAULT_MATCHING_CRITERIA;
 
-    const result = await detectDuplicates(supabase, studentData, criteria);
+    const { result } = await getDuplicateResultWithCache(supabase, studentData, criteria);
 
     if (hasExtraFields && result.matches && result.matches.length > 0) {
       const matchedIds = result.matches.map((match) => match.student.id);
