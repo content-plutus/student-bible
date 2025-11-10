@@ -78,6 +78,24 @@ describe("POST /api/schema/extend", () => {
     expect(payload.success).toBe(true);
     expect(payload.extension.fields).toContain("preferred_language");
     expect(mockSupabase.from).toHaveBeenCalledWith("jsonb_schema_extensions");
+    const fromInvocation = mockSupabase.from.mock.results[0]?.value as {
+      upsert: jest.Mock;
+    };
+    expect(fromInvocation?.upsert).toHaveBeenCalledTimes(1);
+    const [recordsArg, optionsArg] = fromInvocation!.upsert.mock.calls[0];
+    expect(recordsArg).toEqual([
+      expect.objectContaining({
+        table_name: "students",
+        jsonb_column: "extra_fields",
+        field_name: "preferred_language",
+        field_type: "string",
+        required: false,
+        default_value: "en",
+        migration_strategy: "merge",
+        apply_to_existing: true,
+      }),
+    ]);
+    expect(optionsArg).toEqual({ onConflict: "table_name,jsonb_column,field_name" });
     expect(mockSupabase.rpc).toHaveBeenCalledWith("apply_jsonb_schema_extension", {
       target_table: "students",
       jsonb_column: "extra_fields",

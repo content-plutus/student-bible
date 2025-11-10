@@ -1,4 +1,15 @@
-import { z, ZodNumber, ZodObject, ZodRawShape, ZodString, ZodTypeAny } from "zod";
+import {
+  z,
+  ZodCatch,
+  ZodDefault,
+  ZodNullable,
+  ZodNumber,
+  ZodObject,
+  ZodOptional,
+  ZodRawShape,
+  ZodString,
+  ZodTypeAny,
+} from "zod";
 import { emailSchema, phoneNumberSchema } from "@/lib/validators/studentValidator";
 import {
   certificationTypeSchema,
@@ -50,13 +61,28 @@ export interface ApplySchemaExtensionResult {
   addedFields: string[];
 }
 
+function normalizeRequiredSchema(schema: ZodTypeAny, required: boolean) {
+  if (!required) {
+    return schema.optional().nullable();
+  }
+
+  let working = schema;
+  while (
+    working instanceof ZodOptional ||
+    working instanceof ZodNullable ||
+    working instanceof ZodDefault ||
+    working instanceof ZodCatch
+  ) {
+    working = working.unwrap();
+  }
+  return working;
+}
+
 export function buildZodSchemaForField(definition: SchemaExtensionFieldDefinition): ZodTypeAny {
   const rules = definition.validation_rules;
   let schema = getBaseSchema(definition.field_type, rules);
 
-  if (!definition.required) {
-    schema = schema.optional().nullable();
-  }
+  schema = normalizeRequiredSchema(schema, !!definition.required);
 
   if (definition.default_value !== undefined) {
     schema = schema.default(definition.default_value as never);

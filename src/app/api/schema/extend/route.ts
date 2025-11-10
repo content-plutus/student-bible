@@ -6,6 +6,7 @@ import {
   applySchemaExtensions,
   type SchemaExtensionFieldDefinition,
 } from "@/lib/jsonb/schemaExtensionBuilder";
+import { getJsonbSchemaDefinition, registerJsonbSchema } from "@/lib/jsonb/schemaRegistry";
 
 if (process.env.NODE_ENV === "production" && !process.env.INTERNAL_API_KEY) {
   throw new Error(
@@ -176,8 +177,10 @@ async function handleSchemaExtension(_: NextRequest, validatedData: SchemaExtens
     );
   }
 
+  const originalDefinition = getJsonbSchemaDefinition(table_name, jsonb_column);
+  let schemaResult: ReturnType<typeof applySchemaExtensions>;
   try {
-    const schemaResult = applySchemaExtensions(table_name, jsonb_column, fields);
+    schemaResult = applySchemaExtensions(table_name, jsonb_column, fields);
     const supabase = supabaseAdmin();
     const extensionRecords = fields.map((field) => ({
       table_name,
@@ -237,6 +240,9 @@ async function handleSchemaExtension(_: NextRequest, validatedData: SchemaExtens
       },
     });
   } catch (error) {
+    if (originalDefinition) {
+      registerJsonbSchema(originalDefinition);
+    }
     if (error instanceof Error) {
       return NextResponse.json(
         {
