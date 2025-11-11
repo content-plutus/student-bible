@@ -1,65 +1,113 @@
-import Image from "next/image";
+import { AppShell, ContentSurface } from "@/components/layout";
+
+const readinessHighlights = [
+  {
+    title: "Phones first",
+    detail:
+      "Stacked sections, sticky header, and chip scroller keep core actions reachable on <640px screens.",
+  },
+  {
+    title: "Tablet comfort",
+    detail:
+      "Two-column grid snaps in at the md breakpoint so search + data widgets breathe without horizontal scroll.",
+  },
+  {
+    title: "Desktop lanes",
+    detail:
+      "XL layout introduces a right-hand insights rail the data grid, timeline, and exports can tap into.",
+  },
+];
+
+const checklist = [
+  { label: "Semantic landmarks", status: "header · nav · main · aside", emphasis: true },
+  { label: "Max width control", status: "2xl container keeps lines readable", emphasis: false },
+  { label: "Theming", status: "neutral surfaces + sky accent for actions", emphasis: false },
+  { label: "Future hooks", status: "Dedicated zones for search, filters, tables", emphasis: true },
+];
 
 export default function Home() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+    <AppShell>
+      <div className="flex flex-col gap-6">
+        <ContentSurface
+          kicker="Task 5.1"
+          title="Responsive layout foundation"
+          description="Establishes the adaptive shell that the smart search, dynamic table, and journey widgets will live inside."
+        >
+          <div className="grid gap-4 lg:grid-cols-3">
+            {readinessHighlights.map((item) => (
+              <article
+                key={item.title}
+                className="rounded-2xl border border-zinc-100 bg-zinc-50/70 p-4 shadow-inner"
+              >
+                <p className="text-xs font-semibold uppercase tracking-[0.25em] text-zinc-400">
+                  {item.title}
+                </p>
+                <p className="mt-2 text-sm text-zinc-700">{item.detail}</p>
+              </article>
+            ))}
+          </div>
+        </ContentSurface>
+
+        <ContentSurface
+          title="Breakpoint checklist"
+          description="Confirms that the same layout primitives gracefully scale from phones to widescreen analyst monitors."
+        >
+          <ul className="divide-y divide-zinc-100">
+            {checklist.map((item) => (
+              <li
+                key={item.label}
+                className="flex flex-col gap-1 py-3 sm:flex-row sm:items-center sm:justify-between"
+              >
+                <span className="text-sm font-medium text-zinc-700">{item.label}</span>
+                <span className="text-xs uppercase tracking-wide text-zinc-500">
+                  {item.emphasis ? (
+                    <strong className="font-semibold text-sky-600">{item.status}</strong>
+                  ) : (
+                    item.status
+                  )}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </ContentSurface>
+
+        <ContentSurface
+          title="Next UI hooks"
+          description="Slots dedicated in the layout so upcoming tasks can focus purely on their domain logic."
+        >
+          <div className="grid gap-4 md:grid-cols-2">
+            <article className="rounded-2xl border border-dashed border-zinc-200 bg-white/60 p-4">
+              <p className="text-xs uppercase tracking-[0.3em] text-zinc-400">Search rail</p>
+              <p className="mt-2 text-sm text-zinc-700">
+                Context bar reserves space for the phone autocomplete, quick filters, and status
+                badges described in tasks 5.2 and 5.6.
+              </p>
+            </article>
+            <article className="rounded-2xl border border-dashed border-zinc-200 bg-white/60 p-4">
+              <p className="text-xs uppercase tracking-[0.3em] text-zinc-400">Data grid zone</p>
+              <p className="mt-2 text-sm text-zinc-700">
+                Main column stretches with minmax logic so the responsive table, expandable rows,
+                and tabbed profile views have predictable width.
+              </p>
+            </article>
+            <article className="rounded-2xl border border-dashed border-zinc-200 bg-white/60 p-4">
+              <p className="text-xs uppercase tracking-[0.3em] text-zinc-400">Insights lane</p>
+              <p className="mt-2 text-sm text-zinc-700">
+                Right rail (xl breakpoint) is wired for the journey timeline, export dialog, and
+                other tertiary widgets without crowding the core table.
+              </p>
+            </article>
+            <article className="rounded-2xl border border-dashed border-zinc-200 bg-white/60 p-4">
+              <p className="text-xs uppercase tracking-[0.3em] text-zinc-400">Footer status</p>
+              <p className="mt-2 text-sm text-zinc-700">
+                Compact footer surfaces sync + latency info on mobile where the insights panel is
+                intentionally hidden.
+              </p>
+            </article>
+          </div>
+        </ContentSurface>
+      </div>
+    </AppShell>
   );
 }
