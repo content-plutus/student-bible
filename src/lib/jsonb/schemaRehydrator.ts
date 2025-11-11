@@ -2,6 +2,7 @@ import { ZodObject, type ZodRawShape, type ZodTypeAny } from "zod";
 import {
   getJsonbSchemaDefinition,
   registerJsonbSchema,
+  updateSchemaBinding,
   type JsonbSchemaDefinition,
 } from "@/lib/jsonb/schemaRegistry";
 import {
@@ -210,11 +211,13 @@ function applyPersistedExtensions(group: SchemaExtensionGroup) {
     return;
   }
 
-  Object.assign(definition.schema.shape, additionalShape);
+  const extendedSchema = definition.schema.extend(additionalShape);
   registerJsonbSchema({
     ...definition,
+    schema: extendedSchema,
     version: Math.max(group.version, definition.version),
   });
+  updateSchemaBinding(group.table, group.column, extendedSchema);
 }
 
 function normalizeFieldType(value: string | null | undefined): SchemaExtensionFieldType | null {

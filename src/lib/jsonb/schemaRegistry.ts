@@ -173,11 +173,24 @@ class JsonbSchemaRegistry {
 }
 
 export const jsonbSchemaRegistry = new JsonbSchemaRegistry();
+const schemaBindingUpdaters = new Map<JsonbSchemaKey, (schema: ZodTypeAny) => void>();
+
+function setSchemaBindingUpdater(
+  table: string,
+  column: string,
+  updater: (schema: ZodTypeAny) => void,
+) {
+  schemaBindingUpdaters.set(`${table}.${column}`, updater);
+}
+
+export function updateSchemaBinding(table: string, column: string, schema: ZodTypeAny) {
+  schemaBindingUpdaters.get(`${table}.${column}`)?.(schema);
+}
 
 const leadSourceSchema = z.enum(["event", "referral", "organic", "paid_ads", "partner", "other"]);
 const preferredChannelSchema = z.enum(["phone", "email", "whatsapp"]);
 
-const studentExtraFieldsSchema = batchCodePartialSchema
+let studentExtraFieldsSchema = batchCodePartialSchema
   .extend({
     guardian_email: emailSchema.optional().nullable(),
     alternate_phone: phoneNumberSchema.optional().nullable(),
@@ -196,7 +209,7 @@ const studentExtraFieldsSchema = batchCodePartialSchema
   })
   .catchall(z.unknown());
 
-const addressAdditionalDataSchema = z
+let addressAdditionalDataSchema = z
   .object({
     latitude: z.number().min(-90).max(90).optional().nullable(),
     longitude: z.number().min(-180).max(180).optional().nullable(),
@@ -218,7 +231,7 @@ const addressAdditionalDataSchema = z
   })
   .catchall(z.unknown());
 
-const studentCertificationCustomFieldsSchema = z
+let studentCertificationCustomFieldsSchema = z
   .object({
     mentor_id: z.string().uuid().optional().nullable(),
     mentor_name: z.string().trim().max(120).optional().nullable(),
@@ -247,7 +260,7 @@ const studentCertificationCustomFieldsSchema = z
   })
   .catchall(z.unknown());
 
-const certificationMetadataSchema = z
+let certificationMetadataSchema = z
   .object({
     exam_sequence: z.array(z.string().trim().min(1).max(120)).max(20).optional(),
     awarding_body: z.string().trim().max(120).optional().nullable(),
@@ -258,7 +271,7 @@ const certificationMetadataSchema = z
   })
   .catchall(z.unknown());
 
-const academicInfoExtraFieldsSchema = z
+let academicInfoExtraFieldsSchema = z
   .object({
     board: z.string().trim().max(120).optional().nullable(),
     medium_of_instruction: z.string().trim().max(120).optional().nullable(),
@@ -272,7 +285,7 @@ const academicInfoExtraFieldsSchema = z
   })
   .catchall(z.unknown());
 
-const examAttemptMetadataSchema = z
+let examAttemptMetadataSchema = z
   .object({
     attempt_type: z.enum(["mock", "official", "retest"]).optional().nullable(),
     location: z.string().trim().max(120).optional().nullable(),
@@ -284,7 +297,7 @@ const examAttemptMetadataSchema = z
   })
   .catchall(z.unknown());
 
-const attendanceExtraMetricsSchema = z
+let attendanceExtraMetricsSchema = z
   .object({
     attention_score: z.number().min(0).max(100).optional().nullable(),
     participation_score: z.number().min(0).max(100).optional().nullable(),
@@ -296,7 +309,7 @@ const attendanceExtraMetricsSchema = z
   })
   .catchall(z.unknown());
 
-const testScoreAnalysisSchema = z
+let testScoreAnalysisSchema = z
   .object({
     topic_scores: z.record(z.string(), z.number()).optional().nullable(),
     strengths: z.array(z.string().trim().min(1).max(120)).max(20).optional(),
@@ -314,7 +327,7 @@ const testScoreAnalysisSchema = z
   })
   .catchall(z.unknown());
 
-const formSubmissionRawDataSchema = z.record(z.string(), z.unknown());
+let formSubmissionRawDataSchema = z.record(z.string(), z.unknown());
 
 jsonbSchemaRegistry.register({
   table: "students",
@@ -323,6 +336,9 @@ jsonbSchemaRegistry.register({
   schema: studentExtraFieldsSchema,
   description: "Flexible student profile attributes captured outside of the core schema.",
   allowUnknownKeys: true,
+});
+setSchemaBindingUpdater("students", "extra_fields", (schema) => {
+  studentExtraFieldsSchema = schema as typeof studentExtraFieldsSchema;
 });
 
 registerCompatibilityRule("students", "extra_fields", [
@@ -360,6 +376,9 @@ jsonbSchemaRegistry.register({
   description: "Supplementary address metadata such as delivery preferences and geocodes.",
   allowUnknownKeys: true,
 });
+setSchemaBindingUpdater("student_addresses", "additional_data", (schema) => {
+  addressAdditionalDataSchema = schema as typeof addressAdditionalDataSchema;
+});
 
 jsonbSchemaRegistry.register({
   table: "student_certifications",
@@ -368,6 +387,9 @@ jsonbSchemaRegistry.register({
   schema: studentCertificationCustomFieldsSchema,
   description: "Program-specific metadata for student certification enrolments.",
   allowUnknownKeys: true,
+});
+setSchemaBindingUpdater("student_certifications", "custom_fields", (schema) => {
+  studentCertificationCustomFieldsSchema = schema as typeof studentCertificationCustomFieldsSchema;
 });
 
 registerCompatibilityRule("student_certifications", "custom_fields", [
@@ -392,6 +414,9 @@ jsonbSchemaRegistry.register({
   description: "Certification-level metadata such as exam sequencing and support details.",
   allowUnknownKeys: true,
 });
+setSchemaBindingUpdater("certifications", "metadata", (schema) => {
+  certificationMetadataSchema = schema as typeof certificationMetadataSchema;
+});
 
 jsonbSchemaRegistry.register({
   table: "academic_info",
@@ -400,6 +425,9 @@ jsonbSchemaRegistry.register({
   schema: academicInfoExtraFieldsSchema,
   description: "Academic background extensions and unstructured achievements.",
   allowUnknownKeys: true,
+});
+setSchemaBindingUpdater("academic_info", "extra_fields", (schema) => {
+  academicInfoExtraFieldsSchema = schema as typeof academicInfoExtraFieldsSchema;
 });
 
 jsonbSchemaRegistry.register({
@@ -410,6 +438,9 @@ jsonbSchemaRegistry.register({
   description: "Per-attempt metadata including break-downs and evaluator comments.",
   allowUnknownKeys: true,
 });
+setSchemaBindingUpdater("exam_attempts", "metadata", (schema) => {
+  examAttemptMetadataSchema = schema as typeof examAttemptMetadataSchema;
+});
 
 jsonbSchemaRegistry.register({
   table: "attendance_records",
@@ -418,6 +449,9 @@ jsonbSchemaRegistry.register({
   schema: attendanceExtraMetricsSchema,
   description: "Engagement telemetry and derived attendance metrics.",
   allowUnknownKeys: true,
+});
+setSchemaBindingUpdater("attendance_records", "extra_metrics", (schema) => {
+  attendanceExtraMetricsSchema = schema as typeof attendanceExtraMetricsSchema;
 });
 
 jsonbSchemaRegistry.register({
@@ -428,6 +462,9 @@ jsonbSchemaRegistry.register({
   description: "Analytical breakdown for assessments including strengths and improvements.",
   allowUnknownKeys: true,
 });
+setSchemaBindingUpdater("test_scores", "analysis_data", (schema) => {
+  testScoreAnalysisSchema = schema as typeof testScoreAnalysisSchema;
+});
 
 jsonbSchemaRegistry.register({
   table: "form_submissions",
@@ -436,6 +473,9 @@ jsonbSchemaRegistry.register({
   schema: formSubmissionRawDataSchema,
   description: "Raw Google Form payloads stored verbatim for reconciliation.",
   allowUnknownKeys: true,
+});
+setSchemaBindingUpdater("form_submissions", "raw_data", (schema) => {
+  formSubmissionRawDataSchema = schema as typeof formSubmissionRawDataSchema;
 });
 
 export {

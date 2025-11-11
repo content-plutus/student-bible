@@ -23,6 +23,7 @@ import {
 import {
   getJsonbSchemaDefinition,
   registerJsonbSchema,
+  updateSchemaBinding,
   type JsonbSchemaDefinition,
 } from "@/lib/jsonb/schemaRegistry";
 
@@ -214,15 +215,16 @@ export function applySchemaExtensions(
     newShape[field.field_name] = buildZodSchemaForField(field);
   }
 
-  Object.assign(definition.schema.shape, newShape);
+  const extendedSchema = definition.schema.extend(newShape);
 
   const updatedDefinition: JsonbSchemaDefinition = {
     ...definition,
-    schema: definition.schema,
+    schema: extendedSchema,
     version: definition.version + 1,
   };
 
   registerJsonbSchema(updatedDefinition);
+  updateSchemaBinding(table, column, extendedSchema);
 
   return {
     version: updatedDefinition.version,
