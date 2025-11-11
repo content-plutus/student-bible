@@ -14,9 +14,9 @@ export function FooterStatus({ className }: FooterStatusProps) {
     >
       <p className="text-xs uppercase tracking-[0.3em] text-zinc-400">Status</p>
       <p className="mt-2">
-        Layout grid, navigation rail, and insights lane are ready for the upcoming smart search and data grid workstreams.
+        Layout grid, navigation rail, and insights lane are ready for the upcoming smart search and
+        data grid workstreams.
       </p>
     </footer>
   );
 }
-

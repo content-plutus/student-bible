@@ -14,8 +14,12 @@ export function PrimaryHeader({ className }: PrimaryHeaderProps) {
     >
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.3em] text-sky-600">Student Bible</p>
-          <h1 className="mt-2 text-2xl font-semibold text-zinc-900">Centralized intelligence hub</h1>
+          <p className="text-xs font-semibold uppercase tracking-[0.3em] text-sky-600">
+            Student Bible
+          </p>
+          <h1 className="mt-2 text-2xl font-semibold text-zinc-900">
+            Centralized intelligence hub
+          </h1>
           <p className="mt-1 text-sm text-zinc-600">
             Responsive shell for enrollment, mentorship, and exam workflows.
           </p>
@@ -45,4 +49,3 @@ export function PrimaryHeader({ className }: PrimaryHeaderProps) {
     </header>
   );
 }
-

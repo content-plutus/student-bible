@@ -11,7 +11,14 @@ type ContentSurfaceProps = {
   className?: string;
 };
 
-export function ContentSurface({ title, kicker, description, children, actions, className }: ContentSurfaceProps) {
+export function ContentSurface({
+  title,
+  kicker,
+  description,
+  children,
+  actions,
+  className,
+}: ContentSurfaceProps) {
   return (
     <section
       className={cn(
@@ -22,7 +29,9 @@ export function ContentSurface({ title, kicker, description, children, actions, 
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           {kicker ? (
-            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-sky-600">{kicker}</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-sky-600">
+              {kicker}
+            </p>
           ) : null}
           <h2 className="mt-1 text-xl font-semibold text-zinc-900">{title}</h2>
           {description ? <p className="mt-1 text-sm text-zinc-600">{description}</p> : null}
@@ -33,4 +42,3 @@ export function ContentSurface({ title, kicker, description, children, actions, 
     </section>
   );
 }
-

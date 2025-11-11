@@ -41,7 +41,9 @@ export function ContextBar({ className }: ContextBarProps) {
             <span className="font-medium text-zinc-700">Phone lookup</span>
             <span className="ml-2 text-xs text-zinc-400">Task 5.2 wires this up</span>
           </div>
-          <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-zinc-500">Coming soon</span>
+          <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-zinc-500">
+            Coming soon
+          </span>
         </div>
         <div className="flex gap-2 overflow-x-auto" role="list">
           {contextItems.map((item) => (
@@ -50,8 +52,17 @@ export function ContextBar({ className }: ContextBarProps) {
               role="listitem"
               className="min-w-fit rounded-2xl border border-zinc-200 bg-white px-3 py-2 text-xs font-medium text-zinc-500 shadow-sm"
             >
-              <span className="block text-[0.65rem] uppercase tracking-widest text-zinc-400">{item.detail}</span>
-              <span className={cn("mt-1 inline-flex rounded-full px-2 py-0.5 text-[0.68rem]", item.accent)}>{item.label}</span>
+              <span className="block text-[0.65rem] uppercase tracking-widest text-zinc-400">
+                {item.detail}
+              </span>
+              <span
+                className={cn(
+                  "mt-1 inline-flex rounded-full px-2 py-0.5 text-[0.68rem]",
+                  item.accent,
+                )}
+              >
+                {item.label}
+              </span>
             </div>
           ))}
         </div>
@@ -59,4 +70,3 @@ export function ContextBar({ className }: ContextBarProps) {
     </section>
   );
 }
-
