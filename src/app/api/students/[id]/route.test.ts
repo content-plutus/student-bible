@@ -19,6 +19,13 @@ jest.mock("@/lib/types/student", () => ({
   },
 }));
 
+jest.mock("@/lib/utils/auditContext", () => ({
+  buildAuditContext: jest.fn(() => ({
+    actor: "test-actor",
+    requestId: "test-request-id",
+  })),
+}));
+
 const { createClient } = jest.requireMock("@supabase/supabase-js") as {
   createClient: jest.Mock;
 };
@@ -159,12 +166,17 @@ describe("/api/students/[id]", () => {
     expect(response.status).toBe(200);
     expect(payload.success).toBe(true);
     expect(payload.data.student.id).toBe("student-123");
-    expect(mockSupabase.rpc).toHaveBeenCalledWith("students_update_profile", {
-      student_id: "student-123",
-      core_patch: { phone_number: "9876543210" },
-      extra_patch: { lead_source: "Referral" },
-      strip_nulls: true,
-    });
+    expect(mockSupabase.rpc).toHaveBeenCalledWith(
+      "students_update_profile",
+      expect.objectContaining({
+        student_id: "student-123",
+        core_patch: { phone_number: "9876543210" },
+        extra_patch: { lead_source: "Referral" },
+        strip_nulls: true,
+        p_actor: "test-actor",
+        p_request_id: "test-request-id",
+      }),
+    );
   });
 
   it("returns validation errors from PATCH requests", async () => {

@@ -35,6 +35,13 @@ jest.mock("@/lib/types/student", () => ({
   },
 }));
 
+jest.mock("@/lib/utils/auditContext", () => ({
+  buildAuditContext: jest.fn(() => ({
+    actor: "test-actor",
+    requestId: "test-request-id",
+  })),
+}));
+
 const { createClient } = jest.requireMock("@supabase/supabase-js") as {
   createClient: jest.Mock;
 };
@@ -116,12 +123,23 @@ const createMockSupabase = () => {
     select,
   }));
 
+  const rpc = jest.fn().mockResolvedValue({
+    data: {
+      id: "student-123",
+      phone_number: "9876543210",
+      email: "student@example.com",
+      extra_fields: { lead_source: "Referral", certification_type: "ACCA" },
+    },
+    error: null,
+  });
+
   return {
     from,
     insert,
     select,
     insertSingle,
     contains,
+    rpc,
   };
 };
 
@@ -133,10 +151,13 @@ const mockDuplicateResult = {
 };
 
 describe("/api/students", () => {
+  let mockSupabase: ReturnType<typeof createMockSupabase>;
+
   beforeEach(() => {
     process.env.INTERNAL_API_KEY = API_KEY;
     jest.clearAllMocks();
-    createClient.mockReturnValue(createMockSupabase());
+    mockSupabase = createMockSupabase();
+    createClient.mockReturnValue(mockSupabase as never);
   });
 
   afterEach(() => {
@@ -227,6 +248,14 @@ describe("/api/students", () => {
     expect(payload.success).toBe(true);
     expect(payload.created).toBe(true);
     expect(payload.student.id).toBe("student-123");
+    expect(mockSupabase.rpc).toHaveBeenCalledWith("students_insert_with_audit", {
+      payload: expect.objectContaining({
+        phone_number: "9876543210",
+        email: "student@example.com",
+      }),
+      p_actor: "test-actor",
+      p_request_id: "test-request-id",
+    });
     expect(studentInsertSchema.parse).toHaveBeenCalled();
     expect(validateJsonbPayload).toHaveBeenCalled();
     expect(validateBatchCodeFromExtraFields).toHaveBeenCalled();
