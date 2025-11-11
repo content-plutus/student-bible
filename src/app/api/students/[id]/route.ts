@@ -10,6 +10,7 @@ import {
   ErrorCode,
 } from "@/lib/errors";
 import { buildAuditContext } from "@/lib/utils/auditContext";
+import { cache, CACHE_PREFIXES } from "@/lib/cache/memoryCache";
 
 if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
   throw new Error(
@@ -121,11 +122,10 @@ export const PATCH = withErrorHandling(
 
     const supabase = getSupabaseClient();
     const { id } = await params;
+    const auditContext = buildAuditContext(request, "students:update");
 
     const { full_name, extra_fields, ...coreFields } = validatedData;
     void full_name;
-
-    const auditContext = buildAuditContext(request, "students:update");
 
     const updatedStudent = await handleDatabaseOperation(
       async () => {
@@ -174,6 +174,8 @@ export const PATCH = withErrorHandling(
       ...updatedCoreFields,
       ...(updatedExtraFields || {}),
     };
+
+    cache.invalidateByPrefix(CACHE_PREFIXES.duplicateDetection);
 
     return createSuccessResponse({ student: mergedStudent });
   },

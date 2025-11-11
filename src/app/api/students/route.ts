@@ -280,7 +280,6 @@ export async function PUT(request: NextRequest) {
         };
 
         const auditContext = buildAuditContext(request, "students:create");
-
         const { data: newStudent, error: insertError } = await supabase.rpc(
           "students_insert_with_audit",
           {
