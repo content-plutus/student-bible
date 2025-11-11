@@ -197,10 +197,9 @@ function applyPersistedExtensions(group: SchemaExtensionGroup) {
     return;
   }
 
-  const updatedSchema = definition.schema.extend(additionalShape);
+  Object.assign(definition.schema.shape, additionalShape);
   registerJsonbSchema({
     ...definition,
-    schema: updatedSchema,
     version: Math.max(group.version, definition.version),
   });
 }

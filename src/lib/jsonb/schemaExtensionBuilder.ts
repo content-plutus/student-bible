@@ -214,11 +214,12 @@ export function applySchemaExtensions(
     newShape[field.field_name] = buildZodSchemaForField(field);
   }
 
-  const updatedSchema = definition.schema.extend(newShape);
+  Object.assign(definition.schema.shape, newShape);
+
   const updatedDefinition: JsonbSchemaDefinition = {
     ...definition,
+    schema: definition.schema,
     version: definition.version + 1,
-    schema: updatedSchema,
   };
 
   registerJsonbSchema(updatedDefinition);

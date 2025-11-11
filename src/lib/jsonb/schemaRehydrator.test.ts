@@ -7,7 +7,11 @@ process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = "anon-key";
 process.env.SUPABASE_SERVICE_ROLE_KEY = "test-service-role";
 
 import { describe, expect, it, beforeEach, afterEach, jest } from "@jest/globals";
-import { getJsonbSchemaDefinition, registerJsonbSchema } from "@/lib/jsonb/schemaRegistry";
+import {
+  getJsonbSchemaDefinition,
+  registerJsonbSchema,
+  studentExtraFieldsSchema,
+} from "@/lib/jsonb/schemaRegistry";
 import {
   ensureJsonbSchemaExtensionsLoaded,
   resetJsonbSchemaRehydrationStateForTests,
@@ -28,6 +32,7 @@ const { supabaseAdmin } = jest.requireMock("@/lib/supabase/server") as {
 describe("schema rehydrator", () => {
   const originalEnv = { ...process.env };
   let originalDefinition: ReturnType<typeof getJsonbSchemaDefinition> | undefined;
+  let baseFieldKeys: Set<string>;
   let selectMock: jest.Mock;
   let firstOrderMock: jest.Mock;
   let secondOrderMock: jest.Mock;
@@ -38,6 +43,7 @@ describe("schema rehydrator", () => {
     process.env.JSONB_SCHEMA_REHYDRATE_IN_TESTS = "true";
 
     originalDefinition = getJsonbSchemaDefinition("students", "extra_fields");
+    baseFieldKeys = new Set(Object.keys(studentExtraFieldsSchema.shape));
     secondOrderMock = jest.fn();
     firstOrderMock = jest.fn().mockReturnValue({
       order: secondOrderMock,
@@ -54,9 +60,7 @@ describe("schema rehydrator", () => {
   });
 
   afterEach(() => {
-    if (originalDefinition) {
-      registerJsonbSchema(originalDefinition);
-    }
+    restoreBaseStudentSchema();
     resetJsonbSchemaRehydrationStateForTests();
     process.env = { ...originalEnv };
     jest.clearAllMocks();
@@ -85,6 +89,7 @@ describe("schema rehydrator", () => {
 
     const updatedDefinition = getJsonbSchemaDefinition("students", "extra_fields");
     expect(updatedDefinition?.schema.shape).toHaveProperty("rehydrated_field");
+    expect(studentExtraFieldsSchema.shape).toHaveProperty("rehydrated_field");
     expect(updatedDefinition?.version).toBeGreaterThanOrEqual(3);
   });
 
@@ -111,4 +116,25 @@ describe("schema rehydrator", () => {
 
     await expect(ensureJsonbSchemaExtensionsLoaded()).rejects.toThrow("database unavailable");
   });
+  function restoreBaseStudentSchema() {
+    const definition = getJsonbSchemaDefinition("students", "extra_fields");
+    if (!definition) {
+      return;
+    }
+
+    const shape = definition.schema.shape as Record<string, unknown>;
+    for (const key of Object.keys(shape)) {
+      if (!baseFieldKeys.has(key)) {
+        delete shape[key];
+      }
+    }
+
+    if (originalDefinition) {
+      registerJsonbSchema({
+        ...definition,
+        schema: definition.schema,
+        version: originalDefinition.version,
+      });
+    }
+  }
 });
