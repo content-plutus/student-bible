@@ -66,6 +66,19 @@ class JsonbSchemaRegistry {
     return Array.from(this.schemas.values());
   }
 
+  public compareAndSet<TSchema extends ZodTypeAny>(
+    definition: JsonbSchemaDefinition<TSchema>,
+    expectedVersion: number,
+  ): boolean {
+    const key = this.getKey(definition.table, definition.column);
+    const current = this.schemas.get(key);
+    if (!current || current.version !== expectedVersion) {
+      return false;
+    }
+    this.schemas.set(key, definition);
+    return true;
+  }
+
   public validate<TSchema extends ZodTypeAny>(
     table: string,
     column: string,
@@ -494,6 +507,18 @@ export const registerJsonbSchema = <TSchema extends ZodTypeAny>(
   definition: JsonbSchemaDefinition<TSchema>,
 ) => {
   jsonbSchemaRegistry.register(definition);
+  updateSchemaBinding(definition.table, definition.column, definition.schema);
+};
+
+export const replaceJsonbSchemaDefinition = <TSchema extends ZodTypeAny>(
+  definition: JsonbSchemaDefinition<TSchema>,
+  expectedVersion: number,
+): boolean => {
+  const replaced = jsonbSchemaRegistry.compareAndSet(definition, expectedVersion);
+  if (replaced) {
+    updateSchemaBinding(definition.table, definition.column, definition.schema);
+  }
+  return replaced;
 };
 
 export const validateJsonbPayload = <TSchema extends ZodTypeAny>(

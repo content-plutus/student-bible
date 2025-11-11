@@ -22,7 +22,7 @@ import {
 } from "@/lib/types/validations";
 import {
   getJsonbSchemaDefinition,
-  registerJsonbSchema,
+  replaceJsonbSchemaDefinition,
   updateSchemaBinding,
   type JsonbSchemaDefinition,
 } from "@/lib/jsonb/schemaRegistry";
@@ -188,46 +188,70 @@ function applyNumericRules(
   return workingSchema;
 }
 
+const MAX_SCHEMA_EXTENSION_RETRIES = 5;
+
+export const schemaRegistryAdapter = {
+  replaceDefinition: replaceJsonbSchemaDefinition,
+};
+
 export function applySchemaExtensions(
   table: string,
   column: string,
   fields: SchemaExtensionFieldDefinition[],
 ): ApplySchemaExtensionResult {
-  const definition = getJsonbSchemaDefinition(table, column) as
-    | JsonbSchemaDefinition<ZodObject<ZodRawShape>>
-    | undefined;
+  for (let attempt = 0; attempt < MAX_SCHEMA_EXTENSION_RETRIES; attempt++) {
+    const definition = getJsonbSchemaDefinition(table, column) as
+      | JsonbSchemaDefinition<ZodObject<ZodRawShape>>
+      | undefined;
 
-  if (!definition) {
-    throw new Error(`No JSONB schema registered for ${table}.${column}`);
-  }
-
-  if (!(definition.schema instanceof ZodObject)) {
-    throw new Error(`JSONB schema for ${table}.${column} is not an object schema`);
-  }
-
-  const shape = definition.schema.shape;
-  const newShape: Record<string, ZodTypeAny> = {};
-
-  for (const field of fields) {
-    if (field.field_name in shape || field.field_name in newShape) {
-      throw new Error(`Field '${field.field_name}' already exists on ${table}.${column}`);
+    if (!definition) {
+      throw new Error(`No JSONB schema registered for ${table}.${column}`);
     }
-    newShape[field.field_name] = buildZodSchemaForField(field);
+
+    if (!(definition.schema instanceof ZodObject)) {
+      throw new Error(`JSONB schema for ${table}.${column} is not an object schema`);
+    }
+
+    const shape = definition.schema.shape;
+    const conflicts = fields.filter((field) => field.field_name in shape);
+    if (conflicts.length > 0) {
+      throw new Error(
+        `Field(s) already exist on ${table}.${column}: ${conflicts.map((f) => f.field_name).join(", ")}`,
+      );
+    }
+
+    const newShape: Record<string, ZodTypeAny> = {};
+    for (const field of fields) {
+      if (field.field_name in newShape) {
+        continue;
+      }
+      newShape[field.field_name] = buildZodSchemaForField(field);
+    }
+
+    const shapeKeys = Object.keys(newShape);
+    if (shapeKeys.length === 0) {
+      return {
+        version: definition.version,
+        addedFields: [],
+      };
+    }
+
+    const extendedSchema = definition.schema.extend(newShape);
+
+    const updatedDefinition: JsonbSchemaDefinition = {
+      ...definition,
+      schema: extendedSchema,
+      version: definition.version + 1,
+    };
+
+    if (schemaRegistryAdapter.replaceDefinition(updatedDefinition, definition.version)) {
+      updateSchemaBinding(table, column, extendedSchema);
+      return {
+        version: updatedDefinition.version,
+        addedFields: shapeKeys,
+      };
+    }
   }
 
-  const extendedSchema = definition.schema.extend(newShape);
-
-  const updatedDefinition: JsonbSchemaDefinition = {
-    ...definition,
-    schema: extendedSchema,
-    version: definition.version + 1,
-  };
-
-  registerJsonbSchema(updatedDefinition);
-  updateSchemaBinding(table, column, extendedSchema);
-
-  return {
-    version: updatedDefinition.version,
-    addedFields: Object.keys(newShape),
-  };
+  throw new Error("Schema is being modified concurrently. Please retry.");
 }

@@ -1,8 +1,7 @@
 import { ZodObject, type ZodRawShape, type ZodTypeAny } from "zod";
 import {
   getJsonbSchemaDefinition,
-  registerJsonbSchema,
-  updateSchemaBinding,
+  replaceJsonbSchemaDefinition,
   type JsonbSchemaDefinition,
 } from "@/lib/jsonb/schemaRegistry";
 import {
@@ -181,43 +180,54 @@ function groupExtensions(rows: SchemaExtensionRow[]) {
   return grouped;
 }
 
+const MAX_SCHEMA_REHYDRATE_RETRIES = 5;
+
 function applyPersistedExtensions(group: SchemaExtensionGroup) {
-  const definition = getJsonbSchemaDefinition(group.table, group.column) as
-    | JsonbSchemaDefinition<ZodObject<ZodRawShape>>
-    | undefined;
+  for (let attempt = 0; attempt < MAX_SCHEMA_REHYDRATE_RETRIES; attempt++) {
+    const definition = getJsonbSchemaDefinition(group.table, group.column) as
+      | JsonbSchemaDefinition<ZodObject<ZodRawShape>>
+      | undefined;
 
-  if (!definition) {
-    console.warn(
-      `No base JSONB schema registered for ${group.table}.${group.column}; skipping persisted extensions.`,
-    );
-    return;
-  }
-
-  if (!(definition.schema instanceof ZodObject)) {
-    return;
-  }
-
-  const additionalShape: Record<string, ZodTypeAny> = {};
-  for (const field of group.fields) {
-    if (field.field_name in definition.schema.shape || field.field_name in additionalShape) {
-      continue;
+    if (!definition) {
+      console.warn(
+        `No base JSONB schema registered for ${group.table}.${group.column}; skipping persisted extensions.`,
+      );
+      return;
     }
-    const { version: _version, ...fieldDefinition } = field;
-    additionalShape[field.field_name] = buildZodSchemaForField(fieldDefinition);
+
+    if (!(definition.schema instanceof ZodObject)) {
+      return;
+    }
+
+    const additionalShape: Record<string, ZodTypeAny> = {};
+    for (const field of group.fields) {
+      if (field.field_name in definition.schema.shape || field.field_name in additionalShape) {
+        continue;
+      }
+      const { version: _version, ...fieldDefinition } = field;
+      additionalShape[field.field_name] = buildZodSchemaForField(fieldDefinition);
+    }
+
+    const newFields = Object.keys(additionalShape);
+    if (newFields.length === 0) {
+      return;
+    }
+
+    const extendedSchema = definition.schema.extend(additionalShape);
+    const updatedDefinition: JsonbSchemaDefinition = {
+      ...definition,
+      schema: extendedSchema,
+      version: Math.max(group.version, definition.version),
+    };
+
+    if (replaceJsonbSchemaDefinition(updatedDefinition, definition.version)) {
+      return;
+    }
   }
 
-  const newFields = Object.keys(additionalShape);
-  if (newFields.length === 0) {
-    return;
-  }
-
-  const extendedSchema = definition.schema.extend(additionalShape);
-  registerJsonbSchema({
-    ...definition,
-    schema: extendedSchema,
-    version: Math.max(group.version, definition.version),
-  });
-  updateSchemaBinding(group.table, group.column, extendedSchema);
+  console.warn(
+    `Failed to apply persisted extensions for ${group.table}.${group.column} due to concurrent modifications.`,
+  );
 }
 
 function normalizeFieldType(value: string | null | undefined): SchemaExtensionFieldType | null {
