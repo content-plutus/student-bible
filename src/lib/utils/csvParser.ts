@@ -12,6 +12,7 @@ import {
   validateBatchCode,
 } from "@/lib/validators/studentValidator";
 import { ENUM_VALUES } from "@/lib/validators/rules";
+import { ensureJsonbSchemaExtensionsLoaded } from "@/lib/jsonb/schemaRehydrator";
 
 export interface CsvParseOptions {
   encoding?: BufferEncoding;
@@ -162,6 +163,7 @@ const JSONB_COLUMN_MAPPINGS: Record<string, string> = {
 
 export class DynamicCsvParser {
   private options: Required<CsvParseOptions>;
+  private readonly schemaExtensionsReady: Promise<void>;
 
   constructor(options: CsvParseOptions) {
     this.options = {
@@ -172,6 +174,7 @@ export class DynamicCsvParser {
       jsonbColumn:
         options.jsonbColumn || JSONB_COLUMN_MAPPINGS[options.targetTable] || "extra_fields",
     };
+    this.schemaExtensionsReady = ensureJsonbSchemaExtensionsLoaded();
   }
 
   public getJsonbColumn(): string {
@@ -179,6 +182,7 @@ export class DynamicCsvParser {
   }
 
   async parse(filePath: string): Promise<CsvParseResult> {
+    await this.schemaExtensionsReady;
     const fileContent = this.readFile(filePath);
     const { records } = this.parseCSV(fileContent);
 
@@ -562,6 +566,7 @@ export class DynamicCsvParser {
     errors: CsvParseError[];
     unmappedColumns: string[];
   }> {
+    await this.schemaExtensionsReady;
     const fileContent = this.readFile(filePath);
     const { records } = this.parseCSV(fileContent);
 

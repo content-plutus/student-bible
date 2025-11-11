@@ -9,6 +9,7 @@ import {
 import { detectDuplicates } from "@/lib/validators/duplicateDetector";
 import { DEFAULT_MATCHING_CRITERIA, getPreset } from "@/lib/validators/matchingRules";
 import { CertificationType } from "@/lib/validators/rules";
+import { ensureJsonbSchemaExtensionsLoaded } from "@/lib/jsonb/schemaRehydrator";
 import type {
   ImportJobStatus,
   ImportError,
@@ -31,6 +32,7 @@ export class BatchImportService {
   private supabase: SupabaseClient;
   private options: Required<Omit<ImportOptions, "duplicateCheckPreset">> &
     Pick<ImportOptions, "duplicateCheckPreset">;
+  private readonly schemaExtensionsReady: Promise<void>;
 
   constructor(supabase: SupabaseClient, options: ImportOptions = {}) {
     this.supabase = supabase;
@@ -42,6 +44,7 @@ export class BatchImportService {
       duplicateCheckPreset: options.duplicateCheckPreset,
       rollbackOnError: options.rollbackOnError ?? false,
     };
+    this.schemaExtensionsReady = ensureJsonbSchemaExtensionsLoaded();
   }
 
   /**
@@ -54,6 +57,7 @@ export class BatchImportService {
     _metadata: ImportJobMetadata,
   ): Promise<{ success: boolean; errors: ImportError[] }> {
     try {
+      await this.schemaExtensionsReady;
       await this.updateJobStatus(jobId, "processing");
 
       const totalRecords = records.length;
@@ -118,6 +122,7 @@ export class BatchImportService {
     records: Array<Record<string, unknown>>,
     startRowNumber: number,
   ): Promise<ValidationResult> {
+    await this.schemaExtensionsReady;
     const valid: ValidatedStudentRecord[] = [];
     const errors: ImportError[] = [];
 

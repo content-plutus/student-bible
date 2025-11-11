@@ -7,9 +7,11 @@ import {
   type SchemaExtensionFieldDefinition,
 } from "@/lib/jsonb/schemaExtensionBuilder";
 import { getJsonbSchemaDefinition, registerJsonbSchema } from "@/lib/jsonb/schemaRegistry";
+import { ensureJsonbSchemaExtensionsLoaded } from "@/lib/jsonb/schemaRehydrator";
 import { buildAuditContext } from "@/lib/utils/auditContext";
 
 type SchemaExtensionPayload = z.infer<typeof schemaExtensionSchema>;
+const schemaExtensionsReady = ensureJsonbSchemaExtensionsLoaded();
 
 if (process.env.NODE_ENV === "production" && !process.env.INTERNAL_API_KEY) {
   throw new Error(
@@ -129,6 +131,7 @@ const schemaExtensionSchema = z.object({
 });
 
 async function handleSchemaExtension(request: NextRequest, validatedData: SchemaExtensionPayload) {
+  await schemaExtensionsReady;
   const { table_name, jsonb_column, fields, migration_strategy, apply_to_existing } = validatedData;
 
   const fieldNames = fields.map((f) => f.field_name);

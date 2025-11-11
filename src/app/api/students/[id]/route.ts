@@ -10,6 +10,7 @@ import {
   ErrorCode,
 } from "@/lib/errors";
 import { buildAuditContext } from "@/lib/utils/auditContext";
+import { ensureJsonbSchemaExtensionsLoaded } from "@/lib/jsonb/schemaRehydrator";
 
 if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
   throw new Error(
@@ -26,6 +27,7 @@ if (process.env.NODE_ENV === "production" && !process.env.INTERNAL_API_KEY) {
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+const schemaExtensionsReady = ensureJsonbSchemaExtensionsLoaded();
 
 /**
  * Validates the API key from the request header.
@@ -73,6 +75,7 @@ function getSupabaseClient() {
 export const GET = withErrorHandling(
   async (request: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
     validateApiKey(request);
+    await schemaExtensionsReady;
 
     const supabase = getSupabaseClient();
     const { id } = await params;
@@ -115,6 +118,7 @@ export const GET = withErrorHandling(
 export const PATCH = withErrorHandling(
   async (request: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
     validateApiKey(request);
+    await schemaExtensionsReady;
 
     const body = await request.json();
     const validatedData = studentUpdateSchema.parse(body);

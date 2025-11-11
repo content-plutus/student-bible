@@ -10,6 +10,7 @@ import {
 } from "@/lib/validators/schemaEvolution";
 import { CertificationType } from "@/lib/validators/rules";
 import { buildAuditContext } from "@/lib/utils/auditContext";
+import { ensureJsonbSchemaExtensionsLoaded } from "@/lib/jsonb/schemaRehydrator";
 import { z } from "zod";
 
 if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
@@ -27,6 +28,7 @@ if (process.env.NODE_ENV === "production" && !process.env.INTERNAL_API_KEY) {
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const schemaExtensionsReady = ensureJsonbSchemaExtensionsLoaded();
 
 /**
  * Validates the API key from the request header.
@@ -132,6 +134,7 @@ export async function POST(request: NextRequest) {
   if (authError) {
     return authError;
   }
+  await schemaExtensionsReady;
 
   try {
     const body = await request.json();
@@ -189,6 +192,7 @@ export async function PUT(request: NextRequest) {
   if (authError) {
     return authError;
   }
+  await schemaExtensionsReady;
 
   try {
     const body = await request.json();
@@ -368,6 +372,7 @@ export async function GET(request: NextRequest) {
   if (authError) {
     return authError;
   }
+  await schemaExtensionsReady;
 
   try {
     const searchParams = request.nextUrl.searchParams;

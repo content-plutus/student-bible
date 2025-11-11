@@ -120,7 +120,7 @@
   - [x] 3.19 Write comprehensive unit tests for all validators
   - [x] 3.20 Document validation rules and error codes
 
-- [ ] 4.0 Develop Core Backend Services with Dynamic Field Handling
+- [x] 4.0 Develop Core Backend Services with Dynamic Field Handling
   - [x] 4.1 Create Supabase client singleton with connection pooling
   - [x] 4.2 Implement student search API with phone number and dynamic field search
   - [x] 4.3 Create student profile API with JSONB field merging
@@ -137,9 +137,9 @@
   - [x] 4.15 Create field metadata API for UI field discovery
   - [x] 4.16 Build schema extension API for adding new fields dynamically
   - [x] 4.17 Implement audit logging for all data modifications
-  - [ ] 4.18 Create caching layer with invalidation strategies
-  - [ ] 4.19 Write integration tests for all API endpoints
-  - [ ] 4.20 Reload persisted JSONB schema extensions on startup (rehydrate registry from `jsonb_schema_extensions`)
+  - [x] 4.18 Create caching layer with invalidation strategies
+  - [x] 4.19 Write integration tests for all API endpoints
+  - [x] 4.20 Reload persisted JSONB schema extensions on startup (rehydrate registry from `jsonb_schema_extensions`)
 
 - [ ] 5.0 Create Adaptive User Interface Components
   - [ ] 5.1 Build responsive layout with mobile-first approach
