@@ -1,6 +1,10 @@
 import { describe, expect, it, beforeEach, afterEach } from "@jest/globals";
 import { ZodRawShape, z } from "zod";
-import { applySchemaExtensions, buildZodSchemaForField } from "@/lib/jsonb/schemaExtensionBuilder";
+import {
+  applySchemaExtensions,
+  buildZodSchemaForField,
+  schemaRegistryAdapter,
+} from "@/lib/jsonb/schemaExtensionBuilder";
 import { getJsonbSchemaDefinition, registerJsonbSchema } from "@/lib/jsonb/schemaRegistry";
 
 describe("schema extension builder", () => {
@@ -51,6 +55,26 @@ describe("schema extension builder", () => {
     expect(updatedDefinition?.version).toBe(result.version);
     const schema = updatedDefinition?.schema as z.ZodObject<ZodRawShape>;
     expect(schema.shape.mentorship_tier).toBeDefined();
+  });
+
+  it("retries when schema version changes during extension", () => {
+    const originalReplace = schemaRegistryAdapter.replaceDefinition;
+    const mockedReplace = jest
+      .fn<typeof schemaRegistryAdapter.replaceDefinition>()
+      .mockImplementationOnce(() => false)
+      .mockImplementation(() => true);
+    schemaRegistryAdapter.replaceDefinition = mockedReplace;
+
+    const result = applySchemaExtensions("students", "extra_fields", [
+      {
+        field_name: "retry_field",
+        field_type: "string",
+      },
+    ]);
+
+    expect(result.addedFields).toContain("retry_field");
+    expect(mockedReplace).toHaveBeenCalledTimes(2);
+    schemaRegistryAdapter.replaceDefinition = originalReplace;
   });
 
   it("rejects unsafe regex patterns", () => {

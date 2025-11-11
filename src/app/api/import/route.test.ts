@@ -5,6 +5,7 @@
 // Set environment variables before importing route module
 process.env.NEXT_PUBLIC_SUPABASE_URL = "https://test.supabase.co";
 process.env.SUPABASE_SERVICE_ROLE_KEY = "test-service-key";
+process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = "anon-key";
 process.env.INTERNAL_API_KEY = "test-key";
 
 import { describe, expect, it, jest, beforeEach, afterEach } from "@jest/globals";
