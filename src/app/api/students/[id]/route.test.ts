@@ -35,7 +35,11 @@ const { studentUpdateSchema } = jest.requireMock("@/lib/types/student") as {
 
 const API_KEY = "test-internal-key";
 
-const buildRequest = (method: "GET" | "PATCH", headers?: Record<string, string>, body?: unknown) => {
+const buildRequest = (
+  method: "GET" | "PATCH",
+  headers?: Record<string, string>,
+  body?: unknown,
+) => {
   const url = new URL("http://localhost/api/students/abc");
   const init: RequestInit = {
     method,

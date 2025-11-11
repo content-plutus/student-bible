@@ -51,10 +51,9 @@ const { detectDuplicates } = jest.requireMock("@/lib/validators/duplicateDetecto
 const { validateJsonbPayload } = jest.requireMock("@/lib/jsonb/schemaRegistry") as {
   validateJsonbPayload: jest.Mock;
 };
-const {
-  validateBatchCodeFromExtraFields,
-  stripNullValuesFromExtraFields,
-} = jest.requireMock("@/lib/validators/schemaEvolution") as {
+const { validateBatchCodeFromExtraFields, stripNullValuesFromExtraFields } = jest.requireMock(
+  "@/lib/validators/schemaEvolution",
+) as {
   validateBatchCodeFromExtraFields: jest.Mock;
   stripNullValuesFromExtraFields: jest.Mock;
 };
@@ -64,11 +63,7 @@ const { studentInsertSchema } = jest.requireMock("@/lib/types/student") as {
 
 const API_KEY = "test-internal-key";
 
-const createRequest = (
-  method: "POST" | "PUT",
-  body: unknown,
-  headers?: Record<string, string>,
-) => {
+const createRequest = (method: "POST" | "PUT", body: unknown, headers?: Record<string, string>) => {
   const url = new URL("http://localhost/api/students");
   return new NextRequest(url, {
     method,

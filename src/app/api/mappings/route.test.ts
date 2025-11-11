@@ -200,10 +200,7 @@ describe("/api/mappings", () => {
     expect(response.status).toBe(200);
     expect(payload.success).toBe(true);
     expect(payload.message).toContain("Replaced rules");
-    expect(transformationService.resetMappingsFor).toHaveBeenCalledWith(
-      "students",
-      "extra_fields",
-    );
+    expect(transformationService.resetMappingsFor).toHaveBeenCalledWith("students", "extra_fields");
     expect(transformationService.registerFieldMapping).toHaveBeenCalledWith(
       "students",
       "extra_fields",
@@ -226,9 +223,6 @@ describe("/api/mappings", () => {
     expect(response.status).toBe(200);
     expect(payload.success).toBe(true);
     expect(payload.message).toContain("Cleared custom rules");
-    expect(transformationService.resetMappingsFor).toHaveBeenCalledWith(
-      "students",
-      "extra_fields",
-    );
+    expect(transformationService.resetMappingsFor).toHaveBeenCalledWith("students", "extra_fields");
   });
 });
