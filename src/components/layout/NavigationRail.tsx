@@ -47,8 +47,17 @@ export function NavigationRail() {
                     : "border-zinc-100 text-zinc-600 hover:border-zinc-200",
                 )}
               >
-                <span className="block text-base font-semibold text-zinc-900">{item.title}</span>
-                <span className="text-xs text-zinc-500">{item.detail}</span>
+                <span
+                  className={cn(
+                    "block text-base font-semibold",
+                    isComingSoon ? "text-zinc-400" : "text-zinc-900",
+                  )}
+                >
+                  {item.title}
+                </span>
+                <span className={cn("text-xs", isComingSoon ? "text-zinc-400" : "text-zinc-500")}>
+                  {item.detail}
+                </span>
               </button>
             </li>
           );
