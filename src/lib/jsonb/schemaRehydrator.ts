@@ -62,14 +62,17 @@ export function ensureJsonbSchemaExtensionsLoaded(): Promise<void> {
     return rehydrationPromise;
   }
 
-  rehydrationPromise = performRehydration()
-    .catch((error) => {
-      console.error("Failed to rehydrate JSONB schema extensions:", error);
-    })
-    .finally(() => {
+  rehydrationPromise = (async () => {
+    try {
+      await performRehydration();
       hasRehydrated = true;
+    } catch (error) {
+      console.error("Failed to rehydrate JSONB schema extensions:", error);
+      throw error;
+    } finally {
       rehydrationPromise = null;
-    });
+    }
+  })();
 
   return rehydrationPromise;
 }

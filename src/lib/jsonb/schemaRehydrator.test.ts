@@ -100,4 +100,15 @@ describe("schema rehydrator", () => {
     const updatedDefinition = getJsonbSchemaDefinition("students", "extra_fields");
     expect(updatedDefinition).toEqual(originalDefinition);
   });
+
+  it("propagates rehydration errors to callers", async () => {
+    secondOrderMock.mockReturnValue(
+      Promise.resolve({
+        data: null,
+        error: new Error("database unavailable"),
+      }),
+    );
+
+    await expect(ensureJsonbSchemaExtensionsLoaded()).rejects.toThrow("database unavailable");
+  });
 });
