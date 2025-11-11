@@ -26,7 +26,7 @@ type SchemaExtensionGroup = {
   table: string;
   column: string;
   version: number;
-  fields: SchemaExtensionFieldDefinition[];
+  fields: Array<SchemaExtensionFieldDefinition & { version: number }>;
 };
 
 const SUPPORTED_FIELD_TYPES: readonly SchemaExtensionFieldType[] = [
@@ -155,14 +155,26 @@ function groupExtensions(rows: SchemaExtensionRow[]) {
 
     const group = grouped.get(key)!;
     group.version = Math.max(group.version, row.schema_version ?? group.version);
-    group.fields.push({
+    const fieldVersion = row.schema_version ?? group.version;
+    const updatedField: SchemaExtensionFieldDefinition & { version: number } = {
       field_name: row.field_name,
       field_type: fieldType,
       required: row.required ?? false,
       description: row.description ?? undefined,
       default_value: row.default_value ?? undefined,
       validation_rules: row.validation_rules ?? undefined,
-    });
+      version: fieldVersion,
+    };
+
+    const existingIndex = group.fields.findIndex((f) => f.field_name === row.field_name);
+    if (existingIndex >= 0) {
+      if (group.fields[existingIndex].version >= fieldVersion) {
+        continue;
+      }
+      group.fields[existingIndex] = updatedField;
+    } else {
+      group.fields.push(updatedField);
+    }
   }
 
   return grouped;
@@ -189,7 +201,8 @@ function applyPersistedExtensions(group: SchemaExtensionGroup) {
     if (field.field_name in definition.schema.shape || field.field_name in additionalShape) {
       continue;
     }
-    additionalShape[field.field_name] = buildZodSchemaForField(field);
+    const { version: _version, ...fieldDefinition } = field;
+    additionalShape[field.field_name] = buildZodSchemaForField(fieldDefinition);
   }
 
   const newFields = Object.keys(additionalShape);
