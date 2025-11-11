@@ -9,6 +9,8 @@ type NavItem = {
   comingSoon?: boolean;
 };
 
+("use client");
+
 const navItems: NavItem[] = [
   { title: "Overview", detail: "Status & alerts", isActive: true },
   { title: "Students", detail: "Profiles & search", comingSoon: true },
