@@ -70,19 +70,24 @@ export function EditablePortfolioPage() {
   };
 
   const addProject = () => {
-    setDraft((previous) => ({
-      ...previous,
-      projects: [
-        ...previous.projects,
-        {
-          id: Date.now(),
-          name: "New project",
-          summary: "Describe what you built and the result.",
-          stack: "Tech stack",
-          link: "https://",
-        },
-      ],
-    }));
+    setDraft((previous) => {
+      const nextId =
+        previous.projects.reduce((maxId, project) => Math.max(maxId, project.id), 0) + 1;
+
+      return {
+        ...previous,
+        projects: [
+          ...previous.projects,
+          {
+            id: nextId,
+            name: "New project",
+            summary: "Describe what you built and the result.",
+            stack: "Tech stack",
+            link: "https://",
+          },
+        ],
+      };
+    });
   };
 
   const removeProject = (id: number) => {
@@ -193,9 +198,9 @@ export function EditablePortfolioPage() {
             </label>
           ) : (
             <div className="flex flex-wrap gap-2">
-              {skillTags.map((skill) => (
+              {skillTags.map((skill, index) => (
                 <span
-                  key={skill}
+                  key={`${skill}-${index}`}
                   className="rounded-full border border-sky-100 bg-sky-50 px-3 py-1 text-xs font-medium text-sky-700"
                 >
                   {skill}
@@ -252,6 +257,7 @@ export function EditablePortfolioPage() {
                       <button
                         type="button"
                         onClick={() => removeProject(project.id)}
+                        aria-label={`Remove project ${project.name}`}
                         className="text-sm font-semibold text-rose-600 transition hover:text-rose-500"
                       >
                         Remove project
@@ -272,6 +278,7 @@ export function EditablePortfolioPage() {
                       href={project.link}
                       target="_blank"
                       rel="noreferrer"
+                      aria-label={`View project ${project.name} (opens in a new tab)`}
                     >
                       View project
                     </a>
